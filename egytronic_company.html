@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Egytronic — Advanced AI Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0a0e27;--bg2:#0f1429;--surface:#151d3b;
+  --blue:#1648c8;--blue2:#2257e0;--blue3:#3b6ef0;
+  --cyan:#06b6d4;--purple:#7c3aed;--green:#10b981;
+  --text:#e5e7eb;--text2:#9ca3af;--muted:#6b7280;
+  --border:#2d3748;
+  --sh:0 4px 28px rgba(22,72,200,.15);
+  --shL:0 16px 56px rgba(22,72,200,.25);
+}
+
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Tajawal',sans-serif;font-weight:400;overflow-x:hidden}
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--blue),var(--cyan));border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,var(--blue2),var(--cyan))}
+
+/* ═══ CURSOR ═══ */
+#cur{position:fixed;width:12px;height:12px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:transform .1s;box-shadow:0 0 25px var(--cyan)}
+#cur2{position:fixed;width:48px;height:48px;border:2.5px solid var(--cyan);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);box-shadow:inset 0 0 25px rgba(6,182,212,.15)}
+
+/* ═══ PAGE LOADER ═══ */
+#loader{position:fixed;inset:0;background:linear-gradient(135deg,var(--bg),var(--surface));z-index:9000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:30px;transition:opacity .6s,transform .6s}
+#loader.hide{opacity:0;pointer-events:none;transform:translateY(-20px)}
+
+.loader-logo{font-family:'Tajawal',sans-serif;font-size:56px;font-weight:900;background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px;animation:ldPulse 1.5s ease-in-out infinite alternate}
+
+.loader-bar{width:240px;height:3px;background:rgba(6,182,212,.2);border-radius:2px;overflow:hidden;box-shadow:0 0 20px rgba(6,182,212,.3)}
+.loader-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:2px;animation:ldBar 2s ease-out forwards;box-shadow:0 0 20px var(--cyan)}
+
+@keyframes ldPulse{from{opacity:.6;transform:scale(.95)}to{opacity:1;transform:scale(1.05)}}
+@keyframes ldBar{from{width:0}to{width:100%}}
+
+/* ═══ NAVIGATION ═══ */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;padding:20px 60px;display:flex;align-items:center;justify-content:space-between;transition:all .4s;background:transparent}
+nav.scrolled{background:rgba(10,14,39,.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(6,182,212,.1);padding:16px 60px;box-shadow:0 4px 20px rgba(22,72,200,.1)}
+
+.logo{font-family:'Tajawal',sans-serif;font-size:24px;font-weight:900;background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none;display:flex;align-items:center;gap:12px;letter-spacing:-0.5px}
+
+.logo-mark{width:40px;height:40px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:grid;place-items:center;color:#fff;font-size:18px;font-weight:900;border-radius:10px;box-shadow:0 0 20px rgba(6,182,212,.3)}
+
+.nav-links{display:flex;gap:40px;list-style:none}
+.nav-links a{font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);text-decoration:none;transition:all .3s;position:relative;font-weight:500}
+.nav-links a::after{content:'';position:absolute;bottom:-6px;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--cyan));transform:scaleX(0);transition:transform .3s;border-radius:1px}
+.nav-links a:hover{color:var(--cyan)}.nav-links a:hover::after{transform:scaleX(1)}
+
+.nav-cta{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;padding:12px 28px;cursor:pointer;border-radius:8px;transition:all .3s;font-family:'Tajawal',sans-serif;font-weight:600;font-size:13px;letter-spacing:.05em;text-transform:uppercase}
+.nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(22,72,200,.4)}
+
+/* ═══ HERO SECTION ═══ */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:120px 60px 100px;position:relative;overflow:hidden;background:linear-gradient(135deg,#0a0e27 0%,#0f1429 50%,#0a0e27 100%)}
+
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 50%,rgba(22,72,200,.15) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(6,182,212,.1) 0%,transparent 45%);pointer-events:none}
+
+.hero::after{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(22,72,200,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(22,72,200,.03) 1px,transparent 1px);background-size:100px 100px;pointer-events:none}
+
+.hero-orb{position:absolute;width:700px;height:700px;background:conic-gradient(from 0deg at 50% 50%,rgba(22,72,200,.2),rgba(6,182,212,.15),rgba(22,72,200,.1),rgba(6,182,212,.15),rgba(22,72,200,.2));border-radius:50%;animation:orbRot 20s linear infinite;filter:blur(80px);top:-250px;right:-250px;z-index:1}
+
+@keyframes orbRot{to{transform:rotate(360deg)}}
+
+.hero-content{position:relative;z-index:2;max-width:900px;text-align:center;animation:fadeInUp .8s .2s both}
+
+.hero-tag{font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);margin-bottom:20px;display:inline-block;background:rgba(6,182,212,.1);padding:8px 16px;border-radius:20px;border:1px solid rgba(6,182,212,.3)}
+
+.hero-title{font-size:clamp(48px,8vw,96px);font-weight:900;background:linear-gradient(135deg,var(--blue),var(--cyan),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:20px;letter-spacing:-1px;line-height:1.1}
+
+.hero-subtitle{font-size:20px;color:var(--text2);margin-bottom:40px;max-width:700px;margin-left:auto;margin-right:auto;line-height:1.6}
+
+.hero-cta{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;animation:fadeInUp .8s .4s both}
+
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;padding:16px 44px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;font-family:'Tajawal',sans-serif;letter-spacing:.05em;text-transform:uppercase}
+
+.btn-primary::before{content:'';position:absolute;inset:0;background:rgba(255,255,255,.15);transform:translateX(-100%);transition:transform .4s}
+
+.btn-primary:hover::before{transform:translateX(100%)}
+.btn-primary:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(22,72,200,.5)}
+
+.btn-secondary{background:transparent;color:var(--cyan);border:2px solid var(--cyan);padding:14px 42px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all .3s;font-family:'Tajawal',sans-serif;letter-spacing:.05em;text-transform:uppercase}
+
+.btn-secondary:hover{background:rgba(6,182,212,.1);transform:translateY(-4px);box-shadow:0 0 30px rgba(6,182,212,.3)}
+
+@keyframes fadeInUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ WORKFLOW SECTION ═══ */
+.workflow-section{padding:140px 60px;position:relative;overflow:hidden;background:linear-gradient(135deg,#0f1429 0%,#151d3b 50%,#0f1429 100%)}
+
+.workflow-section::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 80% 50%,rgba(6,182,212,.08) 0%,transparent 50%);pointer-events:none}
+
+.section-header{text-align:center;margin-bottom:80px;animation:fadeInUp .8s both}
+
+.section-tag{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);margin-bottom:16px;display:inline-block;background:rgba(6,182,212,.1);padding:8px 16px;border-radius:20px;border:1px solid rgba(6,182,212,.3)}
+
+.section-title{font-size:clamp(36px,5vw,56px);font-weight:900;background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:16px}
+
+.section-subtitle{font-size:18px;color:var(--text2);max-width:600px;margin:0 auto}
+
+.workflow-container{position:relative;width:100%;max-width:1200px;margin:0 auto;height:600px;display:flex;align-items:center;justify-content:center}
+
+.workflow-canvas{width:100%;height:100%;position:relative}
+
+.workflow-nodes{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-around;width:100%}
+
+.node{position:relative;display:flex;flex-direction:column;align-items:center;gap:16px;animation:nodeSlide .8s ease-out forwards;opacity:0;z-index:10}
+
+.node:nth-child(1){animation-delay:0s}
+.node:nth-child(2){animation-delay:.15s}
+.node:nth-child(3){animation-delay:.3s}
+.node:nth-child(4){animation-delay:.45s}
+.node:nth-child(5){animation-delay:.6s}
+
+@keyframes nodeSlide{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+
+.node-circle{width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,rgba(22,72,200,.3),rgba(6,182,212,.2));border:3px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-size:40px;position:relative;box-shadow:0 0 40px rgba(6,182,212,.4);transition:all .4s;cursor:pointer}
+
+.node-circle::before{content:'';position:absolute;inset:-12px;border-radius:50%;border:2px solid var(--cyan);animation:nodePulse 2.5s ease-in-out infinite;opacity:0.6}
+
+.node-circle::after{content:'';position:absolute;inset:0;border-radius:50%;background:linear-gradient(135deg,rgba(6,182,212,.2),transparent);opacity:0;transition:opacity .4s}
+
+@keyframes nodePulse{0%,100%{transform:scale(1);opacity:.4}50%{transform:scale(1.3);opacity:0}}
+
+.node:hover .node-circle{transform:scale(1.15);box-shadow:0 0 60px rgba(6,182,212,.6);border-color:#fff}
+.node:hover .node-circle::after{opacity:1}
+
+.node-label{font-size:16px;font-weight:700;color:var(--text);text-align:center}
+
+.node-desc{font-size:13px;color:var(--text2);text-align:center;max-width:110px}
+
+/* SVG Connections */
+.workflow-svg{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+
+/* ═══ PRODUCTS SECTION ═══ */
+.products-section{padding:140px 60px;position:relative;background:var(--bg)}
+
+.products-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:40px;max-width:1200px;margin:0 auto;margin-top:60px}
+
+.product-card{background:linear-gradient(135deg,rgba(21,29,59,.8),rgba(21,29,59,.4));border:1px solid rgba(6,182,212,.2);border-radius:16px;padding:48px 36px;position:relative;overflow:hidden;transition:all .4s;animation:cardSlide .6s ease-out forwards;opacity:0}
+
+.product-card:nth-child(1){animation-delay:0s}
+.product-card:nth-child(2){animation-delay:.2s}
+.product-card:nth-child(3){animation-delay:.4s}
+
+@keyframes cardSlide{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+
+.product-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(6,182,212,.15),transparent);opacity:0;transition:opacity .4s}
+
+.product-card:hover::before{opacity:1}
+.product-card:hover{transform:translateY(-12px);border-color:var(--cyan);box-shadow:0 20px 60px rgba(6,182,212,.2)}
+
+.product-icon{font-size:56px;margin-bottom:24px;display:block}
+
+.product-title{font-size:28px;font-weight:800;margin-bottom:16px;color:var(--text)}
+
+.product-desc{font-size:15px;color:var(--text2);line-height:1.7;margin-bottom:28px}
+
+.product-tags{display:flex;gap:10px;flex-wrap:wrap}
+
+.tag{background:rgba(22,72,200,.2);color:var(--cyan);padding:8px 14px;border-radius:6px;font-size:12px;border:1px solid rgba(6,182,212,.3);font-weight:600}
+
+/* ═══ PARTNERS SECTION ═══ */
+.partners-section{padding:140px 60px;position:relative;background:linear-gradient(135deg,#0f1429 0%,#151d3b 50%,#0f1429 100%)}
+
+.partners-section::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 50%,rgba(22,72,200,.08) 0%,transparent 50%);pointer-events:none}
+
+.partners-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:30px;max-width:1200px;margin:0 auto;margin-top:60px}
+
+.partner-card{background:rgba(21,29,59,.6);border:1px solid rgba(6,182,212,.2);border-radius:14px;padding:36px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:all .4s;animation:partnerSlide .6s ease-out forwards;opacity:0;cursor:pointer;position:relative;overflow:hidden}
+
+.partner-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(6,182,212,.15),transparent);opacity:0;transition:opacity .4s}
+
+.partner-card:hover::before{opacity:1}
+.partner-card:hover{transform:translateY(-10px);border-color:var(--cyan);box-shadow:0 16px 50px rgba(6,182,212,.25)}
+
+@keyframes partnerSlide{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+
+.partner-svg{width:70px;height:70px;position:relative;z-index:2;transition:all .4s;filter:drop-shadow(0 0 15px rgba(6,182,212,.2))}
+
+.partner-card:hover .partner-svg{transform:scale(1.25);filter:drop-shadow(0 0 30px rgba(6,182,212,.6))}
+
+.partner-name{font-size:15px;font-weight:700;color:var(--text);text-align:center;position:relative;z-index:2}
+
+/* ═══ FOOTER ═══ */
+footer{background:linear-gradient(135deg,#0a0e27 0%,#0f1429 100%);padding:60px;border-top:1px solid rgba(6,182,212,.1);text-align:center;color:var(--text2)}
+
+footer p{margin-bottom:16px}
+
+footer a{color:var(--cyan);text-decoration:none;transition:color .3s}
+footer a:hover{color:var(--blue)}
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width:768px){
+  nav{padding:16px 30px}
+  nav.scrolled{padding:14px 30px}
+  
+  .hero{padding:100px 30px 80px}
+  .workflow-section,.products-section,.partners-section{padding:100px 30px}
+  
+  .nav-links{gap:20px}
+  .nav-links a{font-size:12px}
+  
+  .hero-title{font-size:42px}
+  .hero-subtitle{font-size:16px}
+  
+  .workflow-container{height:500px}
+  .node-circle{width:80px;height:80px;font-size:32px}
+  
+  .products-grid{grid-template-columns:1fr;gap:30px}
+  .partners-grid{grid-template-columns:repeat(2,1fr);gap:20px}
+  
+  .section-title{font-size:36px}
+  .btn-primary,.btn-secondary{padding:12px 28px;font-size:13px}
+}
+
+@media (max-width:480px){
+  nav{padding:14px 16px}
+  .hero{padding:80px 16px 60px}
+  .workflow-section,.products-section,.partners-section{padding:80px 16px}
+  
+  .logo{font-size:20px}
+  .nav-links{gap:12px;display:none}
+  
+  .hero-title{font-size:32px}
+  .hero-subtitle{font-size:14px}
+  .hero-cta{flex-direction:column}
+  
+  .workflow-container{height:400px}
+  .node-circle{width:70px;height:70px;font-size:28px}
+  .node-label{font-size:13px}
+  
+  .products-grid{grid-template-columns:1fr}
+  .partners-grid{grid-template-columns:1fr}
+  
+  .section-title{font-size:28px}
+  .btn-primary,.btn-secondary{width:100%;padding:14px 24px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOADER ══════════ -->
+<div id="loader">
+  <div class="loader-logo">E</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+</div>
+
+<!-- ══════════ CURSOR ══════════ -->
+<div id="cur"></div>
+<div id="cur2"></div>
+
+<!-- ══════════ NAVIGATION ══════════ -->
+<nav id="nav">
+  <a href="#" class="logo">
+    <div class="logo-mark">E</div>
+    <span>Egytronic</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#workflow">Workflow</a></li>
+    <li><a href="#products">Products</a></li>
+    <li><a href="#partners">Partners</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <button class="nav-cta">Get Started</button>
+</nav>
+
+<!-- ══════════ HERO SECTION ══════════ -->
+<section class="hero">
+  <div class="hero-orb"></div>
+  <div class="hero-content">
+    <div class="hero-tag">Welcome to the Future</div>
+    <h1 class="hero-title">Advanced AI for the Arab World</h1>
+    <p class="hero-subtitle">Building intelligent solutions that understand Arabic and serve the MENA region with cutting-edge technology.</p>
+    <div class="hero-cta">
+      <button class="btn-primary">Explore Now</button>
+      <button class="btn-secondary">Learn More</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ WORKFLOW SECTION ══════════ -->
+<section class="workflow-section" id="workflow">
+  <div class="section-header">
+    <div class="section-tag">How It Works</div>
+    <h2 class="section-title">Our Workflow</h2>
+    <p class="section-subtitle">From data collection to deployment, our intelligent pipeline processes information seamlessly</p>
+  </div>
+  
+  <div class="workflow-container">
+    <svg class="workflow-svg" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:rgba(22,72,200,.3);stop-opacity:1" />
+          <stop offset="50%" style="stop-color:rgba(6,182,212,.6);stop-opacity:1" />
+          <stop offset="100%" style="stop-color:rgba(22,72,200,.3);stop-opacity:1" />
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      
+      <!-- Connection lines -->
+      <line x1="120" y1="150" x2="280" y2="150" stroke="url(#lineGrad)" stroke-width="3" filter="url(#glow)" stroke-dasharray="160" stroke-dashoffset="160" style="animation:flowLine 4s ease-in-out infinite"/>
+      <line x1="400" y1="150" x2="560" y2="150" stroke="url(#lineGrad)" stroke-width="3" filter="url(#glow)" stroke-dasharray="160" stroke-dashoffset="160" style="animation:flowLine 4s ease-in-out infinite;animation-delay:.8s"/>
+      <line x1="680" y1="150" x2="840" y2="150" stroke="url(#lineGrad)" stroke-width="3" filter="url(#glow)" stroke-dasharray="160" stroke-dashoffset="160" style="animation:flowLine 4s ease-in-out infinite;animation-delay:1.6s"/>
+      <line x1="960" y1="150" x2="1120" y2="150" stroke="url(#lineGrad)" stroke-width="3" filter="url(#glow)" stroke-dasharray="160" stroke-dashoffset="160" style="animation:flowLine 4s ease-in-out infinite;animation-delay:2.4s"/>
+      
+      <!-- Animated flow dots -->
+      <circle cx="120" cy="150" r="5" fill="rgba(6,182,212,.9)" style="animation:dotFlow 4s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(6,182,212,.8))"/>
+      <circle cx="400" cy="150" r="5" fill="rgba(6,182,212,.9)" style="animation:dotFlow 4s ease-in-out infinite;animation-delay:.8s;filter:drop-shadow(0 0 10px rgba(6,182,212,.8))"/>
+      <circle cx="680" cy="150" r="5" fill="rgba(6,182,212,.9)" style="animation:dotFlow 4s ease-in-out infinite;animation-delay:1.6s;filter:drop-shadow(0 0 10px rgba(6,182,212,.8))"/>
+      <circle cx="960" cy="150" r="5" fill="rgba(6,182,212,.9)" style="animation:dotFlow 4s ease-in-out infinite;animation-delay:2.4s;filter:drop-shadow(0 0 10px rgba(6,182,212,.8))"/>
+    </svg>
+    
+    <div class="workflow-nodes">
+      <div class="node">
+        <div class="node-circle">📊</div>
+        <div class="node-label">Data</div>
+        <div class="node-desc">Collection & Processing</div>
+      </div>
+      <div class="node">
+        <div class="node-circle">⚙️</div>
+        <div class="node-label">Process</div>
+        <div class="node-desc">NLP Engine</div>
+      </div>
+      <div class="node">
+        <div class="node-circle">🧠</div>
+        <div class="node-label">Analyze</div>
+        <div class="node-desc">AI Model</div>
+      </div>
+      <div class="node">
+        <div class="node-circle">✨</div>
+        <div class="node-label">Optimize</div>
+        <div class="node-desc">Fine-tuning</div>
+      </div>
+      <div class="node">
+        <div class="node-circle">🚀</div>
+        <div class="node-label">Deploy</div>
+        <div class="node-desc">Production</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PRODUCTS SECTION ══════════ -->
+<section class="products-section" id="products">
+  <div class="section-header">
+    <div class="section-tag">Our Solutions</div>
+    <h2 class="section-title">Innovative Products</h2>
+    <p class="section-subtitle">Cutting-edge AI solutions designed for the modern world</p>
+  </div>
+  
+  <div class="products-grid">
+    <div class="product-card">
+      <div class="product-icon">🎓</div>
+      <h3 class="product-title">SmartBoard.ai</h3>
+      <p class="product-desc">Intelligent learning platform powered by Arabic NLP for students and educators worldwide.</p>
+      <div class="product-tags">
+        <span class="tag">Arabic NLP</span>
+        <span class="tag">Education</span>
+      </div>
+    </div>
+    
+    <div class="product-card">
+      <div class="product-icon">⚙️</div>
+      <h3 class="product-title">Egytronic API</h3>
+      <p class="product-desc">Developer-friendly APIs for Arabic language processing, sentiment analysis, and NLP tasks.</p>
+      <div class="product-tags">
+        <span class="tag">API</span>
+        <span class="tag">Developer</span>
+      </div>
+    </div>
+    
+    <div class="product-card">
+      <div class="product-icon">⚖️</div>
+      <h3 class="product-title">Misar</h3>
+      <p class="product-desc">Egypt's first AI-powered legal access platform making justice accessible to all citizens.</p>
+      <div class="product-tags">
+        <span class="tag">Legal Tech</span>
+        <span class="tag">AI</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PARTNERS SECTION ══════════ -->
+<section class="partners-section" id="partners">
+  <div class="section-header">
+    <div class="section-tag">Trusted By</div>
+    <h2 class="section-title">Authorized Partners</h2>
+    <p class="section-subtitle">Collaborating with leading AI platforms and organizations</p>
+  </div>
+  
+  <div class="partners-grid">
+    <div class="partner-card" title="Google Colab - Collaborative research platform">
+      <svg class="partner-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#4285F4;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0f1429;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="45" fill="url(#grad1)" opacity="0.2"/>
+        <text x="50" y="65" font-size="45" fill="#4285F4" text-anchor="middle" font-weight="bold" font-family="Arial">G</text>
+      </svg>
+      <div class="partner-name">Google Colab</div>
+    </div>
+    
+    <div class="partner-card" title="Claude AI - Advanced language model">
+      <svg class="partner-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#9F7AEA;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0f1429;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="45" fill="url(#grad2)" opacity="0.2"/>
+        <path d="M 50 20 L 70 40 L 60 50 L 70 60 L 50 80 L 30 60 L 40 50 L 30 40 Z" fill="#9F7AEA" stroke="#9F7AEA" stroke-width="2"/>
+      </svg>
+      <div class="partner-name">Claude AI</div>
+    </div>
+    
+    <div class="partner-card" title="HuggingFace - ML model hub">
+      <svg class="partner-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#FFD21E;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0f1429;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="45" fill="url(#grad3)" opacity="0.2"/>
+        <circle cx="35" cy="40" r="12" fill="#FFD21E"/>
+        <circle cx="65" cy="40" r="12" fill="#FFD21E"/>
+        <path d="M 40 60 Q 50 70 60 60" stroke="#FFD21E" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="partner-name">HuggingFace</div>
+    </div>
+    
+    <div class="partner-card" title="Llama - Meta's language model">
+      <svg class="partner-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad4" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0EA5E9;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0f1429;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="45" fill="url(#grad4)" opacity="0.2"/>
+        <ellipse cx="50" cy="45" rx="15" ry="20" fill="#0EA5E9"/>
+        <circle cx="40" cy="35" r="4" fill="#0EA5E9"/>
+        <circle cx="60" cy="35" r="4" fill="#0EA5E9"/>
+      </svg>
+      <div class="partner-name">Llama</div>
+    </div>
+    
+    <div class="partner-card" title="Unsloth - Fast LLM training">
+      <svg class="partner-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad5" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#06B6D4;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0f1429;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="45" fill="url(#grad5)" opacity="0.2"/>
+        <path d="M 30 50 L 50 30 L 70 50 L 60 50 L 60 70 L 40 70 L 40 50 Z" fill="#06B6D4" stroke="#06B6D4" stroke-width="2"/>
+      </svg>
+      <div class="partner-name">Unsloth</div>
+    </div>
+    
+    <div class="partner-card" title="Manus.im - AI automation">
+      <svg class="partner-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad6" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#EC4899;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0f1429;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="45" fill="url(#grad6)" opacity="0.2"/>
+        <circle cx="50" cy="50" r="20" fill="none" stroke="#EC4899" stroke-width="2"/>
+        <circle cx="50" cy="50" r="12" fill="#EC4899"/>
+        <circle cx="50" cy="50" r="6" fill="#0f1429"/>
+      </svg>
+      <div class="partner-name">Manus.im</div>
+    </div>
+    
+    <div class="partner-card" title="Z.ai - AI research">
+      <svg class="partner-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad7" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0f1429;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="45" fill="url(#grad7)" opacity="0.2"/>
+        <path d="M 35 35 L 65 35 L 50 65 Z" fill="#F59E0B" stroke="#F59E0B" stroke-width="2"/>
+      </svg>
+      <div class="partner-name">Z.ai</div>
+    </div>
+    
+    <div class="partner-card" title="Unthlos - Advanced AI tools">
+      <svg class="partner-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad8" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0f1429;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="45" fill="url(#grad8)" opacity="0.2"/>
+        <rect x="30" y="30" width="40" height="40" rx="5" fill="none" stroke="#10B981" stroke-width="2"/>
+        <circle cx="50" cy="50" r="8" fill="#10B981"/>
+      </svg>
+      <div class="partner-name">Unthlos</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer id="contact">
+  <p>&copy; 2025 Egytronic. All rights reserved.</p>
+  <p>Building the future of AI from Cairo, Egypt.</p>
+  <p><a href="mailto:hello@egytronic.com">hello@egytronic.com</a></p>
+</footer>
+
+<style>
+@keyframes flowLine{
+  0%{stroke-dashoffset:160}
+  100%{stroke-dashoffset:0}
+}
+
+@keyframes dotFlow{
+  0%{cx:120;opacity:0}
+  5%{opacity:1}
+  95%{opacity:1}
+  100%{cx:1120;opacity:0}
+}
+</style>
+
+<script>
+// ── PAGE LOADER ──
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('loader').classList.add('hide');
+  }, 800);
+});
+
+// ── CURSOR ──
+const C = document.getElementById('cur');
+const C2 = document.getElementById('cur2');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX;
+  my = e.clientY;
+  C.style.left = mx + 'px';
+  C.style.top = my + 'px';
+});
+
+(function loop() {
+  rx += (mx - rx) * 0.09;
+  ry += (my - ry) * 0.09;
+  C2.style.left = rx + 'px';
+  C2.style.top = ry + 'px';
+  requestAnimationFrame(loop);
+})();
+
+document.querySelectorAll('button,.partner-card,.product-card,.node-circle,a').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    C.style.transform = 'translate(-50%,-50%) scale(.5)';
+    C2.style.width = '70px';
+    C2.style.height = '70px';
+    C2.style.borderColor = 'rgba(6,182,212,.9)';
+  });
+  el.addEventListener('mouseleave', () => {
+    C.style.transform = 'translate(-50%,-50%) scale(1)';
+    C2.style.width = '48px';
+    C2.style.height = '48px';
+    C2.style.borderColor = 'var(--cyan)';
+  });
+});
+
+// ── NAVIGATION SCROLL ──
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', scrollY > 50);
+});
+
+// ── SMOOTH SCROLL ──
+document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  const target = document.querySelector(a.getAttribute('href'));
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}));
+
+// ── INTERSECTION OBSERVER FOR ANIMATIONS ──
+const observerOptions = {
+  threshold: 0.1,
+  rootMargin: '0px 0px -100px 0px'
+};
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, observerOptions);
+
+document.querySelectorAll('.product-card, .partner-card, .node').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'all .6s ease-out';
+  observer.observe(el);
+});
+</script>
+
+</body>
+</html>
