@@ -1,0 +1,32 @@
+# Egytronic Configuration
+# Save as ~/.egytronic.json or egytronic.json in your project
+
+{
+  "llm": {
+    "provider": "cloudflare",
+    "model": "@cf/meta/llama-3-8b-instruct",
+    "api_key": "",
+    "temperature": 0.7,
+    "max_tokens": 4096
+  },
+  "tools": {
+    "enabled": [
+      "browser",
+      "file_system",
+      "terminal",
+      "mcp",
+      "github"
+    ],
+    "config": {
+      "browser": {
+        "headless": true,
+        "viewport": {"width": 1920, "height": 1080}
+      }
+    }
+  },
+  "openclaw": {
+    "enabled": true,
+    "remote_endpoint": "https://api.openclaw.dev"
+  },
+  "log_level": "INFO"
+}
