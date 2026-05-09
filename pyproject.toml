@@ -1,52 +1,60 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "egytronic"
+name = "egtronic"
 version = "1.0.0"
-description = "Universal Agent Development Platform"
+description = "Universal AI Agent Development Platform - Turn any LLM into a powerful autonomous agent"
 readme = "README.md"
-requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "Egytronic", email = "dev@egytronic.com"}
+    {name = "Egytronic Team", email = "dev@egtronic.com"}
 ]
-keywords = ["agent", "ai", "llm", "autonomous", "framework"]
+keywords = ["ai", "agent", "llm", "openai", "claude", "gemini", "cloudflare", "ollama", "automation", "autonomous"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development :: Libraries :: Application Frameworks",
 ]
-
+requires-python = ">=3.8"
 dependencies = [
+    "requests>=2.28.0",
     "aiohttp>=3.8.0",
-    "click>=8.0",
-    "fastapi>=0.100.0",
-    "uvicorn>=0.20.0",
-    "pydantic>=2.0",
-    "aiofiles>=23.0",
-    "pyyaml>=6.0",
+    "click>=8.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
-    "pytest-asyncio>=0.21",
-    "pytest-cov>=4.0",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
 ]
 all = [
-    "playwright>=1.40",
+    "playwright>=1.40.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
 ]
 
 [project.scripts]
-egy = "egytronic.cli.main:main"
+egtronic = "egtronic.cli:main"
 
 [project.urls]
-Homepage = "https://egytronic.com"
-Repository = "https://github.com/egytronic/egytronic"
+Homepage = "https://egtronic.pages.dev"
+Repository = "https://github.com/yk445kauod-coder/Egytronic"
+Issues = "https://github.com/yk445kauod-coder/Egytronic/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["egtronic*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
