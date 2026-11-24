@@ -918,3 +918,9 @@
   white-space: nowrap;
   flex: 1 1 auto;
 }
+
+.ops-code__bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}

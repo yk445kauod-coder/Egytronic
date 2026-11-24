@@ -799,15 +799,20 @@ async function renderAgents() {
 
       <div class="ops-card">
         <div class="ops-head"><h2>ازاي توصّل وكيل</h2></div>
-        <p class="ops-item__meta" style="margin-bottom:8px">أي عميل MCP (Claude Desktop، Cursor، أو سكربتك) بيكلمنا على نفس العنوان، وبيرى نفس الطلبات والمهام.</p>
+        <p class="ops-item__meta" style="margin-bottom:8px">أي وكيل MCP (Claude Code، Cursor، Claude Desktop، أو سكربتك) بيكلمنا على نفس العنوان. المفتاح ده بيدير الطلبات والعملاء والمهام والقنوات، والريبو فيه ملفات جاهزة: <bdi>.mcp.json</bdi> و <bdi>.cursor/mcp.json</bdi> — بس حدّد المفتاح في <bdi>EGYTRONIC_AGENT_KEY</bdi>.</p>
+        <pre class="ops-code">export EGYTRONIC_AGENT_KEY=egx_agent_...</pre>
+        <pre class="ops-code">claude mcp add --transport http egytronic-ops \\
+  ${esc(base)}/mcp \\
+  --header "Authorization: Bearer egx_agent_..."</pre>
+        <p class="ops-item__meta" style="margin:10px 0 6px">Claude Desktop أو أي عميل بيقرا JSON:</p>
         <pre class="ops-code">{
   "mcpServers": {
     "egytronic-ops": {
-      "type": "http",
-      "url": "${esc(base)}/mcp",
-      "headers": {
-        "Authorization": "Bearer egx_agent_..."
-      }
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote", "${esc(base)}/mcp",
+        "--header", "Authorization: Bearer egx_agent_..."
+      ]
     }
   }
 }</pre>
@@ -822,6 +827,15 @@ curl -X POST ${esc(base)}/api/tasks \\
       </div>
     </div>`)
   );
+
+  $$(".ops-code", panel).forEach((pre) => {
+    const bar = el(`<div class="ops-code__bar"><button class="ops-chip" type="button">نسخ</button></div>`);
+    bar.firstElementChild.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(pre.innerText).catch(() => {});
+      toast("اتنسخ");
+    });
+    pre.after(bar);
+  });
 
   if (state.newAgentKey) {
     panel.append(

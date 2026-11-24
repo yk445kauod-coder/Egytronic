@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "egytronic-ops": {
+      "type": "http",
+      "url": "https://egytronic.pages.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer ${EGYTRONIC_AGENT_KEY}"
+      }
+    }
+  }
+}

@@ -96,6 +96,25 @@ async function emit(env, kind, entity, entityId, actor, payload) {
     .run();
 }
 
+// every lead should land somewhere a human reads; the channel is created on demand
+async function inboxChannel(env) {
+  await ensureChannels(env);
+  return (await env.DB.prepare("SELECT id FROM channels WHERE slug = 'inbox'").first())?.id ?? null;
+}
+
+async function noteInbox(env, inquiry) {
+  const channelId = await inboxChannel(env);
+  if (!channelId || !inquiry?.id) return;
+  await env.DB
+    .prepare("INSERT INTO messages (channel_id, author, kind, body, meta) VALUES (?, 'portal', 'system', ?, ?)")
+    .bind(
+      channelId,
+      `${inquiry.name || "زائر"} — ${String(inquiry.message || inquiry.phone || "بدون تفاصيل").slice(0, 400)}`,
+      JSON.stringify({ inquiry_id: inquiry.id, email: inquiry.email, phone: inquiry.phone, package: inquiry.package }),
+    )
+    .run();
+}
+
 // ── public: contact portal ───────────────────────────────────────────
 
 async function contact(request, env) {
@@ -132,17 +151,7 @@ async function contact(request, env) {
     .bind(name, email, phone || null, PACKAGES.has(wanted) ? wanted : null, message, ipHash)
     .first();
 
-  const channel = await env.DB.prepare("SELECT id FROM channels WHERE slug = 'inbox'").first();
-  if (channel && inserted?.id) {
-    await env.DB
-      .prepare("INSERT INTO messages (channel_id, author, kind, body, meta) VALUES (?, 'portal', 'system', ?, ?)")
-      .bind(
-        channel.id,
-        `${name} — ${message.slice(0, 400)}`,
-        JSON.stringify({ inquiry_id: inserted.id, email, package: wanted })
-      )
-      .run();
-  }
+  await noteInbox(env, { id: inserted?.id, name, email, phone, message, package: wanted });
 
   await emit(env, "inquiry.created", "inquiry", inserted?.id, "portal", { name, email, package: wanted });
   return json({ ok: true, id: inserted?.id ?? null });
@@ -183,15 +192,17 @@ async function listInquiries(env, url) {
 async function createInquiry(env, payload, who) {
   const name = clean(payload.name, 80);
   const email = clean(payload.email, 120);
+  const phone = clean(payload.phone, 40);
   const message = clean(payload.message, 4000);
   if (!name) return json({ ok: false, code: "name" }, 400);
-  if (!email && !message) return json({ ok: false, code: "detail" }, 400);
+  if (!email && !phone && !message) return json({ ok: false, code: "detail" }, 400);
 
   const row = await env.DB
     .prepare("INSERT INTO inquiries (name, email, phone, package, message, source, status) VALUES (?, ?, ?, ?, ?, 'manual', 'new') RETURNING *")
-    .bind(name, email, clean(payload.phone, 40), clean(payload.package, 24), message)
+    .bind(name, email, phone, clean(payload.package, 24), message)
     .first();
   await emit(env, "inquiry.created", "inquiry", row.id, who?.name || "manual", { name });
+  await noteInbox(env, row);
   return json({ ok: true, row });
 }
 
@@ -351,7 +362,14 @@ async function patchProject(env, id, payload, who) {
 
 // ── console: channels & messages ─────────────────────────────────────
 
+async function ensureChannels(env) {
+  await env.DB
+    .prepare("INSERT OR IGNORE INTO channels (slug, topic, kind) VALUES ('inbox', 'طلبات الموقع والرسائل', 'team'), ('agents', 'شغل الوكلاء', 'agent')")
+    .run();
+}
+
 async function listChannels(env) {
+  await ensureChannels(env);
   const { results } = await env.DB
     .prepare(
       `SELECT c.*, (SELECT COUNT(*) FROM messages m WHERE m.channel_id = c.id) AS messages,
@@ -389,10 +407,16 @@ async function channelByAny(env, key) {
 async function listMessages(env, channel, url) {
   const after = int(url.searchParams.get("after"), 0);
   const limit = Math.min(int(url.searchParams.get("limit"), 100), 200);
-  const { results } = await env.DB
-    .prepare("SELECT * FROM messages WHERE channel_id = ? AND id > ? ORDER BY id ASC LIMIT ?")
-    .bind(channel.id, after, limit)
-    .all();
+  // no cursor = open the channel at its newest messages; a cursor = poll what came after
+  const { results } = after
+    ? await env.DB
+        .prepare("SELECT * FROM messages WHERE channel_id = ? AND id > ? ORDER BY id ASC LIMIT ?")
+        .bind(channel.id, after, limit)
+        .all()
+    : await env.DB
+        .prepare("SELECT * FROM (SELECT * FROM messages WHERE channel_id = ? ORDER BY id DESC LIMIT ?) ORDER BY id ASC")
+        .bind(channel.id, limit)
+        .all();
   return json({ ok: true, channel: { id: channel.id, slug: channel.slug, topic: channel.topic }, rows: results });
 }
 
@@ -797,10 +821,17 @@ async function mcpCall(env, who, name, args = {}) {
       read();
       const channel = await channelByAny(env, args.channel);
       if (!channel) throw new Error("channel not found");
-      const { results } = await env.DB
-        .prepare("SELECT id, created_at, author, kind, body FROM messages WHERE channel_id = ? AND id > ? ORDER BY id ASC LIMIT ?")
-        .bind(channel.id, int(args.after, 0), Math.min(int(args.limit, 50), 200))
-        .all();
+      const after = int(args.after, 0);
+      const take = Math.min(int(args.limit, 50), 200);
+      const { results } = after
+        ? await env.DB
+            .prepare("SELECT id, created_at, author, kind, body FROM messages WHERE channel_id = ? AND id > ? ORDER BY id ASC LIMIT ?")
+            .bind(channel.id, after, take)
+            .all()
+        : await env.DB
+            .prepare("SELECT * FROM (SELECT id, created_at, author, kind, body FROM messages WHERE channel_id = ? ORDER BY id DESC LIMIT ?) ORDER BY id ASC")
+            .bind(channel.id, take)
+            .all();
       return { channel: channel.slug, rows: results };
     }
     case "post_message": {
@@ -854,7 +885,13 @@ async function mcp(request, env, url) {
           capabilities: { tools: { listChanged: false } },
           serverInfo: { name: "egytronic-ops", version: "1.0.0" },
           instructions:
-            "Operations server for Egytronic. Prices: logo 5,000 · landing 6,000 · static 8,000 · identity 10,000 · dynamic from 18,000 EGP; 50% upfront, 50% before delivery.",
+            "Egytronic operations server — run by Yousef Khamis, an Egyptian software studio. " +
+            "What we sell: logo 5,000 · landing 6,000 · static site 8,000 · identity 10,000 · dynamic site from 18,000 EGP, " +
+            "50% upfront and 50% before delivery. Management systems (ERP, CRM, POS, hotel, clinic, LMS) are installed, " +
+            "customised and trained on — never claim Egytronic wrote them. " +
+            "Never invent testimonials, client counts, ratings or certifications, and never publish a price that is not on this list. " +
+            "Leads arrive as inquiries: create_inquiry for phone/WhatsApp leads, update_inquiry to move status, " +
+            "convert_inquiry to turn a won lead into client + project + first task. Use log_focus/list_channels to keep the board honest.",
         },
       });
       continue;
