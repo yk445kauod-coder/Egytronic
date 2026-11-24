@@ -1,0 +1,41 @@
+export default function Capabilities() {
+  return (
+    <>
+      <section className="section section--alt" id="capabilities">
+    <div className="wrap">
+      <div className="section-head reveal">
+        <span className="px-tag">Services</span>
+        <h2>What we build</h2>
+        <p>Choose what your project needs now.</p>
+      </div>
+      <div className="ledger reveal">
+        <article className="ledger__row">
+          <span className="ledger__n">01</span>
+          <div className="ledger__body">
+            <span className="ledger__k">WEB</span>
+            <h3>Websites</h3>
+          </div>
+          <p>A landing page, a static site of up to 5 pages, or a dynamic site with a backend.</p>
+        </article>
+        <article className="ledger__row">
+          <span className="ledger__n">02</span>
+          <div className="ledger__body">
+            <span className="ledger__k">BRAND</span>
+            <h3>Brand</h3>
+          </div>
+          <p>A logo on its own, or a full identity covering your visual elements.</p>
+        </article>
+        <article className="ledger__row">
+          <span className="ledger__n">03</span>
+          <div className="ledger__body">
+            <span className="ledger__k">SYSTEMS</span>
+            <h3>Smart systems</h3>
+          </div>
+          <p>Software and AI systems built to your project's needs and delivered ready.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+    </>
+  );
+}

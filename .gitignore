@@ -5,3 +5,7 @@ _*.html
 
 .admin-token.local
 .shots/
+
+dist/
+node_modules/
+.ref/

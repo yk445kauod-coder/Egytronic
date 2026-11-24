@@ -1,0 +1,27 @@
+/* Numbers are read as values, not as emphasis: same size, never bold. */
+.stat__n,
+.pricerow__n,
+.pricerow__from,
+.bundle__price strong,
+.bundle__price span,
+.px-window .c-gold,
+.px-window .c-mint,
+.px-window .c-dim,
+.portal__steps li > span,
+.steps li > span,
+[class$="__n"],
+[class*="__amt"],
+[class*="__amount"] {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.prods__note b,
+.principle__k {
+  font-weight: 400;
+}
+
+.transform__price b {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
