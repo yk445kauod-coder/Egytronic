@@ -1285,7 +1285,7 @@ async function rotateToken(request, env) {
   const payload = await body(request);
   const current = typeof payload.current === "string" ? payload.current : "";
   const next = typeof payload.next === "string" ? payload.next : "";
-  if (next.length < 16) return json({ ok: false, code: "short" }, 400);
+  if (next.length < 12) return json({ ok: false, code: "short" }, 400);
 
   const stored = await env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_token_sha256'").first();
   if (!stored || (await sha256(current)) !== stored.value) return json({ ok: false }, 404);
