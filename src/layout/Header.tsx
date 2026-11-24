@@ -57,7 +57,7 @@ export default function Header({ path }: { path: string }) {
             aria-label={t("التبديل إلى النسخة الإنجليزية")}
             title={t("عرض الموقع بالإنجليزية")}
           >
-            {locale === "ar" ? "EN" : "ع"}
+            {locale === "ar" ? "EN" : "AR"}
           </a>
           {home ? (
             <a className="px-btn px-btn--ghost px-btn--sm" href={localePath(locale, "/pricing/")} aria-label={t("انتقل إلى صفحة الأسعار لحجز باقة")}>

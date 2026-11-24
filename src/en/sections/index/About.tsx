@@ -37,7 +37,7 @@ export default function About() {
           <p>You see each package's price before you contact us.</p>
         </div>
         <div className="principle">
-          <span className="principle__k">03 / OPAR</span>
+          <span className="principle__k">03 / OPEN</span>
           <h3>Open tools</h3>
           <p>We publish some of our tools publicly for anyone to see.</p>
         </div>

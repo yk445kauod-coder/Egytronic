@@ -21,10 +21,10 @@ export default function Block0() {
           <a className="px-btn px-btn--ghost" href="#contact">Contact us</a>
         </div>
         <div className="hero__stats">
-          <div className="stat"><span className="stat__n">5,000</span><span className="stat__l">from, in EGP</span></div>
+          <div className="stat"><span className="stat__n">5,000</span><span className="stat__l">Starting — EGP</span></div>
           <div className="stat"><span className="stat__n">50%</span><span className="stat__l">upfront</span></div>
           <div className="stat"><span className="stat__n">Year 1</span><span className="stat__l">free hosting</span></div>
-          <div className="stat"><span className="stat__n"><bdi>AR / AR</bdi></span><span className="stat__l">Arabic and English</span></div>
+          <div className="stat"><span className="stat__n"><bdi>AR / EN</bdi></span><span className="stat__l">Arabic and English</span></div>
         </div>
       </div>
 

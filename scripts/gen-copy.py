@@ -117,6 +117,10 @@ OVERRIDES = {
     "الكل في واحد": "All in one",
     "الشروط": "Terms",
     "الخطوات": "Steps",
+    "EN": "EN",
+    "ع": "ع",
+    "AR / EN": "AR / EN",
+    "تبدأ من — جنيه": "Starting — EGP",
 }
 pairs.update(OVERRIDES)
 

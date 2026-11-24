@@ -33,7 +33,7 @@ export default function Software() {
           <div className="pricerow__top">
             <h3>Open tools</h3>
             <span className="pricerow__dots" aria-hidden="true"></span>
-            <p className="pricerow__price"><span className="pricerow__cur">OPAR</span></p>
+            <p className="pricerow__price"><span className="pricerow__cur">OPEN</span></p>
           </div>
           <p className="pricerow__desc">We publish some of our tools on GitHub for anyone to use and review.</p>
         </li>

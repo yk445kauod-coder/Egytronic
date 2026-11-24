@@ -11,7 +11,7 @@ export default function OpenTools() {
 
       <div className="bundle reveal">
         <div className="bundle__head">
-          <span className="bundle__badge">OPAR WEIGHTS</span>
+          <span className="bundle__badge">OPEN WEIGHTS</span>
           <h3>A model built on Llama 3.1 8B</h3>
         </div>
         <p className="bundle__lead">131,072-token context, GGUF weights, LLaMA Community license. You do not need it to order any package; use follows the license.</p>
