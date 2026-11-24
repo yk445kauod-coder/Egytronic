@@ -1,3 +1,4 @@
 .openhands/
 _*.html
 .DS_Store
+.deploy/
