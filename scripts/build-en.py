@@ -213,8 +213,8 @@ PRICING = {
     '<span class="px-tag">قايمة الأسعار</span>': '<span class="px-tag">Price list</span>',
     "التكنولوجيا اللي فعلاً تساعد بيزنسك يكبر":
         "Technology that actually helps your business grow",
-    "من غير وجع دماغ. أسعار معلنة لكل باقة، والدفع مقسّم على مرحلتين.":
-        "Without the headache. Every package is priced up front, and payment is split in two stages.",
+    "من غير وجع دماغ. أسعار معلنة لكل باقة، والدفع 50% مقدم وقت البدء.":
+        "Without the headache. Every package is priced up front, and 50% is paid up front when work starts.",
     "<h3>لوجو</h3>": "<h3>Logo</h3>",
     "شعار مميز لبيزنسك، بملفات جاهزة للاستخدام على الموقع والسوشيال.":
         "A distinctive mark for your business, with files ready for your site and social.",
