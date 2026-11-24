@@ -122,6 +122,12 @@ body::after {
   top: 16px;
 }
 
+/* Cairo 400 is too light against a charcoal ground; 600 is the weight that
+   keeps Arabic joins crisp without looking bold. */
+html[lang="ar"] body {
+  font-weight: 600;
+}
+
 /* Handjet's Arabic glyphs run taller than its em box, so display leading that
    works for Latin collides in Arabic. */
 html[lang="ar"] :is(h1, h2, h3) {

@@ -3,7 +3,8 @@
 import { hex, mix } from "./color.js";
 import { rand } from "./math.js";
 
-const SKY = hex("#15131d"), SKY_TOP = hex("#0d0b14"), SKY_LOW = hex("#221d33");
+// retuned for Egytronic: the stock violet night sky clashes with the charcoal/orange palette.
+const SKY = hex("#1a1a1a"), SKY_TOP = hex("#141414"), SKY_LOW = hex("#2a1e16");
 const FLOOR_EDGE = hex("#4a4263"), FLOOR = hex("#2b2639"), FLOOR_DARK = hex("#211d2d"), MORTAR = hex("#1a1724");
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 
@@ -24,7 +25,7 @@ export function backdrop(kind, w, h, groundY = h) {
         const t = y / Math.max(1, h - 1), step = (t * 5 + BAYER[((y & 3) << 2) | (x & 3)] / 16) | 0;
         c = mix(SKY_TOP, SKY_LOW, Math.min(1, step / 4));
         const r = rand(x, y, 77);
-        if (r > 0.994) c = mix(c, hex("#cfc8ff"), 0.35 + (r - 0.994) * 90);
+        if (r > 0.994) c = mix(c, hex("#ffd0a8"), 0.35 + (r - 0.994) * 90);
       }
       if (kind === "ground" && y >= groundY) {
         const gy = y - groundY;

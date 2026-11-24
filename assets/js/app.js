@@ -6,35 +6,35 @@ import * as confetti from "../vendor/pixelfx/fx/ui/confetti.js";
 import * as crtOff from "../vendor/pixelfx/fx/transitions/crt-off.js";
 import * as digitalRain from "./fx/digital-rain.js";
 
-const GOLD_RAMP = ["#07070f", "#12121c", "#2a2a3c", "#7a4a05", "#c8a96e", "#ffd166", "#fff0c2"];
+const GOLD_RAMP = ["#161616", "#202020", "#3d3d3d", "#8a3a00", "#d95a00", "#ffa45c", "#ffd0a8"];
 const CORE_RAMP = [
-  "#0a0a12",
-  "#1a1408",
-  "#3a2a10",
-  "#7a4a05",
-  "#c8a96e",
-  "#ffd166",
-  "#fff0c2",
+  "#161616",
+  "#221a14",
+  "#3a2418",
+  "#8a3a00",
+  "#d95a00",
+  "#ff8a3d",
+  "#ffd0a8",
   "#ffffff",
 ];
 const BOOT_RAMP = [
-  "#07070f",
-  "#0c0c18",
-  "#111120",
-  "#2a2a3c",
-  "#c8a96e",
-  "#ffd166",
-  "#ffe9b0",
+  "#161616",
+  "#1a1a1a",
+  "#202020",
+  "#3d3d3d",
+  "#d95a00",
+  "#ff8a3d",
+  "#ffd0a8",
   "#ffffff",
 ];
-const RAIN_RAMP = ["#05090c", "#06201c", "#0b3a31", "#10604f", "#1fa88b", "#58f0cf", "#e6fff8"];
+const RAIN_RAMP = ["#161616", "#241a12", "#3d2414", "#8a3a00", "#d95a00", "#ffa45c", "#ffe4cd"];
 const CONFETTI_RAMP = [
-  "#ffa500",
-  "#ffd166",
-  "#2ee6c0",
-  "#9af7df",
-  "#c8a96e",
-  "#f2ede4",
+  "#ff6a00",
+  "#ffa45c",
+  "#ffd0a8",
+  "#ffffff",
+  "#d9c1a0",
+  "#c4c4c4",
   "#ff6b5e",
 ];
 
@@ -64,7 +64,12 @@ if (toggle && links) {
 
 /* ── hero aurora ────────────────────────────────────────── */
 const heroCanvas = document.querySelector("[data-fx='aurora']");
-if (heroCanvas) mountFx(heroCanvas, aurora, { palette: GOLD_RAMP });
+if (heroCanvas) {
+  mountFx(heroCanvas, aurora, {
+    palette: GOLD_RAMP,
+    upper: ["#161616", "#241a12", "#3d2414", "#8a3a00", "#d95a00", "#ffa45c", "#ffe4cd"],
+  });
+}
 
 /* ── model cartridge ────────────────────────────────────── */
 const coreCanvas = document.querySelector("[data-fx='energy-core']");

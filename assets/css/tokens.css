@@ -3,23 +3,23 @@
 
 :root {
   /* palette — a deliberately short ramp, no smooth gradients */
-  --ink: #07070f;
-  --ink-2: #0c0c18;
-  --panel: #111120;
-  --panel-2: #181828;
-  --line: #2a2a3c;
-  --line-soft: #1e1e2e;
+  --ink: #161616;
+  --ink-2: #1d1d1d;
+  --panel: #202020;
+  --panel-2: #282828;
+  --line: #3d3d3d;
+  --line-soft: #262626;
 
-  --gold: #ffa500;
-  --gold-hi: #ffd166;
-  --gold-deep: #7a4a05;
-  --mint: #2ee6c0;
-  --mint-hi: #9af7df;
-  --sand: #c8a96e;
+  --gold: #ff6a00;
+  --gold-hi: #ffa45c;
+  --gold-deep: #d95a00;
+  --mint: #ff8a3d;
+  --mint-hi: #ffd0a8;
+  --sand: #d9c1a0;
   --danger: #ff6b5e;
 
-  --text: #f2ede4;
-  --muted: #a79c86;
+  --text: #ffffff;
+  --muted: #c4c4c4;
 
   /* pixel geometry */
   --u: 4px;

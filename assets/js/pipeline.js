@@ -12,14 +12,14 @@ export function mountPipeline(canvas) {
   canvas.width = W;
   canvas.height = H;
 
-  const ink = "#07070f";
-  const panel = "#111120";
-  const line = "#2a2a3c";
-  const soft = "#1e1e2e";
-  const gold = "#ffa500";
-  const goldHi = "#ffd166";
-  const mint = "#2ee6c0";
-  const muted = "#a79c86";
+  const ink = "#161616";
+  const panel = "#202020";
+  const line = "#3d3d3d";
+  const soft = "#262626";
+  const gold = "#ff6a00";
+  const goldHi = "#ffa45c";
+  const mint = "#ff8a3d";
+  const muted = "#c4c4c4";
 
   const chips = [
     { x: 26, label: 0 },
@@ -64,7 +64,7 @@ export function mountPipeline(canvas) {
     px(0, y, W, 2, soft);
     for (const c of chips) px(c.x + 4, y, chipW, 2, line);
     // the travelled portion
-    px(0, y, W * progress, 2, "#7a4a05");
+    px(0, y, W * progress, 2, "#8a3a00");
   }
 
   function pulse(t) {
@@ -74,7 +74,7 @@ export function mountPipeline(canvas) {
       const x = 20 + p * (W - 48);
       const lead = i === 0 ? goldHi : gold;
       px(x, y, 6, 10, lead);
-      px(x + 6, y + 2, 2, 6, "#7a4a05");
+      px(x + 6, y + 2, 2, 6, "#8a3a00");
       px(x - 2, y + 2, 2, 6, mint);
     }
   }
@@ -86,7 +86,7 @@ export function mountPipeline(canvas) {
       const phase = (t * 0.8 + i * 0.33) % 1;
       const sx = c.x + 10 + i * 12;
       const sy = chipY - 6 - phase * 18;
-      if (phase < 0.85) px(sx, sy, 2, 2, phase < 0.4 ? goldHi : "#7a4a05");
+      if (phase < 0.85) px(sx, sy, 2, 2, phase < 0.4 ? goldHi : "#8a3a00");
     }
   }
 
@@ -99,7 +99,7 @@ export function mountPipeline(canvas) {
     px(0, 0, W, H, ink);
     // dotted measurement grid
     for (let x = 8; x < W; x += 16) {
-      for (let y = 8; y < H; y += 16) px(x, y, 1, 1, "#181828");
+      for (let y = 8; y < H; y += 16) px(x, y, 1, 1, "#242424");
     }
     // header rails
     px(0, 28, W, 2, soft);
