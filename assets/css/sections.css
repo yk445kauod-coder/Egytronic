@@ -1647,3 +1647,11 @@ section[id] {
     margin-block-end: 4px;
   }
 }
+
+/* the "for whom" tag sat on the baseline, so wrapped text indented under it */
+.prod__who {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: start;
+}

@@ -879,6 +879,19 @@ function startPolling() {
 
 $$(".ops__nav-btn").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
 $("[data-lock]").addEventListener("click", () => lock("اتقفلت اللوحة."));
+
+$("[data-rotate]").addEventListener("click", async () => {
+  const next = prompt("التوكن الجديد (16 حرف على الأقل). هتحتاجه في الدخول الجاي:");
+  if (!next || next.trim().length < 16) return;
+  try {
+    await api("/api/admin/token", { method: "POST", body: { current: token, next: next.trim() } });
+    token = next.trim();
+    sessionStorage.setItem(KEY, token);
+    toast("التوكن اتغير. احفظه دلوقتي.");
+  } catch {
+    toast("التغيير فشل", "error");
+  }
+});
 $("[data-refresh]").addEventListener("click", () => {
   refreshCounts();
   render(state.view);

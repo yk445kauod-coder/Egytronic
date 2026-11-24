@@ -887,3 +887,20 @@
     font-size: 40px;
   }
 }
+
+/* the footer carries a name and two buttons: give the name its own line */
+.ops__side-foot {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.ops__side-foot .ops__who {
+  flex: 1 1 100%;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.ops__side-foot .ops__ghost {
+  white-space: nowrap;
+  flex: 1 1 auto;
+}
