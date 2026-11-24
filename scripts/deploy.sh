@@ -4,6 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+python3 scripts/stamp.py
 python3 scripts/build-en.py
 
 rm -rf .deploy && mkdir -p .deploy

@@ -598,5 +598,82 @@ PRICING.update({
     'صُنع في مصر — <bdi>Egytronic</bdi>': 'Made in Egypt — <bdi>Egytronic</bdi>',
 })
 
+# ── 2026-11-24: package cards sell themselves; systems + transformation ──
+INDEX.update({
+    '<p class="prod__who"><span>لمين</span> مشروع لسه بيبدأ</p>':
+        '<p class="prod__who"><span>For whom</span> A project just starting</p>',
+    '<p class="prod__who"><span>لمين</span> خدمة واحدة أو منتج واحد</p>':
+        '<p class="prod__who"><span>For whom</span> One service or one product</p>',
+    '<p class="prod__who"><span>لمين</span> شركة عندها خدمات وصفحات</p>':
+        '<p class="prod__who"><span>For whom</span> A company with services and pages</p>',
+    '<p class="prod__who"><span>لمين</span> علامة بتكبر ومحتاجة تطبيقات</p>':
+        '<p class="prod__who"><span>For whom</span> A growing brand that needs applications</p>',
+    '<p class="prod__who"><span>لمين</span> محتوى بيتغير كل أسبوع</p>':
+        '<p class="prod__who"><span>For whom</span> Content that changes weekly</p>',
+    "<li>لوجو أساسي بنسختين</li>": "<li>A primary logo in two versions</li>",
+    "<li>ملفات جاهزة للطباعة والسوشيال</li>": "<li>Files ready for print and social</li>",
+    "<li>تسليم في 3–5 أيام</li>": "<li>Delivered in 3–5 days</li>",
+    "<li>صفحة واحدة بمحتوى منظم</li>": "<li>One page with structured content</li>",
+    "<li>فورم تواصل وزر واتساب</li>": "<li>Contact form and WhatsApp button</li>",
+    "<li>تسليم في 5–7 أيام</li>": "<li>Delivered in 5–7 days</li>",
+    "<li>حتى 5 صفحات</li>": "<li>Up to 5 pages</li>",
+    "<li>سيو أساسي وسرعة تحميل</li>": "<li>Basic SEO and fast loading</li>",
+    "<li>تسليم في 7–10 أيام</li>": "<li>Delivered in 7–10 days</li>",
+    "<li>لوجو وألوان وخطوط</li>": "<li>Logo, colours and type</li>",
+    "<li>كروت وسوشيال ميديا</li>": "<li>Business cards and social media</li>",
+    "<li>دليل استخدام مختصر</li>": "<li>A short usage guide</li>",
+    "<li>باكند ولوحة تحكم</li>": "<li>Backend and admin panel</li>",
+    "<li>قاعدة بيانات ومحتوى تديره بنفسك</li>": "<li>A database and content you manage yourself</li>",
+    "<li>تسليم في 3–4 أسابيع</li>": "<li>Delivered in 3–4 weeks</li>",
+    '<a class="prod__link" href="/contact/">ناقش مشروعك</a>':
+        '<a class="prod__link" href="contact/">Discuss your project</a>',
+
+    '<span class="px-tag">أنظمة إدارية</span>': '<span class="px-tag">Business systems</span>',
+    '<h2 id="systems-title">مش بس موقع — نظام كامل</h2>':
+        '<h2 id="systems-title">Not just a site — a full system</h2>',
+    "<p>لو مشروعك محتاج نظام إداري، بنبني ERP أو CRM أو POS أو LMS أو HMS على مقاسك، ونسلّمه جاهز للتشغيل.</p>":
+        "<p>If your business needs a management system, we build ERP, CRM, POS, LMS or HMS to fit, and deliver it ready to run.</p>",
+    "<h3>إدارة موارد</h3>": "<h3>Resource planning</h3>",
+    "<p>مخزون وفواتير ومشتريات وحسابات في مكان واحد.</p>":
+        "<p>Stock, invoices, purchasing and accounts in one place.</p>",
+    "<h3>علاقات عملاء</h3>": "<h3>Customer relations</h3>",
+    "<p>عملاء ومتابعات وصفقات وتقارير مبيعات.</p>":
+        "<p>Customers, follow-ups, deals and sales reports.</p>",
+    "<h3>نقاط بيع</h3>": "<h3>Point of sale</h3>",
+    "<p>كاشير وفواتير وورديات ومخزون لكل فرع.</p>":
+        "<p>Checkout, invoices, shifts and stock per branch.</p>",
+    "<h3>منصة تعليم</h3>": "<h3>Learning platform</h3>",
+    "<p>كورسات ودروس واختبارات وشهادات.</p>": "<p>Courses, lessons, quizzes and certificates.</p>",
+    "<h3>إدارة عيادات</h3>": "<h3>Clinic management</h3>",
+    "<p>مواعيد وملفات مرضى وفواتير وروشتات.</p>":
+        "<p>Appointments, patient records, invoices and prescriptions.</p>",
+    '<p class="systems__note reveal">مش لاقي احتياجك؟ <a href="/contact/">اطلب نظام مخصص</a> ونحدد النطاق معاك.</p>':
+        '<p class="systems__note reveal">Not seeing what you need? <a href="contact/">Ask for a custom system</a> and we will scope it with you.</p>',
+
+    '<span class="px-tag px-tag--mint">التحول الرقمي</span>':
+        '<span class="px-tag px-tag--mint">Digital transformation</span>',
+    '<h2 id="transform-title">من دفاتر وإكسل لنظام بيشتغل لوحده</h2>':
+        '<h2 id="transform-title">From notebooks and spreadsheets to a system that runs itself</h2>',
+    "<p>بنحوّل طريقة الشغل نفسها: بيانات واحدة، تقارير لحظية، وصلاحيات واضحة لكل دور.</p>":
+        "<p>We change how the work itself runs: one set of data, live reports, and clear permissions for every role.</p>",
+    "<h3>بيانات واحدة</h3>": "<h3>One set of data</h3>",
+    "<p>بدل ملفات متفرقة، كل حاجة في قاعدة بيانات واحدة.</p>":
+        "<p>Instead of scattered files, everything lives in one database.</p>",
+    "<h3>تقارير لحظية</h3>": "<h3>Live reports</h3>",
+    "<p>المبيعات والمخزون والتحصيل من غير ما تسأل حد.</p>":
+        "<p>Sales, stock and collections without asking anyone.</p>",
+    "<h3>صلاحيات لكل دور</h3>": "<h3>Permissions per role</h3>",
+    "<p>كل موظف بيشوف اللي يخصه بس.</p>": "<p>Every employee sees only what concerns them.</p>",
+    "<h3>ربط وأتمتة</h3>": "<h3>Integrations and automation</h3>",
+    "<p>الدفع والمخزون والواتساب بيتكلموا مع بعض.</p>":
+        "<p>Payments, stock and WhatsApp talk to each other.</p>",
+    '<p class="transform__price"><span>التحول الكامل</span> من <b>28,000</b> جنيه</p>':
+        '<p class="transform__price"><span>Full transformation</span> from <b>28,000</b> EGP</p>',
+    '<p class="transform__note">نحدد النطاق معاك بعد أول مكالمة، والدفع 50% عند البدء و50% قبل التسليم.</p>':
+        '<p class="transform__note">We scope it with you after a first call. Pay 50% to start and 50% before delivery.</p>',
+    '<a class="px-btn" href="/contact/">اطلب تقييم لمشروعك</a>':
+        '<a class="px-btn" href="contact/">Request a project assessment</a>',
+})
+
 if __name__ == "__main__":
     raise SystemExit(main())

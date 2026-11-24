@@ -156,6 +156,70 @@ dynamic()
 check()
 
 
+def erp():
+    g = Grid(16, 16)
+    for x, y in ((1, 1), (9, 1), (1, 9)):
+        g.frame(x, y, 6, 6)
+    g.rect(3, 3, 2, 2, "4")
+    g.rect(11, 3, 2, 2, "5")
+    g.rect(3, 11, 2, 2, "4")
+    g.rect(9, 9, 6, 6, "4")
+    g.frame(9, 9, 6, 6)
+    g.svg("g-erp.svg")
+
+
+def crm():
+    g = Grid(16, 16)
+    g.frame(2, 2, 9, 9)
+    g.rect(4, 4, 5, 4, "5")   # head
+    g.rect(3, 9, 7, 1, "4")   # shoulders
+    g.frame(9, 8, 5, 5, "4")  # second card
+    g.rect(11, 10, 1, 2, "4")
+    g.svg("g-crm.svg")
+
+
+def pos():
+    g = Grid(16, 16)
+    g.frame(3, 1, 10, 11)
+    for x in range(4, 12, 2):
+        g.rect(x, 12, 1, 2, "1")
+    g.rect(5, 3, 6, 1, "5")
+    g.rect(5, 6, 4, 1, "1")
+    g.rect(5, 8, 5, 1, "1")
+    g.rect(5, 10, 3, 1, "4")
+    g.svg("g-pos.svg")
+
+
+def lms():
+    g = Grid(16, 16)
+    g.frame(1, 4, 6, 9, "4")      # left page
+    g.frame(9, 4, 6, 9, "4")      # right page
+    g.rect(7, 4, 2, 9, "5")       # spine
+    g.rect(2, 6, 3, 1, "1")
+    g.rect(2, 8, 4, 1, "1")
+    g.rect(10, 6, 3, 1, "1")
+    g.rect(10, 8, 4, 1, "1")
+    g.rect(2, 11, 2, 1, "4")
+    g.rect(10, 11, 2, 1, "4")
+    g.svg("g-lms.svg")
+
+
+def hms():
+    g = Grid(16, 16)
+    g.frame(2, 1, 12, 14)
+    g.rect(6, 4, 4, 8, "4")
+    g.rect(4, 6, 8, 4, "4")
+    g.rect(7, 12, 2, 2, "5")
+    g.svg("g-hms.svg")
+
+
+erp()
+crm()
+pos()
+lms()
+hms()
+
+
 def skyline(width=1200, height=200, seed=16):
     """A city strip: buildings, lit windows that flicker, antenna beacons."""
     rnd = random.Random(seed)

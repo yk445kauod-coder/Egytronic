@@ -3,80 +3,81 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>لوحة الطلبات | Egytronic</title>
+<title>غرفة العمليات | Egytronic</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <link rel="icon" href="/favicon.ico">
-<link rel="stylesheet" href="/assets/css/tokens.css?v=20261124e">
-<link rel="stylesheet" href="/assets/css/base.css?v=20261124e">
-<link rel="stylesheet" href="/assets/css/components.css?v=20261124e">
-<link rel="stylesheet" href="/assets/css/admin.css?v=20261124e">
-<script defer src="/assets/js/admin.js?v=20261124e"></script>
+<link rel="stylesheet" href="/assets/css/tokens.css?v=50d67802">
+<link rel="stylesheet" href="/assets/css/base.css?v=e7b3ed06">
+<link rel="stylesheet" href="/assets/css/components.css?v=bc44624e">
+<link rel="stylesheet" href="/assets/css/admin.css?v=7026ec50">
+<script defer src="/assets/js/admin.js?v=a774c2e7"></script>
 </head>
-<body class="admin">
-<main id="main" class="admin__main">
+<body class="ops">
 
-  <header class="admin__head">
-    <div>
-      <span class="px-tag">EGYTRONIC</span>
-      <h1>لوحة الطلبات</h1>
-      <p>الرسايل اللي وصلت من بوابة التواصل. الصفحه دي مش مفهرسه ومحدش بيشوفها غيرك.</p>
-    </div>
-    <button class="admin__lock" type="button" data-lock hidden>خروج</button>
-  </header>
+<main id="main" class="ops__main">
 
-  <section class="admin__gate" data-gate aria-labelledby="gate-title">
-    <h2 id="gate-title">افتح اللوحة</h2>
-    <p>اكتب توكن القراءة. بيتحفظ في التاب ده بس، ومش بيتبعت لأي مكان غير الـAPI بتاعنا.</p>
-    <form class="admin__gate-form" data-gate-form novalidate>
-      <input type="password" name="token" autocomplete="current-password" placeholder="egx_…" dir="ltr" required aria-label="توكن القراءة">
-      <button class="admin__reveal" type="button" data-reveal>إظهار</button>
-      <button class="px-btn" type="submit">دخول</button>
-    </form>
-    <p class="admin__status" data-gate-status role="status" aria-live="polite"></p>
-    <p class="admin__hint">التوكن بيبدأ بـ <bdi>egx_</bdi> وبعده حروف وأرقام، ومفيهوش مسافات. لو نسخته من رسالة، انسخ سطر التوكن لوحده.</p>
-  </section>
-
-  <section class="admin__panel" data-panel hidden aria-labelledby="panel-title">
-    <div class="admin__bar">
-      <h2 id="panel-title">الطلبات <span class="admin__count" data-count>0</span></h2>
-      <div class="admin__tools">
-        <input type="search" data-search placeholder="دوّر بالاسم أو البريد أو النص" aria-label="بحث">
-        <button class="px-btn px-btn--ghost px-btn--sm" type="button" data-csv>تحميل CSV</button>
-        <button class="px-btn px-btn--ghost px-btn--sm" type="button" data-reload>تحديث</button>
-      </div>
-    </div>
-
-    <p class="admin__status" data-status role="status" aria-live="polite"></p>
-
-    <div class="admin__list" data-list></div>
-
-    <details class="admin__rotate">
-      <summary>تغيير التوكن</summary>
-      <form data-rotate-form>
-        <input type="password" name="next" placeholder="التوكن الجديد (16 حرف على الأقل)" autocomplete="new-password" dir="ltr" required>
-        <input type="password" name="confirm" placeholder="أكد التوكن الجديد" autocomplete="new-password" dir="ltr" required>
-        <button class="px-btn px-btn--ghost px-btn--sm" type="submit">حفظ</button>
+  <section class="ops__gate" data-gate aria-labelledby="gate-title">
+    <div class="ops__gate-card">
+      <span class="px-tag">EGYTRONIC · OPS</span>
+      <h1 id="gate-title">افتح غرفة العمليات</h1>
+      <p>توكن الإدارة بيفتح الطلبات والعملاء والقنوات والمهام والوكلاء. بيتحفظ في التاب ده بس.</p>
+      <form class="ops__gate-form" data-gate-form novalidate>
+        <input type="password" name="token" autocomplete="current-password" placeholder="egx_…" dir="ltr" required aria-label="توكن الإدارة">
+        <div class="ops__gate-actions">
+          <button class="px-btn" type="submit">دخول</button>
+          <button class="ops__ghost" type="button" data-reveal>إظهار</button>
+        </div>
       </form>
-      <p class="admin__status" data-rotate-status role="status" aria-live="polite"></p>
-    </details>
-
-    <template data-row>
-      <article class="inquiry">
-        <div class="inquiry__top">
-          <h3 data-field="name"></h3>
-          <span class="inquiry__pack" data-field="package"></span>
-          <time data-field="created_at" dir="ltr"></time>
-        </div>
-        <div class="inquiry__meta">
-          <a data-field="email" dir="ltr"></a>
-          <a data-field="phone" dir="ltr" hidden></a>
-        </div>
-        <p class="inquiry__msg" data-field="message"></p>
-      </article>
-    </template>
+      <p class="ops__status" data-gate-status role="status" aria-live="polite"></p>
+      <p class="ops__hint">التوكن بيبدأ بـ <bdi>egx_</bdi> ومفيهوش مسافات. لو نسخته من رسالة، انسخ سطر التوكن لوحده.</p>
+    </div>
   </section>
 
+  <div class="ops__shell" data-shell hidden>
+    <aside class="ops__side">
+      <div class="ops__brand">
+        <span class="ops__logo" aria-hidden="true">E</span>
+        <div>
+          <strong>EGYTRONIC</strong>
+          <span>غرفة العمليات</span>
+        </div>
+      </div>
+
+      <nav class="ops__nav" aria-label="أقسام اللوحة">
+        <button type="button" class="ops__nav-btn" data-view="overview"><span aria-hidden="true">▤</span> نظرة عامة</button>
+        <button type="button" class="ops__nav-btn" data-view="inquiries"><span aria-hidden="true">✉</span> الطلبات <b data-count="inquiries">0</b></button>
+        <button type="button" class="ops__nav-btn" data-view="clients"><span aria-hidden="true">▦</span> العملاء</button>
+        <button type="button" class="ops__nav-btn" data-view="channels"><span aria-hidden="true">▞</span> القنوات</button>
+        <button type="button" class="ops__nav-btn" data-view="tasks"><span aria-hidden="true">✓</span> المهام <b data-count="tasks">0</b></button>
+        <button type="button" class="ops__nav-btn" data-view="agents"><span aria-hidden="true">◈</span> الوكلاء</button>
+      </nav>
+
+      <div class="ops__side-foot">
+        <span class="ops__who" data-who>—</span>
+        <button class="ops__ghost ops__ghost--sm" type="button" data-lock>خروج</button>
+      </div>
+    </aside>
+
+    <div class="ops__body">
+      <header class="ops__top">
+        <h1 data-title>نظرة عامة</h1>
+        <div class="ops__top-actions">
+          <span class="ops__pulse" data-sync aria-live="polite">متصل</span>
+          <button class="ops__ghost ops__ghost--sm" type="button" data-refresh>تحديث</button>
+        </div>
+      </header>
+
+      <section class="ops__view" data-view-panel="overview" hidden></section>
+      <section class="ops__view" data-view-panel="inquiries" hidden></section>
+      <section class="ops__view" data-view-panel="clients" hidden></section>
+      <section class="ops__view ops__view--split" data-view-panel="channels" hidden></section>
+      <section class="ops__view" data-view-panel="tasks" hidden></section>
+      <section class="ops__view" data-view-panel="agents" hidden></section>
+    </div>
+  </div>
 </main>
+
+<div class="ops__toast" data-toast role="status" aria-live="polite" hidden></div>
 </body>
 </html>

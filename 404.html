@@ -9,11 +9,11 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/icon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/apple-touch-icon.png">
-<link rel="stylesheet" href="/assets/css/fonts.css?v=20261124d">
-<link rel="stylesheet" href="/assets/css/tokens.css?v=20261124d">
-<link rel="stylesheet" href="/assets/css/base.css?v=20261124d">
-<link rel="stylesheet" href="/assets/css/components.css?v=20261124d">
-<link rel="stylesheet" href="/assets/css/sections.css?v=20261124d">
+<link rel="stylesheet" href="/assets/css/fonts.css?v=6e62af1d">
+<link rel="stylesheet" href="/assets/css/tokens.css?v=50d67802">
+<link rel="stylesheet" href="/assets/css/base.css?v=e7b3ed06">
+<link rel="stylesheet" href="/assets/css/components.css?v=bc44624e">
+<link rel="stylesheet" href="/assets/css/sections.css?v=909ce14f">
 <style>
   .nf{min-height:100svh;display:grid;place-items:center;padding:var(--gutter);position:relative;overflow:hidden}
   .nf__fx{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;opacity:.28;pointer-events:none;
@@ -41,8 +41,8 @@
   </div>
 </main>
 <script type="module">
-  import { mountFx } from "/assets/js/fx-runner.js?v=20261124d";
-  import * as rain from "/assets/js/fx/digital-rain.js";
+  import { mountFx } from "/assets/js/fx-runner.js?v=8019d446";
+  import * as rain from "/assets/js/fx/digital-rain.js?v=470c7a42";
   const canvas = document.querySelector("[data-fx='rain']");
   if (canvas) mountFx(canvas, rain, { palette: ["#161616", "#241a12", "#3d2414", "#8a3a00", "#d95a00", "#ffa45c", "#ffe4cd"], speed: 0.9 });
 </script>
