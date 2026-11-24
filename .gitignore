@@ -9,3 +9,4 @@ _*.html
 dist/
 node_modules/
 .ref/
+__pycache__/

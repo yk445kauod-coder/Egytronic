@@ -26,7 +26,7 @@ export default function Software() {
             <span className="pricerow__dots" aria-hidden="true"></span>
             <p className="pricerow__price"><span className="pricerow__cur">SYSTEMS</span></p>
           </div>
-          <p className="pricerow__desc">برمجيات وأنظمة ذكاء اصطناعي تُبنى حسب حاجة مشروعك وتُسلَّم جاهزة.</p>
+          <p className="pricerow__desc">برمجيات وأنظمة ذكاء اصطناعي تُبنى بحسب احتياج مشروعك وتُسلَّم جاهزة.</p>
         </li>
         <li className="pricerow">
           <span className="pricerow__n" aria-hidden="true">03</span>

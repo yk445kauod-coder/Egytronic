@@ -6,7 +6,7 @@ export default function Portal() {
       <div className="section-head reveal">
         <span className="px-tag">Contact portal</span>
         <h2 id="portal-title">Tell us about your project</h2>
-        <p>Pick the package you are interested in and leave a way to reach you. We get back to you shortly.</p>
+        <p>Choose the package that suits you, leave a way to reach you, and we will reply shortly.</p>
       </div>
 
       <div className="portal__grid">

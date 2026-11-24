@@ -31,7 +31,7 @@ export default function Capabilities() {
             <span className="ledger__k">SYSTEMS</span>
             <h3>أنظمة ذكية</h3>
           </div>
-          <p>برمجيات وأنظمة ذكاء اصطناعي تُبنى حسب حاجة مشروعك وتُسلَّم جاهزة.</p>
+          <p>برمجيات وأنظمة ذكاء اصطناعي تُبنى بحسب احتياج مشروعك وتُسلَّم جاهزة.</p>
         </article>
       </div>
     </div>

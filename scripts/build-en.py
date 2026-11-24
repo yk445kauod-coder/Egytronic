@@ -77,8 +77,8 @@ SHARED = {
 
 # ── pricing page ────────────────────────────────────────────
 PRICING = {
-    "قايمة الأسعار — Egytronic": "Price list — Egytronic",
-    "Egytronic — قايمة الأسعار": "Egytronic — price list",
+    "الأسعار — Egytronic": "Price list — Egytronic",
+    "Egytronic — الأسعار": "Egytronic — price list",
 
     # shell
     '<a href="/">الرئيسية</a>': '<a href="../">Home</a>',
@@ -103,7 +103,7 @@ PRICING = {
     "جلسة تشخيص وتقرير بالأولويات": "Diagnostic session and a prioritised report",
     "هوية كاملة (لوجو وألوان وخطوط)": "Full brand identity (logo, colours, type)",
     "موقع ديناميك بباكند وقاعدة بيانات": "Dynamic site with backend and database",
-    "Google Business وحسابات سوشيال جاهزة": "Google Business profile and social accounts set up",
+    "Google Business وحسابات التواصل جاهزة": "Google Business profile and social accounts set up",
     "تدريب على الاستخدام": "Training on how to use it",
     "شهر متابعة بعد التسليم": "One month of follow-up after delivery",
 
@@ -121,7 +121,7 @@ SOFT = {
         '<meta property="og:title" content="Software and Open Tools | Egytronic">',
     '<meta property="og:description" content="ما تبنيه Egytronic: مواقع وأنظمة ذكاء اصطناعي وأدوات منشورة علنًا، تُسلَّم جاهزة للتشغيل.">':
         '<meta property="og:description" content="What Egytronic builds: websites, AI systems and tools published in the open, delivered ready to run.">',
-    '<meta property="og:image:alt" content="Egytronic — قايمة الأسعار">':
+    '<meta property="og:image:alt" content="Egytronic — الأسعار">':
         '<meta property="og:image:alt" content="Egytronic — software and open tools">',
     '<meta name="twitter:title" content="البرمجيات والأدوات المفتوحة | Egytronic">':
         '<meta name="twitter:title" content="Software and Open Tools | Egytronic">',
@@ -137,7 +137,7 @@ SOFT = {
     '<p class="pricerow__desc">لاندنج بيدج، أو موقع ستاتيك حتى 5 صفحات، أو موقع ديناميك بباكند.</p>':
         '<p class="pricerow__desc">A landing page, a static site of up to 5 pages, or a dynamic site with a backend.</p>',
     '<h3>أنظمة ذكية</h3>': '<h3>Smart systems</h3>',
-    '<p class="pricerow__desc">برمجيات وأنظمة ذكاء اصطناعي تُبنى حسب حاجة مشروعك وتُسلَّم جاهزة.</p>':
+    '<p class="pricerow__desc">برمجيات وأنظمة ذكاء اصطناعي تُبنى بحسب احتياج مشروعك وتُسلَّم جاهزة.</p>':
         "<p class=\"pricerow__desc\">Software and AI systems built to your project's needs and delivered ready.</p>",
     '<h3>أدوات مفتوحة</h3>': '<h3>Open tools</h3>',
     '<p class="pricerow__desc">ننشر بعض أدواتنا علنًا على GitHub، ويمكن لأي شخص استخدامها ومراجعتها.</p>':
@@ -174,9 +174,9 @@ SOFT.update({
 
 INDEX.update({
     '<span class="px-tag">الباقات والأسعار</span>': '<span class="px-tag">Packages and prices</span>',
-    '<h2 id="products-title">خمس باقات، والسعر مكتوب</h2>':
+    '<h2 id="products-title">خمس باقات بأسعار معلنة</h2>':
         '<h2 id="products-title">Five packages, price on the label</h2>',
-    '<p>بالجنيه المصري. تدفع 50% عند البدء و50% قبل التسليم.</p>':
+    '<p>بالجنيه المصري. الدفع 50% عند البدء و50% قبل التسليم.</p>':
         '<p>In Egyptian pounds. Pay 50% to start and 50% before delivery.</p>',
     '<h3>لوجو</h3>': '<h3>Logo</h3>',
     '<h3>لاندنج بيدج</h3>': '<h3>Landing page</h3>',
@@ -238,14 +238,14 @@ INDEX.update({
         '<span class="prod__flag">Best place to start</span>',
     '<a class="prod__link" href="/contact/">احجز الباقة</a>':
         '<a class="prod__link" href="contact/">Book this package</a>',
-    '<b>السعر مكتوب قبل الكلام</b>': '<b>The price is on the table</b>',
-    '<span>خمس باقات بأرقامها، ومفيش مفاوضات على السعر بعد الاتفاق.</span>':
+    '<b>السعر معلن قبل البدء</b>': '<b>The price is on the table</b>',
+    '<span>خمس باقات بأرقامها المعلنة، بلا تفاوض على السعر بعد الاتفاق.</span>':
         '<span>Five packages with their numbers, and no price renegotiation after we agree.</span>',
     '<b>استضافة مجانًا سنة</b>': '<b>Hosting free for a year</b>',
     '<span>الاستضافة والباكند على حسابنا في السنة الأولى مع كل باقة.</span>':
         '<span>Hosting and backend are on us in the first year with every package.</span>',
-    '<b>بتدفع على مرحلتين</b>': '<b>You pay in two steps</b>',
-    '<span>50% عند البدء و50% قبل التسليم. مش بتدفع كله قبل ما تشوف حاجة.</span>':
+    '<b>الدفع على مرحلتين</b>': '<b>You pay in two steps</b>',
+    '<span>50% عند البدء و50% قبل التسليم. لا تُدفع كامل القيمة قبل رؤية العمل.</span>':
         '<span>50% when we start and 50% before delivery. You do not pay it all before you see anything.</span>',
     '<a class="px-btn" href="/contact/">\n              افتح بوابة التواصل\n':
         '<a class="px-btn" href="contact/">\n              Open the contact portal\n',
@@ -253,40 +253,40 @@ INDEX.update({
 
 CONTACT = {
     "<title>بوابة التواصل | Egytronic</title>": "<title>Contact Portal | Egytronic</title>",
-    '<meta name="description" content="ابدأ مشروعك مع Egytronic: اكتب لنا الباقة اللي تهمك ووسيلة التواصل، ونرد عليك في أقرب وقت.">':
+    '<meta name="description" content="ابدأ مشروعك مع Egytronic: اكتب الباقة التي تهمك ووسيلة التواصل، وسنرد عليك في أقرب وقت.">':
         '<meta name="description" content="Start your project with Egytronic: tell us the package you want and how to reach you, and we will get back to you.">',
     '<meta property="og:title" content="بوابة التواصل | Egytronic">':
         '<meta property="og:title" content="Contact Portal | Egytronic">',
-    '<meta property="og:description" content="ابدأ مشروعك مع Egytronic: اكتب لنا الباقة اللي تهمك ووسيلة التواصل، ونرد عليك في أقرب وقت.">':
+    '<meta property="og:description" content="ابدأ مشروعك مع Egytronic: اكتب الباقة التي تهمك ووسيلة التواصل، وسنرد عليك في أقرب وقت.">':
         '<meta property="og:description" content="Start your project with Egytronic: tell us the package you want and how to reach you, and we will get back to you.">',
     '<meta name="twitter:title" content="بوابة التواصل | Egytronic">':
         '<meta name="twitter:title" content="Contact Portal | Egytronic">',
-    '<meta name="twitter:description" content="ابدأ مشروعك مع Egytronic: اكتب لنا الباقة اللي تهمك ووسيلة التواصل، ونرد عليك في أقرب وقت.">':
+    '<meta name="twitter:description" content="ابدأ مشروعك مع Egytronic: اكتب الباقة التي تهمك ووسيلة التواصل، وسنرد عليك في أقرب وقت.">':
         '<meta name="twitter:description" content="Start your project with Egytronic: tell us the package you want and how to reach you, and we will get back to you.">',
     '<meta property="og:image:alt" content="Egytronic — بوابة التواصل">':
         '<meta property="og:image:alt" content="Egytronic — contact portal">',
     '<a class="lang" href="/en/contact/" hreflang="en" lang="en" aria-label="التبديل إلى النسخة الإنجليزية" title="عرض الموقع بالإنجليزية">EN</a>':
         '<a class="lang" href="/contact/" hreflang="ar" lang="ar" aria-label="Switch to the Arabic version" title="View the site in Arabic">AR</a>',
     '<span class="px-tag">بوابة التواصل</span>': '<span class="px-tag">Contact portal</span>',
-    '<h2 id="portal-title">قولنا على مشروعك</h2>': '<h2 id="portal-title">Tell us about your project</h2>',
-    '<p>اختار الباقة اللي تهمك، وسيب وسيلة تواصل. بنرد عليك في أقرب وقت.</p>':
-        '<p>Pick the package you are interested in and leave a way to reach you. We get back to you shortly.</p>',
-    'data-msg-invalid="راجع الحقول الناقصة: الاسم، بريد صحيح، ورسالة 10 أحرف على الأقل."':
+    '<h2 id="portal-title">أخبرنا عن مشروعك</h2>': '<h2 id="portal-title">Tell us about your project</h2>',
+    '<p>اختر الباقة المناسبة واترك وسيلة تواصل، وسنرد عليك في أقرب وقت.</p>':
+        '<p>Choose the package that suits you, leave a way to reach you, and we will reply shortly.</p>',
+    'data-msg-invalid="راجع الحقول الناقصة: الاسم، وبريد إلكتروني صحيح، ورسالة لا تقل عن 10 أحرف."':
         'data-msg-invalid="Check the missing fields: a name, a valid email and a message of at least 10 characters."',
     'data-msg-sending="جاري الإرسال…"': 'data-msg-sending="Sending…"',
-    'data-msg-ok="وصلتنا رسالتك. هنرد عليك على وسيلة التواصل اللي كتبتها."':
+    'data-msg-ok="وصلتنا رسالتك، وسنرد على وسيلة التواصل التي أدخلتها."':
         'data-msg-ok="We received your message and will reply using the contact details you left."',
-    'data-msg-rate="وصلتنا رسايل كتير من نفس الجهاز. استنى شوية وحاول تاني."':
+    'data-msg-rate="وردتنا طلبات كثيرة من هذا الجهاز. يُرجى المحاولة بعد قليل."':
         'data-msg-rate="Too many messages from this device. Wait a little and try again."',
-    'data-msg-down="الإرسال مش متاح دلوقتي."': 'data-msg-down="Sending is unavailable right now."',
-    'data-msg-offline="مفيش اتصال بالشبكة."': 'data-msg-offline="No network connection."',
+    'data-msg-down="الإرسال غير متاح حاليًا."': 'data-msg-down="Sending is unavailable right now."',
+    'data-msg-offline="لا يوجد اتصال بالشبكة."': 'data-msg-offline="No network connection."',
     'data-msg-button="إرسال الطلب"': 'data-msg-button="Send the request"',
     '<label for="cf-name">الاسم</label>': '<label for="cf-name">Name</label>',
     'placeholder="اسمك أو اسم المشروع"': 'placeholder="Your name or business"',
     '<label for="cf-phone">واتساب أو موبايل <span class="field__opt">(اختياري)</span></label>':
         '<label for="cf-phone">WhatsApp or mobile <span class="field__opt">(optional)</span></label>',
     '<label for="cf-package">الباقة</label>': '<label for="cf-package">Package</label>',
-    '<option value="unsure">مش محدد لسه</option>': '<option value="unsure">Not sure yet</option>',
+    '<option value="unsure">لم يُحدَّد بعد</option>': '<option value="unsure">Not sure yet</option>',
     '<option value="logo">لوجو — 5,000 جنيه</option>': '<option value="logo">Logo — EGP 5,000</option>',
     '<option value="landing">لاندنج بيدج — 6,000 جنيه</option>': '<option value="landing">Landing page — EGP 6,000</option>',
     '<option value="static">موقع ستاتيك — 8,000 جنيه</option>': '<option value="static">Static site — EGP 8,000</option>',
@@ -294,7 +294,7 @@ CONTACT = {
     '<option value="dynamic">موقع ديناميك — من 18,000 جنيه</option>': '<option value="dynamic">Dynamic site — from EGP 18,000</option>',
     '<option value="transform">تحول كامل — من 28,000 جنيه</option>': '<option value="transform">Full transformation — from EGP 28,000</option>',
     '<label for="cf-message">الرسالة</label>': '<label for="cf-message">Message</label>',
-    'placeholder="إيه المشروع؟ وإيه أهم حاجة محتاجها؟"': 'placeholder="What is the project, and what matters most to you?"',
+    'placeholder="ما المشروع؟ وما أهم ما تحتاجه؟"': 'placeholder="What is the project, and what matters most to you?"',
     '<label for="cf-website">موقعك</label>': '<label for="cf-website">Your website</label>',
     '<button class="px-btn" type="submit" data-submit>إرسال الطلب</button>':
         '<button class="px-btn" type="submit" data-submit>Send the request</button>',
@@ -302,14 +302,14 @@ CONTACT = {
         '<a class="portal__mail" href="mailto:egytronic.official@googlemail.com">Or email us directly</a>',
     'data-message="تم نسخ البريد" data-fail="تعذّر النسخ. انسخ البريد يدويًا.">نسخ البريد</button>':
         'data-message="Email copied" data-fail="Copy failed. Please copy the email manually.">Copy email</button>',
-    '<h3>إيه اللي بيحصل بعد الإرسال</h3>': '<h3>What happens after you send</h3>',
-    '<li><span>01</span> بنقرأ الطلب والباقة المختارة.</li>': '<li><span>01</span> We read the request and the package you picked.</li>',
-    '<li><span>02</span> بنرد عليك على البريد أو الواتساب اللي كتبته.</li>': '<li><span>02</span> We reply on the email or WhatsApp you left.</li>',
-    '<li><span>03</span> لو مناسب، بنحدد النطاق ونبدأ.</li>': '<li><span>03</span> If it fits, we agree the scope and start.</li>',
+    '<h3>ماذا يحدث بعد الإرسال</h3>': '<h3>What happens after you send</h3>',
+    '<li><span>01</span> نقرأ الطلب والباقة المختارة.</li>': '<li><span>01</span> We read the request and the package you picked.</li>',
+    '<li><span>02</span> نرد على البريد الإلكتروني أو رقم واتساب الذي أدخلته.</li>': '<li><span>02</span> We reply on the email or WhatsApp you left.</li>',
+    '<li><span>03</span> إن كان الطلب مناسبًا، نحدد النطاق ونبدأ.</li>': '<li><span>03</span> If it fits, we agree the scope and start.</li>',
     '<h3>السعر معلن مقدمًا</h3>': '<h3>The price is public up front</h3>',
-    '<p>كل باقة بسعرها المكتوب، والدفع 50% عند البدء و50% قبل التسليم.</p>':
+    '<p>كل باقة بسعرها المعلن، والدفع 50% عند البدء و50% قبل التسليم.</p>':
         '<p>Every package has its printed price: 50% to start and 50% before delivery.</p>',
-    '<a class="px-btn px-btn--ghost px-btn--sm" href="/pricing/">شوف الأسعار</a>':
+    '<a class="px-btn px-btn--ghost px-btn--sm" href="/pricing/">عرض الأسعار</a>':
         '<a class="px-btn px-btn--ghost px-btn--sm" href="../pricing/">See pricing</a>',
     '            تعذّر إرسال الطلب. راسلنا على\n': '            Sending failed. Write to us at\n',
 }
@@ -443,7 +443,7 @@ INDEX.update({
 INDEX.update({
     "<title>Egytronic | برمجيات وأنظمة ذكية بأسعار معلنة</title>":
         "<title>Egytronic | Software and AI Systems, Public Prices</title>",
-    "نبني موقعك أو هويتك، ونسطّب نظامك الإداري ونكيّفه على شغلك. خمس باقات بأسعار معلنة من 5,000 جنيه، والدفع 50% مقدمًا.":
+    "نبني موقعك أو هويتك، ونثبّت نظامك الإداري ونكيّفه على طبيعة عملك. خمس باقات بأسعار معلنة تبدأ من 5,000 جنيه، والدفع 50% مقدمًا.":
         "We build your site or brand, and install and adapt a management system for your business. Five public-price packages from EGP 5,000, 50% upfront.",
     "شركة برمجيات مصرية. نبني موقعك أو هويتك، ونسطّب نظامك الإداري ونكيّفه على شغلك. خمس باقات من 5,000 جنيه.":
         "An Egyptian software company. We build your site or brand, and install and adapt a management system for your business. Five packages from EGP 5,000.",
@@ -457,11 +457,11 @@ INDEX.update({
         '<span class="px-tag">Egyptian software, ready to run</span>',
     "<span class=\"line\">نبني موقعك وهويتك</span>":
         "<span class=\"line\">We build your site and brand</span>",
-    "<span class=\"line\"><em>ونسلّمهما جاهزين</em></span>":
-        "<span class=\"line\"><em>and deliver them ready</em></span>",
-    "لوجو بـ5,000 جنيه وموقع ستاتيك بـ8,000. تدفع 50% عند البدء و50% قبل التسليم، والاستضافة مجانًا أول سنة.":
+    "<span class=\"line\"><em>ونسلّمهما جاهزين للتشغيل</em></span>":
+        "<span class=\"line\"><em>and deliver them ready to run</em></span>",
+    "لوجو بـ5,000 جنيه وموقع ستاتيك بـ8,000. الدفع 50% عند البدء و50% قبل التسليم، والاستضافة مجانية في السنة الأولى.":
         "A logo costs EGP 5,000 and a static site EGP 8,000. Pay 50% to start, 50% before delivery. Hosting is free for the first year.",
-    '<a class="px-btn" href="/pricing/">شوف الأسعار</a>': '<a class="px-btn" href="pricing/">See pricing</a>',
+    '<a class="px-btn" href="/pricing/">عرض الأسعار</a>': '<a class="px-btn" href="pricing/">See pricing</a>',
     '<a class="px-btn px-btn--ghost" href="#contact">تواصل معنا</a>':
         '<a class="px-btn px-btn--ghost" href="#contact">Contact us</a>',
     '<span class="stat__n">5,000</span><span class="stat__l">تبدأ من — جنيه</span>':
@@ -483,13 +483,13 @@ INDEX.update({
     '<p>لوجو وحده، أو هوية كاملة تجمع عناصر مشروعك البصرية.</p>':
         '<p>A logo on its own, or a full identity covering your visual elements.</p>',
     '<h3>أنظمة ذكية</h3>': '<h3>Smart systems</h3>',
-    '<p>برمجيات وأنظمة ذكاء اصطناعي تُبنى حسب حاجة مشروعك وتُسلَّم جاهزة.</p>':
+    '<p>برمجيات وأنظمة ذكاء اصطناعي تُبنى بحسب احتياج مشروعك وتُسلَّم جاهزة.</p>':
         "<p>Software and AI systems built to your project's needs and delivered ready.</p>",
     '<span class="px-tag">المنهجية</span>': '<span class="px-tag">Process</span>',
     '<h2>أربع مراحل حتى التسليم</h2>': '<h2>Four stages to delivery</h2>',
     '<p>لكل مرحلة مخرج واضح قبل أن تبدأ التي بعدها.</p>':
         '<p>Each stage has a clear output before the next begins.</p>',
-    '<p>نحدد المطلوب والنطاق والقيود قبل كتابة أي كود.</p>':
+    '<p>نحدد المطلوب والنطاق والقيود، ثم نصمم الواجهات والتدفقات قبل كتابة أي كود.</p>':
         '<p>We set the goal, scope and limits before writing any code.</p>',
     '<p>ننفذ المخطط المتفق عليه جزءًا جزءًا.</p>': '<p>We build the agreed plan, one part at a time.</p>',
     '<p>نفحص كل مخرج من ناحية الأمان والبنية قبل النشر.</p>':
@@ -502,7 +502,7 @@ INDEX.update({
         '<p>Leads product vision, system architecture and launch.</p>',
     '<span class="principle__k">01 / DELIVERY</span>': '<span class="principle__k">01 / DELIVERY</span>',
     '<h3>تسليم جاهز</h3>': '<h3>Ready on delivery</h3>',
-    '<p>لا نعدّ العمل منتهيًا قبل أن يعمل عندك.</p>': "<p>We don't count work as done until it runs for you.</p>",
+    '<p>لا نعدّ العمل منتهيًا قبل تشغيله لديك.</p>': "<p>We don't count work as done until it runs for you.</p>",
     '<span class="principle__k">02 / PRICING</span>': '<span class="principle__k">02 / PRICING</span>',
     '<h3>أسعار معلنة</h3>': '<h3>Public prices</h3>',
     "<p>ترى سعر كل باقة قبل أن تتواصل معنا.</p>": "<p>You see each package's price before you contact us.</p>",
@@ -539,11 +539,11 @@ INDEX.update({
 })
 
 PRICING.update({
-    "<title>أسعار باقات Egytronic | من 5,000 جنيه</title>":
+    "<title>أسعار باقات Egytronic | تبدأ من 5,000 جنيه</title>":
         "<title>Egytronic Pricing | From EGP 5,000</title>",
     '<span class="px-tag">الأسعار المعلنة</span>': '<span class="px-tag">Public pricing</span>',
-    '<h2 id="prices-title">خمس باقات بسعر واضح</h2>': '<h2 id="prices-title">Five packages, clear prices</h2>',
-    '<p>تدفع 50% مقدمًا عند البدء و50% قبل التسليم النهائي، بالجنيه المصري.</p>':
+    '<h2 id="prices-title">خمس باقات بأسعار واضحة</h2>': '<h2 id="prices-title">Five packages, clear prices</h2>',
+    '<p>الدفع 50% مقدمًا عند البدء و50% قبل التسليم النهائي، بالجنيه المصري.</p>':
         '<p>Pay 50% upfront to start and 50% before final delivery, in Egyptian pounds.</p>',
     '<p class="pricerow__desc">شعار لمشروعك يُسلَّم جاهزًا للاستخدام.</p>':
         '<p class="pricerow__desc">A logo for your business, delivered ready to use.</p>',
@@ -571,7 +571,7 @@ PRICING.update({
 
 
 PRICING.update({
-    "<title>أسعار باقات Egytronic | من 5,000 جنيه</title>":
+    "<title>أسعار باقات Egytronic | تبدأ من 5,000 جنيه</title>":
         "<title>Egytronic Pricing | From EGP 5,000</title>",
     '<meta name="description" content="لوجو 5,000، لاندنج بيدج 6,000، موقع ستاتيك 8,000، هوية 10,000، وموقع ديناميك من 18,000 جنيه. الدفع 50% مقدمًا.">':
         '<meta name="description" content="Logo 5,000, landing page 6,000, static site 8,000, identity 10,000, dynamic site from 18,000 EGP. Pay 50% upfront.">',
@@ -579,7 +579,7 @@ PRICING.update({
         '<meta property="og:description" content="Logo 5,000, landing page 6,000, static site 8,000, identity 10,000, dynamic site from 18,000 EGP. Pay 50% upfront.">',
     '<meta name="twitter:description" content="لوجو 5,000، لاندنج بيدج 6,000، موقع ستاتيك 8,000، هوية 10,000، وموقع ديناميك من 18,000 جنيه. الدفع 50% مقدمًا.">':
         '<meta name="twitter:description" content="Logo 5,000, landing page 6,000, static site 8,000, identity 10,000, dynamic site from 18,000 EGP. Pay 50% upfront.">',
-    '<meta property="og:title" content="أسعار باقات Egytronic | من 5,000 جنيه">':
+    '<meta property="og:title" content="أسعار باقات Egytronic | تبدأ من 5,000 جنيه">':
         '<meta property="og:title" content="Egytronic Pricing | From EGP 5,000">',
     '<a class="lang" href="/en/pricing/" hreflang="en" lang="en" aria-label="التبديل إلى النسخة الإنجليزية" title="عرض الموقع بالإنجليزية">EN</a>':
         '<a class="lang" href="/pricing/" hreflang="ar" lang="ar" aria-label="Switch to the Arabic version" title="View the site in Arabic">AR</a>',
@@ -600,27 +600,27 @@ PRICING.update({
 
 # ── 2026-11-24: package cards sell themselves; systems + transformation ──
 INDEX.update({
-    '<p class="prod__who"><span>لمين</span> مشروع لسه بيبدأ</p>':
+    '<p class="prod__who"><span>مناسب لـ</span> مشروع في بدايته</p>':
         '<p class="prod__who"><span>For whom</span> A project just starting</p>',
-    '<p class="prod__who"><span>لمين</span> خدمة واحدة أو منتج واحد</p>':
+    '<p class="prod__who"><span>مناسب لـ</span> خدمة واحدة أو منتج واحد</p>':
         '<p class="prod__who"><span>For whom</span> One service or one product</p>',
-    '<p class="prod__who"><span>لمين</span> شركة عندها خدمات وصفحات</p>':
+    '<p class="prod__who"><span>مناسب لـ</span> شركة لديها خدمات وصفحات</p>':
         '<p class="prod__who"><span>For whom</span> A company with services and pages</p>',
-    '<p class="prod__who"><span>لمين</span> علامة بتكبر ومحتاجة تطبيقات</p>':
+    '<p class="prod__who"><span>مناسب لـ</span> علامة تتوسّع وتحتاج تطبيقات</p>':
         '<p class="prod__who"><span>For whom</span> A growing brand that needs applications</p>',
-    '<p class="prod__who"><span>لمين</span> محتوى بيتغير كل أسبوع</p>':
+    '<p class="prod__who"><span>مناسب لـ</span> محتوى يتغيّر أسبوعيًا</p>':
         '<p class="prod__who"><span>For whom</span> Content that changes weekly</p>',
     "<li>لوجو أساسي بنسختين</li>": "<li>A primary logo in two versions</li>",
-    "<li>ملفات جاهزة للطباعة والسوشيال</li>": "<li>Files ready for print and social</li>",
+    "<li>ملفات جاهزة للطباعة ووسائل التواصل</li>": "<li>Files ready for print and social</li>",
     "<li>تسليم في 3–5 أيام</li>": "<li>Delivered in 3–5 days</li>",
     "<li>صفحة واحدة بمحتوى منظم</li>": "<li>One page with structured content</li>",
-    "<li>فورم تواصل وزر واتساب</li>": "<li>Contact form and WhatsApp button</li>",
+    "<li>نموذج تواصل وزر واتساب</li>": "<li>Contact form and WhatsApp button</li>",
     "<li>تسليم في 5–7 أيام</li>": "<li>Delivered in 5–7 days</li>",
     "<li>حتى 5 صفحات</li>": "<li>Up to 5 pages</li>",
-    "<li>سيو أساسي وسرعة تحميل</li>": "<li>Basic SEO and fast loading</li>",
+    "<li>تهيئة أساسية لمحركات البحث وسرعة تحميل</li>": "<li>Basic SEO and fast loading</li>",
     "<li>تسليم في 7–10 أيام</li>": "<li>Delivered in 7–10 days</li>",
     "<li>لوجو وألوان وخطوط</li>": "<li>Logo, colours and type</li>",
-    "<li>كروت وسوشيال ميديا</li>": "<li>Business cards and social media</li>",
+    "<li>بطاقات أعمال وتصاميم لوسائل التواصل</li>": "<li>Business cards and social media</li>",
     "<li>دليل استخدام مختصر</li>": "<li>A short usage guide</li>",
     "<li>باكند ولوحة تحكم</li>": "<li>Backend and admin panel</li>",
     "<li>قاعدة بيانات ومحتوى تديره بنفسك</li>": "<li>A database and content you manage yourself</li>",
@@ -629,9 +629,9 @@ INDEX.update({
         '<a class="prod__link" href="contact/">Discuss your project</a>',
 
     '<span class="px-tag">أنظمة إدارية</span>': '<span class="px-tag">Business systems</span>',
-    '<h2 id="systems-title">خلّي شغلك كله يشتغل على نظام واحد</h2>':
+    '<h2 id="systems-title">اجمع أعمالك كلها في نظام واحد</h2>':
         '<h2 id="systems-title">Get your whole business running on one system</h2>',
-    "<p>بنختار معاك النظام المناسب لنشاطك، بنسطّبه عندك، ونكيّفه على طريقة عملك: الصلاحيات، التقارير، الفواتير، والمصطلحات اللي فريقك بيفهمها — ومعاه تدريب لفريقك لحد ما يشتغل عليه بثقة.</p>":
+    "<p>نختار معك النظام المناسب لنشاطك، ونثبّته لدى فريقك، ونكيّفه على طريقة عملك: الصلاحيات والتقارير والفواتير والمصطلحات التي يستخدمها فريقك، مع تدريب حتى يعمل عليه بثقة.</p>":
         "<p>We pick the right system for your line of work with you, install it, and tailor it to how you operate: permissions, reports, invoices and the words your team already uses — with training until they run it with confidence.</p>",
     "<h3>إدارة موارد</h3>": "<h3>Resource planning</h3>",
     "<p>مخزون وفواتير ومشتريات وحسابات في نظام واحد.</p>":
@@ -656,29 +656,29 @@ INDEX.update({
         "<li><b>Adapt</b> Permissions, invoices, reports and wording</li>",
     "<li><b>تدريب</b> فريقك وتسليم دليل التشغيل</li>":
         "<li><b>Train</b> Your team, plus a runbook</li>",
-    '<p class="systems__note reveal">مش لاقي احتياجك؟ <a href="/contact/">اطلب نظام مخصص</a> ونحدد النطاق معاك.</p>':
+    '<p class="systems__note reveal">لم تجد ما تحتاجه؟ <a href="/contact/">اطلب نظام مخصص</a> ونحدد النطاق معك.</p>':
         '<p class="systems__note reveal">Not seeing what you need? <a href="contact/">Ask for a custom system</a> and we will scope it with you.</p>',
 
     '<span class="px-tag px-tag--mint">التحول الرقمي</span>':
         '<span class="px-tag px-tag--mint">Digital transformation</span>',
-    '<h2 id="transform-title">من دفاتر وإكسل لنظام بيشتغل لوحده</h2>':
+    '<h2 id="transform-title">من الدفاتر وملفات إكسل إلى نظام متكامل</h2>':
         '<h2 id="transform-title">From notebooks and spreadsheets to a system that runs itself</h2>',
-    "<p>بنحوّل طريقة الشغل نفسها: ترحيل بياناتك من الملفات، صلاحيات لكل دور، وتقارير لحظية بدل الدفاتر.</p>":
+    "<p>نغيّر طريقة العمل نفسها: ترحيل بياناتك من الملفات، وصلاحيات لكل دور، وتقارير لحظية بدل الدفاتر.</p>":
         "<p>We change how the work itself runs: your data moved out of the files, permissions per role, and live reports instead of notebooks.</p>",
     "<h3>بيانات واحدة</h3>": "<h3>One set of data</h3>",
-    "<p>بدل ملفات متفرقة، كل حاجة في قاعدة بيانات واحدة.</p>":
+    "<p>بدل الملفات المتفرقة، تجتمع البيانات في قاعدة واحدة.</p>":
         "<p>Instead of scattered files, everything lives in one database.</p>",
     "<h3>تقارير لحظية</h3>": "<h3>Live reports</h3>",
-    "<p>المبيعات والمخزون والتحصيل من غير ما تسأل حد.</p>":
+    "<p>المبيعات والمخزون والتحصيل في تقرير واحد، دون سؤال أحد.</p>":
         "<p>Sales, stock and collections without asking anyone.</p>",
     "<h3>صلاحيات لكل دور</h3>": "<h3>Permissions per role</h3>",
-    "<p>كل موظف بيشوف اللي يخصه بس.</p>": "<p>Every employee sees only what concerns them.</p>",
+    "<p>كل موظف يرى ما يخصه فقط.</p>": "<p>Every employee sees only what concerns them.</p>",
     "<h3>ربط وأتمتة</h3>": "<h3>Integrations and automation</h3>",
-    "<p>الدفع والمخزون والواتساب بيتكلموا مع بعض.</p>":
+    "<p>الدفع والمخزون والواتساب مترابطة في تدفق واحد.</p>":
         "<p>Payments, stock and WhatsApp talk to each other.</p>",
     '<p class="transform__price"><span>التحول الكامل</span> من <b>28,000</b> جنيه</p>':
         '<p class="transform__price"><span>Full transformation</span> from <b>28,000</b> EGP</p>',
-    '<p class="transform__note">بعد أول مكالمة بنحدد النطاق: ترحيل البيانات، التكييف، والتدريب. الدفع 50% عند البدء و50% قبل التسليم.</p>':
+    '<p class="transform__note">بعد أول مكالمة نحدد النطاق: ترحيل البيانات والتكييف والتدريب. الدفع 50% عند البدء و50% قبل التسليم.</p>':
         '<p class="transform__note">After a first call we scope it: data migration, adaptation, and training. Pay 50% to start and 50% before delivery.</p>',
     '<a class="px-btn" href="/contact/">اطلب تقييم لمشروعك</a>':
         '<a class="px-btn" href="contact/">Request a project assessment</a>',

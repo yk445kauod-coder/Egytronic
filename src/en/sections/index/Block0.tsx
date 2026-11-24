@@ -11,7 +11,7 @@ export default function Block0() {
         <span className="px-tag">Egyptian software, ready to run</span>
         <h1>
           <span className="line">We build your site and brand</span>
-          <span className="line"><em>and deliver them ready</em></span>
+          <span className="line"><em>and deliver them ready to run</em></span>
         </h1>
         <p className="hero__sub">
           A logo costs EGP 5,000 and a static site EGP 8,000. Pay 50% to start, 50% before delivery. Hosting is free for the first year.

@@ -19,7 +19,7 @@ export default function Pricing({ locale }: { locale: Locale }) {
       <Seo
         locale={locale}
         path={path}
-        title="Egytronic package prices | from EGP 5,000"
+        title="Egytronic Pricing | From EGP 5,000"
         description="Logo 5,000, landing page 6,000, static site 8,000, identity 10,000, dynamic site from 18,000 EGP. Pay 50% upfront."
       />
       <main id="main">

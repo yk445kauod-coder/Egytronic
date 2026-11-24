@@ -91,9 +91,9 @@ OVERRIDES = {
         "Logo 5,000, landing page 6,000, static site 8,000, identity 10,000, dynamic site from 18,000 EGP. Pay 50% upfront.",
     "ما تبنيه Egytronic: مواقع وأنظمة ذكاء اصطناعي وأدوات منشورة علنًا، تُسلَّم جاهزة للتشغيل.":
         "What Egytronic builds: websites, AI systems and tools published in the open, delivered ready to run.",
-    "ابدأ مشروعك مع Egytronic: اكتب لنا الباقة اللي تهمك ووسيلة التواصل، ونرد عليك في أقرب وقت.":
+    "ابدأ مشروعك مع Egytronic: اكتب الباقة التي تهمك ووسيلة التواصل، وسنرد عليك في أقرب وقت.":
         "Start your project with Egytronic: tell us the package you want and how to reach you, and we will get back to you.",
-    "نبني موقعك أو هويتك، ونسطّب نظامك الإداري ونكيّفه على شغلك. خمس باقات بأسعار معلنة من 5,000 جنيه، والدفع 50% مقدمًا.":
+    "نبني موقعك أو هويتك، ونثبّت نظامك الإداري ونكيّفه على طبيعة عملك. خمس باقات بأسعار معلنة تبدأ من 5,000 جنيه، والدفع 50% مقدمًا.":
         "We build your site or brand, and install and adapt a management system for your business. Five public-price packages from EGP 5,000, 50% upfront.",
     "أسعار باقات Egytronic | من 5,000 جنيه": "Egytronic package prices | from EGP 5,000",
     "البرمجيات والأدوات المفتوحة | Egytronic": "Software and open tools | Egytronic",
@@ -102,7 +102,7 @@ OVERRIDES = {
     "أقسام الصفحة": "Page sections",
     "الخطوة التالية": "Next step",
     "الأسعار معلنة. ابدأ بمكالمة قصيرة": "Prices are public. Start with a short call.",
-    "نقول لك أي باقة تكفي شغلك وأيها زيادة، قبل أي دفع.":
+    "نوضح أي باقة تكفي عملك وأيها زائدة عن الحاجة، قبل أي دفع.":
         "We tell you which package covers your work and which is overkill, before any payment.",
     "خمس باقات بسعر معلن": "Five packages, public prices",
     "من 5,000 جنيه · دفع 50%": "From EGP 5,000 · 50% upfront",

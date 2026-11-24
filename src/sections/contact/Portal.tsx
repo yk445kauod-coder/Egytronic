@@ -5,12 +5,12 @@ export default function Portal() {
     <div className="wrap">
       <div className="section-head reveal">
         <span className="px-tag">بوابة التواصل</span>
-        <h2 id="portal-title">قولنا على مشروعك</h2>
-        <p>اختار الباقة اللي تهمك، وسيب وسيلة تواصل. بنرد عليك في أقرب وقت.</p>
+        <h2 id="portal-title">أخبرنا عن مشروعك</h2>
+        <p>اختر الباقة المناسبة واترك وسيلة تواصل، وسنرد عليك في أقرب وقت.</p>
       </div>
 
       <div className="portal__grid">
-        <form className="portal__form reveal" id="contact-form" data-contact-form noValidate data-msg-invalid="راجع الحقول الناقصة: الاسم، بريد صحيح، ورسالة 10 أحرف على الأقل." data-msg-sending="جاري الإرسال…" data-msg-ok="وصلتنا رسالتك. هنرد عليك على وسيلة التواصل اللي كتبتها." data-msg-rate="وصلتنا رسايل كتير من نفس الجهاز. استنى شوية وحاول تاني." data-msg-down="الإرسال مش متاح دلوقتي." data-msg-offline="مفيش اتصال بالشبكة." data-msg-button="إرسال الطلب">
+        <form className="portal__form reveal" id="contact-form" data-contact-form noValidate data-msg-invalid="راجع الحقول الناقصة: الاسم، وبريد إلكتروني صحيح، ورسالة لا تقل عن 10 أحرف." data-msg-sending="جاري الإرسال…" data-msg-ok="وصلتنا رسالتك، وسنرد على وسيلة التواصل التي أدخلتها." data-msg-rate="وردتنا طلبات كثيرة من هذا الجهاز. يُرجى المحاولة بعد قليل." data-msg-down="الإرسال غير متاح حاليًا." data-msg-offline="لا يوجد اتصال بالشبكة." data-msg-button="إرسال الطلب">
           <div className="field">
             <label htmlFor="cf-name">الاسم</label>
             <input id="cf-name" name="name" type="text" autoComplete="name" required minLength="2" maxLength="80" placeholder="اسمك أو اسم المشروع" />
@@ -29,7 +29,7 @@ export default function Portal() {
           <div className="field">
             <label htmlFor="cf-package">الباقة</label>
             <select id="cf-package" name="package">
-              <option value="unsure">مش محدد لسه</option>
+              <option value="unsure">لم يُحدَّد بعد</option>
               <option value="logo">لوجو — 5,000 جنيه</option>
               <option value="landing">لاندنج بيدج — 6,000 جنيه</option>
               <option value="static">موقع ستاتيك — 8,000 جنيه</option>
@@ -41,7 +41,7 @@ export default function Portal() {
 
           <div className="field">
             <label htmlFor="cf-message">الرسالة</label>
-            <textarea id="cf-message" name="message" rows="5" required minLength="10" maxLength="2000" placeholder="إيه المشروع؟ وإيه أهم حاجة محتاجها؟"></textarea>
+            <textarea id="cf-message" name="message" rows="5" required minLength="10" maxLength="2000" placeholder="ما المشروع؟ وما أهم ما تحتاجه؟"></textarea>
           </div>
 
           <div className="field field--trap" aria-hidden="true">
@@ -66,18 +66,18 @@ export default function Portal() {
 
         <aside className="portal__side reveal">
           <div className="portal__card">
-            <h3>إيه اللي بيحصل بعد الإرسال</h3>
+            <h3>ماذا يحدث بعد الإرسال</h3>
             <ol className="portal__steps">
-              <li><span>01</span> بنقرأ الطلب والباقة المختارة.</li>
-              <li><span>02</span> بنرد عليك على البريد أو الواتساب اللي كتبته.</li>
-              <li><span>03</span> لو مناسب، بنحدد النطاق ونبدأ.</li>
+              <li><span>01</span> نقرأ الطلب والباقة المختارة.</li>
+              <li><span>02</span> نرد على البريد الإلكتروني أو رقم واتساب الذي أدخلته.</li>
+              <li><span>03</span> إن كان الطلب مناسبًا، نحدد النطاق ونبدأ.</li>
             </ol>
           </div>
 
           <div className="portal__card portal__card--quiet">
             <h3>السعر معلن مقدمًا</h3>
-            <p>كل باقة بسعرها المكتوب، والدفع 50% عند البدء و50% قبل التسليم.</p>
-            <a className="px-btn px-btn--ghost px-btn--sm" href="/pricing/">شوف الأسعار</a>
+            <p>كل باقة بسعرها المعلن، والدفع 50% عند البدء و50% قبل التسليم.</p>
+            <a className="px-btn px-btn--ghost px-btn--sm" href="/pricing/">عرض الأسعار</a>
           </div>
         </aside>
       </div>

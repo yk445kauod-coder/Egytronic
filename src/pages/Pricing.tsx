@@ -19,7 +19,7 @@ export default function Pricing({ locale }: { locale: Locale }) {
       <Seo
         locale={locale}
         path={path}
-        title="أسعار باقات Egytronic | من 5,000 جنيه"
+        title="أسعار باقات Egytronic | تبدأ من 5,000 جنيه"
         description="لوجو 5,000، لاندنج بيدج 6,000، موقع ستاتيك 8,000، هوية 10,000، وموقع ديناميك من 18,000 جنيه. الدفع 50% مقدمًا."
       />
       <main id="main">

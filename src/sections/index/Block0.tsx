@@ -11,13 +11,13 @@ export default function Block0() {
         <span className="px-tag">برمجيات مصرية جاهزة للتشغيل</span>
         <h1>
           <span className="line">نبني موقعك وهويتك</span>
-          <span className="line"><em>ونسلّمهما جاهزين</em></span>
+          <span className="line"><em>ونسلّمهما جاهزين للتشغيل</em></span>
         </h1>
         <p className="hero__sub">
-          لوجو بـ5,000 جنيه وموقع ستاتيك بـ8,000. تدفع 50% عند البدء و50% قبل التسليم، والاستضافة مجانًا أول سنة.
+          لوجو بـ5,000 جنيه وموقع ستاتيك بـ8,000. الدفع 50% عند البدء و50% قبل التسليم، والاستضافة مجانية في السنة الأولى.
         </p>
         <div className="hero__actions">
-          <a className="px-btn" href="/pricing/">شوف الأسعار</a>
+          <a className="px-btn" href="/pricing/">عرض الأسعار</a>
           <a className="px-btn px-btn--ghost" href="#contact">تواصل معنا</a>
         </div>
         <div className="hero__stats">

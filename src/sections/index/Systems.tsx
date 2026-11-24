@@ -5,8 +5,8 @@ export default function Systems() {
     <div className="wrap">
       <div className="section-head reveal">
         <span className="px-tag">أنظمة إدارية</span>
-        <h2 id="systems-title">خلّي شغلك كله يشتغل على نظام واحد</h2>
-        <p>بنختار معاك النظام المناسب لنشاطك، بنسطّبه عندك، ونكيّفه على طريقة عملك: الصلاحيات، التقارير، الفواتير، والمصطلحات اللي فريقك بيفهمها — ومعاه تدريب لفريقك لحد ما يشتغل عليه بثقة.</p>
+        <h2 id="systems-title">اجمع أعمالك كلها في نظام واحد</h2>
+        <p>نختار معك النظام المناسب لنشاطك، ونثبّته لدى فريقك، ونكيّفه على طريقة عملك: الصلاحيات والتقارير والفواتير والمصطلحات التي يستخدمها فريقك، مع تدريب حتى يعمل عليه بثقة.</p>
       </div>
 
       <ul className="systems reveal">
@@ -54,7 +54,7 @@ export default function Systems() {
         <li><b>تدريب</b> فريقك وتسليم دليل التشغيل</li>
       </ul>
 
-      <p className="systems__note reveal">مش لاقي احتياجك؟ <a href="/contact/">اطلب نظام مخصص</a> ونحدد النطاق معاك.</p>
+      <p className="systems__note reveal">لم تجد ما تحتاجه؟ <a href="/contact/">اطلب نظام مخصص</a> ونحدد النطاق معك.</p>
     </div>
   </section>
     </>

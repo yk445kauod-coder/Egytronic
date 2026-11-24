@@ -5,8 +5,8 @@ export default function Prices() {
     <div className="wrap">
       <div className="section-head reveal">
         <span className="px-tag">الأسعار المعلنة</span>
-        <h2 id="prices-title">خمس باقات بسعر واضح</h2>
-        <p>تدفع 50% مقدمًا عند البدء و50% قبل التسليم النهائي، بالجنيه المصري.</p>
+        <h2 id="prices-title">خمس باقات بأسعار واضحة</h2>
+        <p>الدفع 50% مقدمًا عند البدء و50% قبل التسليم النهائي، بالجنيه المصري.</p>
       </div>
 
       <ol className="pricelist reveal">

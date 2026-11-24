@@ -11,7 +11,7 @@ export default function ContactPage({ locale }: { locale: Locale }) {
         locale={locale}
         path={path}
         title="بوابة التواصل | Egytronic"
-        description="ابدأ مشروعك مع Egytronic: اكتب لنا الباقة اللي تهمك ووسيلة التواصل، ونرد عليك في أقرب وقت."
+        description="ابدأ مشروعك مع Egytronic: اكتب الباقة التي تهمك ووسيلة التواصل، وسنرد عليك في أقرب وقت."
       />
       <main id="main">
         <Portal />

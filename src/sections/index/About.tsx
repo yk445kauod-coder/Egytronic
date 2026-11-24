@@ -29,7 +29,7 @@ export default function About() {
         <div className="principle">
           <span className="principle__k">01 / DELIVERY</span>
           <h3>تسليم جاهز</h3>
-          <p>لا نعدّ العمل منتهيًا قبل أن يعمل عندك.</p>
+          <p>لا نعدّ العمل منتهيًا قبل تشغيله لديك.</p>
         </div>
         <div className="principle">
           <span className="principle__k">02 / PRICING</span>
