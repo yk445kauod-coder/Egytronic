@@ -4,3 +4,4 @@ _*.html
 .deploy/
 
 .admin-token.local
+.shots/

@@ -1,0 +1,247 @@
+/* Inquiry board — a working surface, not a landing page: dense, legible, no motion. */
+.admin {
+  background: var(--ink);
+  color: var(--text);
+  min-block-size: 100vh;
+}
+
+.admin__main {
+  max-inline-size: 1120px;
+  margin-inline: auto;
+  text-align: start;
+  padding: clamp(20px, 4vw, 44px) var(--gutter) 80px;
+}
+
+.admin__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-block-end: 26px;
+  border-block-end: 2px solid var(--line);
+}
+
+.admin__head h1 {
+  font-size: clamp(26px, 4vw, 38px);
+  margin-block: 10px 8px;
+}
+
+.admin__head p {
+  max-inline-size: 52ch;
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.85;
+}
+
+.admin__lock {
+  padding: 9px 14px;
+  border: 2px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.admin__lock:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.admin__gate {
+  margin-block-start: 28px;
+  padding: 26px;
+  border: 2px solid var(--line);
+  background: var(--panel);
+}
+
+.admin__gate h2 {
+  font-size: 20px;
+  margin-block-end: 8px;
+}
+
+.admin__gate p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.85;
+  margin-block-end: 16px;
+}
+
+.admin__gate-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin__gate-form input {
+  flex: 1 1 220px;
+  min-block-size: 48px;
+  padding: 12px 14px;
+  border: 2px solid var(--line);
+  background: var(--ink);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  border-radius: 0;
+}
+
+.admin__gate-form input:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-color: var(--gold);
+}
+
+.admin__status {
+  margin-block-start: 12px;
+  min-block-size: 1.5em;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.admin__panel {
+  margin-block-start: 26px;
+}
+
+.admin__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-block-end: 16px;
+}
+
+.admin__bar h2 {
+  font-size: 18px;
+}
+
+.admin__count {
+  margin-inline-start: 8px;
+  padding: 2px 8px;
+  background: var(--gold);
+  color: #17110b;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.admin__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin__tools input {
+  min-block-size: 40px;
+  min-inline-size: 220px;
+  padding: 8px 12px;
+  border: 2px solid var(--line);
+  background: var(--ink);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  border-radius: 0;
+}
+
+.admin__list {
+  display: grid;
+  gap: 12px;
+}
+
+.inquiry {
+  padding: 18px 20px;
+  border: 2px solid var(--line);
+  background: var(--panel);
+}
+
+.inquiry__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-block-end: 8px;
+}
+
+.inquiry__top h3 {
+  font-size: 17px;
+}
+
+.inquiry__pack {
+  padding: 2px 8px;
+  border: 1px solid var(--gold-deep);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.inquiry__top time {
+  margin-inline-start: auto;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.inquiry__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-block-end: 10px;
+  font-size: 13.5px;
+}
+
+.inquiry__meta a {
+  color: var(--gold);
+  word-break: break-all;
+}
+
+.inquiry__msg {
+  text-align: start;
+  font-size: 14.5px;
+  line-height: 1.9;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+@media (max-width: 600px) {
+  .admin__head {
+    flex-direction: column;
+  }
+  .admin__tools input,
+  .admin__gate-form input {
+    flex: 1 1 100%;
+    min-inline-size: 0;
+  }
+  .inquiry__top time {
+    margin-inline-start: 0;
+  }
+}
+
+.admin__rotate {
+  margin-block-start: 30px;
+  padding-block-start: 18px;
+  border-block-start: 2px solid var(--line);
+  font-size: 14px;
+}
+
+.admin__rotate summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.admin__rotate form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 12px;
+}
+
+.admin__rotate input {
+  flex: 1 1 180px;
+  min-block-size: 44px;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  background: var(--ink);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  border-radius: 0;
+}

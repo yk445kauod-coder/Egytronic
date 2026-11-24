@@ -88,6 +88,32 @@ async function listInquiries(request, env, url) {
   return json({ ok: true, count: results.length, rows: results });
 }
 
+// Lets the owner replace the read token without a deploy. One UPDATE.
+async function rotateToken(request, env) {
+  if (!env.DB) return json({ ok: false, code: "no-store" }, 503);
+
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false }, 400);
+  }
+
+  const current = typeof body.current === "string" ? body.current : "";
+  const next = typeof body.next === "string" ? body.next : "";
+  if (next.length < 16) return json({ ok: false, code: "short" }, 400);
+
+  const stored = await env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_token_sha256'").first();
+  if (!stored || (await sha256(current)) !== stored.value) return json({ ok: false }, 404);
+
+  await env.DB
+    .prepare("INSERT INTO settings (key, value) VALUES ('admin_token_sha256', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+    .bind(await sha256(next))
+    .run();
+
+  return json({ ok: true });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -95,6 +121,9 @@ export default {
     if (url.pathname === "/api/contact") {
       if (request.method !== "POST") return json({ ok: false }, 405);
       return contact(request, env);
+    }
+    if (url.pathname === "/api/admin/token" && request.method === "POST") {
+      return rotateToken(request, env);
     }
     if (url.pathname === "/api/inquiries" && request.method === "GET") {
       return listInquiries(request, env, url);

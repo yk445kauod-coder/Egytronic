@@ -329,6 +329,32 @@ CONTACT.update({
         '<p class="footer__note">Made in Egypt — <bdi>Egytronic</bdi></p>',
 })
 
+TAB = {
+    'aria-label="تنقل سريع"': 'aria-label="Quick navigation"',
+    '<span>الرئيسية</span>': '<span>Home</span>',
+    '<span>الخدمات</span>': '<span>Services</span>',
+    '<span>الأسعار</span>': '<span>Prices</span>',
+    '<span>تواصل</span>': '<span>Contact</span>',
+}
+
+
+def fix_tabbar(html: str, prefix: str) -> str:
+    """The bottom bar is shared markup; only its hrefs depend on page depth."""
+    start = html.find('<nav class="tabbar"')
+    if start == -1:
+        return html
+    end = html.find("</nav>", start) + len("</nav>")
+    block = html[start:end]
+    for href, target in (
+        ('href="/"', f'href="{prefix}"'),
+        ('href="/#capabilities"', f'href="{prefix}#capabilities"'),
+        ('href="/pricing/"', f'href="{prefix}pricing/"'),
+        ('href="/contact/"', f'href="{prefix}contact/"'),
+    ):
+        block = block.replace(href, target)
+    return html[:start] + block + html[end:]
+
+
 PAGES = [
     {
         "src": "index.html",
@@ -367,7 +393,7 @@ def build(page) -> bool:
     html = (ROOT / page["src"]).read_text(encoding="utf-8")
 
     missing = []
-    for table in page["tables"]:
+    for table in page["tables"] + [TAB]:
         for key in sorted(table, key=len, reverse=True):
             if key not in html:
                 missing.append(key)
@@ -393,6 +419,7 @@ def build(page) -> bool:
     for attr in ("href", "src"):
         html = html.replace(f'{attr}="{prefix}assets/', f'{attr}="{deeper}assets/')
     html = html.replace(f'href="{prefix}favicon.ico"', f'href="{deeper}favicon.ico"')
+    html = fix_tabbar(html, prefix)
 
     out = ROOT / page["out"]
     out.parent.mkdir(parents=True, exist_ok=True)

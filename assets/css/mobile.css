@@ -1,0 +1,194 @@
+/* Phones and small tablets. Loaded last so phone rules win without fighting the
+   section files; only layout changes live here, never new colours or type. */
+
+html,
+body {
+  overflow-x: clip;
+}
+
+/* ── product tiles: two up, then one up ─────────────────── */
+@media (max-width: 1100px) {
+  .prods {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .prod--pick {
+    grid-column: 1 / -1;
+    transform: none;
+  }
+  .prod__flag {
+    inset-block-start: 10px;
+    inset-inline-end: 12px;
+    inset-inline-start: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .prods {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 30px;
+  }
+  .prod {
+    padding: 20px 18px 18px;
+  }
+  .prod h3 {
+    font-size: 19px;
+  }
+  .prod__price {
+    flex-direction: row;
+    align-items: baseline;
+    padding-top: 12px;
+  }
+  .prod__amt {
+    font-size: 30px;
+  }
+  .prods__why {
+    gap: 14px;
+    margin-top: 30px;
+    padding-top: 22px;
+  }
+  .prods__foot {
+    margin-top: 28px;
+    gap: 16px;
+  }
+  .prods__foot .px-btn {
+    width: 100%;
+  }
+}
+
+/* ── price rows: title on top, price beneath ────────────── */
+@media (max-width: 600px) {
+  .pricerow {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding-block: 22px;
+  }
+  .pricerow__top {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .pricerow__dots {
+    display: none;
+  }
+  .pricerow__price {
+    flex-basis: 100%;
+    margin-top: 2px;
+  }
+  .pricerow__amount {
+    font-size: 32px;
+  }
+}
+
+/* ── pipeline: stacked, not squeezed ────────────────────── */
+@media (max-width: 1024px) {
+  .pipeline {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .pipeline__stage {
+    aspect-ratio: 16 / 12;
+  }
+}
+
+/* ── hero: tighter stack on phones ──────────────────────── */
+@media (max-width: 620px) {
+  .hero {
+    padding-block-start: calc(var(--nav-h) + 34px);
+  }
+  .hero__actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .hero__actions .px-btn,
+  .hero__actions .px-btn--ghost {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── app-style bottom navigation (phones only) ──────────── */
+.tabbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .nav-toggle {
+    display: none;
+  }
+  .nav-links {
+    display: none !important;
+  }
+
+  body {
+    padding-block-end: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .tabbar {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: 150;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--ink) 92%, transparent);
+    backdrop-filter: blur(10px);
+    border-block-start: 2px solid var(--line);
+  }
+
+  .tabbar a {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    padding: 7px 2px 5px;
+    min-block-size: 48px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+  }
+
+  .tabbar .icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  .tabbar a[aria-current="page"] {
+    color: var(--gold);
+  }
+
+  .tabbar a[aria-current="page"] .icon {
+    filter: drop-shadow(0 0 8px rgba(255, 106, 0, 0.6));
+  }
+
+  .tabbar a:active {
+    background: rgba(255, 106, 0, 0.08);
+  }
+}
+
+/* iPhone SE and narrower: keep the type from crowding */
+@media (max-width: 380px) {
+  .tabbar a {
+    font-size: 10px;
+  }
+  .prod__amt {
+    font-size: 27px;
+  }
+}
+
+/* the pipeline canvas is decoration; on phones the numbered list carries it */
+@media (max-width: 620px) {
+  .pipeline__stage {
+    display: none;
+  }
+}
+
+/* anchor jumps must clear the tab bar, not hide behind it */
+@media (max-width: 768px) {
+  html {
+    scroll-padding-block-end: calc(80px + env(safe-area-inset-bottom, 0px));
+    scroll-padding-block-start: 76px;
+  }
+}
