@@ -29,10 +29,12 @@
     <h2 id="gate-title">افتح اللوحة</h2>
     <p>اكتب توكن القراءة. بيتحفظ في التاب ده بس، ومش بيتبعت لأي مكان غير الـAPI بتاعنا.</p>
     <form class="admin__gate-form" data-gate-form novalidate>
-      <input type="password" name="token" autocomplete="current-password" placeholder="توكن القراءة" dir="ltr" required aria-label="توكن القراءة">
+      <input type="password" name="token" autocomplete="current-password" placeholder="egx_…" dir="ltr" required aria-label="توكن القراءة">
+      <button class="admin__reveal" type="button" data-reveal>إظهار</button>
       <button class="px-btn" type="submit">دخول</button>
     </form>
     <p class="admin__status" data-gate-status role="status" aria-live="polite"></p>
+    <p class="admin__hint">التوكن بيبدأ بـ <bdi>egx_</bdi> وبعده حروف وأرقام، ومفيهوش مسافات. لو نسخته من رسالة، انسخ سطر التوكن لوحده.</p>
   </section>
 
   <section class="admin__panel" data-panel hidden aria-labelledby="panel-title">

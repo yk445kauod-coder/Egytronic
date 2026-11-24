@@ -1,6 +1,14 @@
 /* Inquiry board. The read token never leaves sessionStorage; every fetch is a
    single GET to /api/inquiries, so opening the board costs one D1 SELECT. */
 const KEY = "egytronic.admin.token";
+
+// Pasting a token out of a chat or a terminal often drags whitespace, quotes or
+// the whole message along, so pull the token itself out before sending it.
+const normalize = (raw) => {
+  const text = String(raw || "");
+  const found = text.match(/egx_[A-Za-z0-9_-]{8,}/);
+  return (found ? found[0] : text.replace(/[\s"'`]+/g, "")).trim();
+};
 const PACKAGES = {
   logo: "لوجو",
   landing: "لاندنج بيدج",
@@ -102,8 +110,9 @@ async function load(current) {
       cache: "no-store",
     });
     if (response.status === 404) {
+      localStorage.removeItem(KEY);
       sessionStorage.removeItem(KEY);
-      showGate("التوكن مش صح. جرّب تاني.");
+      showGate("التوكن مش مطابق. انسخ سطر التوكن لوحده من غير أي كلام أو مسافات حواليه.");
       return;
     }
     if (!response.ok) {
@@ -113,6 +122,7 @@ async function load(current) {
 
     const data = await response.json();
     rows = Array.isArray(data.rows) ? data.rows : [];
+    localStorage.setItem(KEY, token);
     sessionStorage.setItem(KEY, token);
     gate.hidden = true;
     panel.hidden = false;
@@ -131,9 +141,18 @@ function showGate(message) {
   gateForm.querySelector("input").focus();
 }
 
+const reveal = document.querySelector("[data-reveal]");
+if (reveal) {
+  reveal.addEventListener("click", () => {
+    const input = gateForm.querySelector("input");
+    input.type = input.type === "password" ? "text" : "password";
+    reveal.textContent = input.type === "password" ? "إظهار" : "إخفاء";
+  });
+}
+
 gateForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  const value = gateForm.querySelector("input").value.trim();
+  const value = normalize(gateForm.querySelector("input").value);
   if (!value) return say(gateStatus, "اكتب التوكن الأول.");
   say(gateStatus, "");
   load(value);
@@ -143,6 +162,7 @@ search.addEventListener("input", render);
 document.querySelector("[data-reload]").addEventListener("click", () => load(token));
 document.querySelector("[data-csv]").addEventListener("click", csv);
 lock.addEventListener("click", () => {
+  localStorage.removeItem(KEY);
   sessionStorage.removeItem(KEY);
   rows = [];
   gateForm.reset();
@@ -173,6 +193,7 @@ if (rotateForm) {
       });
       if (!response.ok) return say(rotateStatus, "مقدرناش نحفظ التوكن. جرّب تاني.");
 
+      localStorage.setItem(KEY, next);
       sessionStorage.setItem(KEY, next);
       token = next;
       rotateForm.reset();
