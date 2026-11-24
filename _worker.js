@@ -180,6 +180,21 @@ async function listInquiries(env, url) {
   return json({ ok: true, rows: results });
 }
 
+async function createInquiry(env, payload, who) {
+  const name = clean(payload.name, 80);
+  const email = clean(payload.email, 120);
+  const message = clean(payload.message, 4000);
+  if (!name) return json({ ok: false, code: "name" }, 400);
+  if (!email && !message) return json({ ok: false, code: "detail" }, 400);
+
+  const row = await env.DB
+    .prepare("INSERT INTO inquiries (name, email, phone, package, message, source, status) VALUES (?, ?, ?, ?, ?, 'manual', 'new') RETURNING *")
+    .bind(name, email, clean(payload.phone, 40), clean(payload.package, 24), message)
+    .first();
+  await emit(env, "inquiry.created", "inquiry", row.id, who?.name || "manual", { name });
+  return json({ ok: true, row });
+}
+
 async function patchInquiry(env, id, payload, who) {
   const sets = [];
   const values = [];
@@ -612,6 +627,21 @@ const MCP_TOOLS = [
     },
   },
   {
+    name: "create_inquiry",
+    description: "Log a lead that arrived by phone or WhatsApp, so it is not lost.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        email: { type: "string" },
+        phone: { type: "string" },
+        package: { type: "string" },
+        message: { type: "string" },
+      },
+      required: ["name"],
+    },
+  },
+  {
     name: "convert_inquiry",
     description: "Turn a lead into client + project + first task, and mark the inquiry won.",
     inputSchema: {
@@ -724,6 +754,10 @@ async function mcpCall(env, who, name, args = {}) {
     case "update_inquiry": {
       write();
       return (await patchInquiry(env, int(args.id), args, who)).json();
+    }
+    case "create_inquiry": {
+      write();
+      return (await createInquiry(env, args, who)).json();
     }
     case "convert_inquiry": {
       write();
@@ -915,6 +949,7 @@ async function api(request, env, url, who) {
 
   if (resource === "inquiries") {
     if (!id && method === "GET") return listInquiries(env, url);
+    if (!id && method === "POST") return createInquiry(env, await body(request), who);
     if (id && !action && method === "GET") {
       const row = await env.DB.prepare("SELECT * FROM inquiries WHERE id = ?").bind(int(id)).first();
       return row ? json({ ok: true, row }) : json({ ok: false, code: "missing" }, 404);

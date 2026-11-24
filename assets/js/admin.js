@@ -59,6 +59,7 @@ const state = {
   view: (location.hash.replace("#/", "") || "overview"),
   inquiryStatus: "",
   query: "",
+  renderSeq: 0,
   channels: [],
   channel: null,
   channelTimer: null,
@@ -266,7 +267,9 @@ async function renderInquiries() {
   const params = new URLSearchParams();
   if (state.inquiryStatus) params.set("status", state.inquiryStatus);
   if (state.query) params.set("q", state.query);
+  const mine = ++state.renderSeq;
   const { rows } = await api(`/api/inquiries?${params}`);
+  if (mine !== state.renderSeq) return;
 
   const panel = $('[data-view-panel="inquiries"]');
   const filters = ["", "new", "contacted", "quoted", "won", "lost"]

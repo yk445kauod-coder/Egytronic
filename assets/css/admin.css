@@ -836,8 +836,17 @@
 
 /* ── responsive ───────────────────────────────────────── */
 @media (max-width: 900px) {
+  .ops__shell,
+  .ops__main,
+  .ops__side,
+  .ops__nav {
+    /* a grid item defaults to min-width:auto, so the scrolling nav kept the
+       whole shell 680px wide on a phone */
+    min-width: 0;
+  }
+
   .ops__shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .ops__side {
@@ -867,6 +876,11 @@
   }
 
   .ops__side-foot {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .ops__side-foot .ops__who {
     display: none;
   }
 

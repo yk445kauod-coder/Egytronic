@@ -443,10 +443,10 @@ INDEX.update({
 INDEX.update({
     "<title>Egytronic | برمجيات وأنظمة ذكية بأسعار معلنة</title>":
         "<title>Egytronic | Software and AI Systems, Public Prices</title>",
-    "نبني موقعك أو هويتك أو نظامك ونسلّمه جاهزًا للتشغيل. خمس باقات بأسعار معلنة من 5,000 جنيه، والدفع 50% مقدمًا.":
-        "Egyptian software company. We build your site, brand or system and deliver it ready to run. Five public-price packages from EGP 5,000, 50% upfront.",
-    "شركة برمجيات مصرية. نبني موقعك أو هويتك أو نظامك ونسلّمه جاهزًا للتشغيل. خمس باقات من 5,000 جنيه.":
-        "An Egyptian software company. We build your site, brand or system and deliver it ready to run. Five packages from EGP 5,000.",
+    "نبني موقعك أو هويتك، ونسطّب نظامك الإداري ونكيّفه على شغلك. خمس باقات بأسعار معلنة من 5,000 جنيه، والدفع 50% مقدمًا.":
+        "We build your site or brand, and install and adapt a management system for your business. Five public-price packages from EGP 5,000, 50% upfront.",
+    "شركة برمجيات مصرية. نبني موقعك أو هويتك، ونسطّب نظامك الإداري ونكيّفه على شغلك. خمس باقات من 5,000 جنيه.":
+        "An Egyptian software company. We build your site or brand, and install and adapt a management system for your business. Five packages from EGP 5,000.",
     '<li><a href="#capabilities">الخدمات</a></li>': '<li><a href="#capabilities">Services</a></li>',
     '<li><a href="#how">المنهجية</a></li>': '<li><a href="#how">Process</a></li>',
     '<li class="nav-ext"><a href="/pricing/">احجز باقتك ↗</a></li>':
@@ -629,24 +629,33 @@ INDEX.update({
         '<a class="prod__link" href="contact/">Discuss your project</a>',
 
     '<span class="px-tag">أنظمة إدارية</span>': '<span class="px-tag">Business systems</span>',
-    '<h2 id="systems-title">مش بس موقع — نظام كامل</h2>':
-        '<h2 id="systems-title">Not just a site — a full system</h2>',
-    "<p>لو مشروعك محتاج نظام إداري، بنبني ERP أو CRM أو POS أو LMS أو HMS على مقاسك، ونسلّمه جاهز للتشغيل.</p>":
-        "<p>If your business needs a management system, we build ERP, CRM, POS, LMS or HMS to fit, and deliver it ready to run.</p>",
+    '<h2 id="systems-title">خلّي شغلك كله يشتغل على نظام واحد</h2>':
+        '<h2 id="systems-title">Get your whole business running on one system</h2>',
+    "<p>بنختار معاك النظام المناسب لنشاطك، بنسطّبه عندك، ونكيّفه على طريقة عملك: الصلاحيات، التقارير، الفواتير، والمصطلحات اللي فريقك بيفهمها — ومعاه تدريب لفريقك لحد ما يشتغل عليه بثقة.</p>":
+        "<p>We pick the right system for your line of work with you, install it, and tailor it to how you operate: permissions, reports, invoices and the words your team already uses — with training until they run it with confidence.</p>",
     "<h3>إدارة موارد</h3>": "<h3>Resource planning</h3>",
-    "<p>مخزون وفواتير ومشتريات وحسابات في مكان واحد.</p>":
-        "<p>Stock, invoices, purchasing and accounts in one place.</p>",
+    "<p>مخزون وفواتير ومشتريات وحسابات في نظام واحد.</p>":
+        "<p>Stock, invoices, purchasing and accounts in one system.</p>",
+    "<h3>إدارة فنادق</h3>": "<h3>Hotel management</h3>",
+    "<p>حجوزات وغرف وإقامة وفواتير ومحاسبة نزلاء.</p>":
+        "<p>Bookings, rooms, stays, folios and guest billing.</p>",
     "<h3>علاقات عملاء</h3>": "<h3>Customer relations</h3>",
     "<p>عملاء ومتابعات وصفقات وتقارير مبيعات.</p>":
         "<p>Customers, follow-ups, deals and sales reports.</p>",
     "<h3>نقاط بيع</h3>": "<h3>Point of sale</h3>",
-    "<p>كاشير وفواتير وورديات ومخزون لكل فرع.</p>":
-        "<p>Checkout, invoices, shifts and stock per branch.</p>",
+    "<p>كاشير وورديات ومخزون لكل فرع.</p>":
+        "<p>Checkout, shifts and stock per branch.</p>",
     "<h3>منصة تعليم</h3>": "<h3>Learning platform</h3>",
     "<p>كورسات ودروس واختبارات وشهادات.</p>": "<p>Courses, lessons, quizzes and certificates.</p>",
     "<h3>إدارة عيادات</h3>": "<h3>Clinic management</h3>",
     "<p>مواعيد وملفات مرضى وفواتير وروشتات.</p>":
         "<p>Appointments, patient records, invoices and prescriptions.</p>",
+    "<li><b>تسطيب</b> بياناتك ومستخدميك الحاليين</li>":
+        "<li><b>Install</b> Existing data and users</li>",
+    "<li><b>تكييف</b> الصلاحيات والفواتير والتقارير والمصطلحات</li>":
+        "<li><b>Adapt</b> Permissions, invoices, reports and wording</li>",
+    "<li><b>تدريب</b> فريقك وتسليم دليل التشغيل</li>":
+        "<li><b>Train</b> Your team, plus a runbook</li>",
     '<p class="systems__note reveal">مش لاقي احتياجك؟ <a href="/contact/">اطلب نظام مخصص</a> ونحدد النطاق معاك.</p>':
         '<p class="systems__note reveal">Not seeing what you need? <a href="contact/">Ask for a custom system</a> and we will scope it with you.</p>',
 
@@ -654,8 +663,8 @@ INDEX.update({
         '<span class="px-tag px-tag--mint">Digital transformation</span>',
     '<h2 id="transform-title">من دفاتر وإكسل لنظام بيشتغل لوحده</h2>':
         '<h2 id="transform-title">From notebooks and spreadsheets to a system that runs itself</h2>',
-    "<p>بنحوّل طريقة الشغل نفسها: بيانات واحدة، تقارير لحظية، وصلاحيات واضحة لكل دور.</p>":
-        "<p>We change how the work itself runs: one set of data, live reports, and clear permissions for every role.</p>",
+    "<p>بنحوّل طريقة الشغل نفسها: ترحيل بياناتك من الملفات، صلاحيات لكل دور، وتقارير لحظية بدل الدفاتر.</p>":
+        "<p>We change how the work itself runs: your data moved out of the files, permissions per role, and live reports instead of notebooks.</p>",
     "<h3>بيانات واحدة</h3>": "<h3>One set of data</h3>",
     "<p>بدل ملفات متفرقة، كل حاجة في قاعدة بيانات واحدة.</p>":
         "<p>Instead of scattered files, everything lives in one database.</p>",
@@ -669,8 +678,8 @@ INDEX.update({
         "<p>Payments, stock and WhatsApp talk to each other.</p>",
     '<p class="transform__price"><span>التحول الكامل</span> من <b>28,000</b> جنيه</p>':
         '<p class="transform__price"><span>Full transformation</span> from <b>28,000</b> EGP</p>',
-    '<p class="transform__note">نحدد النطاق معاك بعد أول مكالمة، والدفع 50% عند البدء و50% قبل التسليم.</p>':
-        '<p class="transform__note">We scope it with you after a first call. Pay 50% to start and 50% before delivery.</p>',
+    '<p class="transform__note">بعد أول مكالمة بنحدد النطاق: ترحيل البيانات، التكييف، والتدريب. الدفع 50% عند البدء و50% قبل التسليم.</p>':
+        '<p class="transform__note">After a first call we scope it: data migration, adaptation, and training. Pay 50% to start and 50% before delivery.</p>',
     '<a class="px-btn" href="/contact/">اطلب تقييم لمشروعك</a>':
         '<a class="px-btn" href="contact/">Request a project assessment</a>',
 })

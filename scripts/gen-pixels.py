@@ -213,6 +213,21 @@ def hms():
     g.svg("g-hms.svg")
 
 
+
+def hotel():
+    g = Grid(16, 16)
+    g.frame(3, 3, 10, 12)          # tower
+    g.rect(3, 2, 10, 1, "4")       # roof line
+    g.rect(6, 0, 4, 2, "5")        # sign plate
+    for row in (5, 8, 11):
+        for col in (5, 8, 11):
+            g.rect(col, row, 1, 1, "4")   # windows
+    g.rect(7, 13, 2, 2, "5")       # door
+    g.svg("g-hotel.svg")
+
+
+hotel()
+
 erp()
 crm()
 pos()
