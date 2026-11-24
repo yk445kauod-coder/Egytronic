@@ -1,0 +1,221 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  background-image:
+    linear-gradient(var(--line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: center top;
+}
+
+/* keep Arabic headings from inheriting any Latin tracking: it breaks the joins */
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] .display {
+  letter-spacing: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: var(--lh-display);
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+}
+
+img,
+svg,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 3px;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ink-2);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gold-deep);
+  border: 2px solid var(--ink-2);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}
+
+/* faint CRT raster over everything; purely decorative */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.22) 0 1px,
+    transparent 1px 3px
+  );
+  opacity: 0.45;
+}
+
+.skip {
+  position: absolute;
+  inset-inline-start: 16px;
+  top: -80px;
+  z-index: 200;
+  padding: 10px 16px;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  transition: top var(--t-fast) var(--ease-steps);
+}
+.skip:focus {
+  top: 16px;
+}
+
+/* Handjet's Arabic glyphs run taller than its em box, so display leading that
+   works for Latin collides in Arabic. */
+html[lang="ar"] :is(h1, h2, h3) {
+  line-height: 1.28;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* reveal on scroll — only armed when JS runs, so no-JS stays readable */
+.js .reveal {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0);
+  transition:
+    opacity var(--dur-3) var(--ease-out),
+    transform var(--dur-3) var(--ease-out);
+  transition-delay: calc(var(--i, 0) * var(--stagger));
+}
+.js .reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+/* section headers lead, body follows: same rhythm everywhere */
+.js .section-head.reveal > * {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  transition:
+    opacity var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-out);
+}
+.js .section-head.reveal.in > * {
+  opacity: 1;
+  transform: none;
+}
+.js .section-head.reveal.in > :nth-child(2) { transition-delay: 60ms; }
+.js .section-head.reveal.in > :nth-child(3) { transition-delay: 120ms; }
+
+/* hero entrance, released once the boot screen clears */
+.js .hero__copy > *,
+.js .hero__term {
+  opacity: 0;
+  transform: translate3d(0, 20px, 0);
+}
+.ui-ready .hero__copy > *,
+.ui-ready .hero__term {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--dur-3) var(--ease-out),
+    transform var(--dur-3) var(--ease-out);
+}
+.ui-ready .hero__copy > :nth-child(2) { transition-delay: 80ms; }
+.ui-ready .hero__copy > :nth-child(3) { transition-delay: 170ms; }
+.ui-ready .hero__copy > :nth-child(4) { transition-delay: 250ms; }
+.ui-ready .hero__copy > :nth-child(5) { transition-delay: 330ms; }
+.ui-ready .hero__term { transition-delay: 200ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .js .reveal,
+  .js .reveal.in,
+  .js .section-head.reveal > *,
+  .js .hero__copy > *,
+  .js .hero__term {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+pre {
+  font: inherit;
+  white-space: pre;
+  margin: 0;
+}

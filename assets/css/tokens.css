@@ -1,0 +1,79 @@
+/* Egytronic design system — 16-bit pixel art.
+   Tokens only. Every size sits on a 4px grid, every corner is square. */
+
+:root {
+  /* palette — a deliberately short ramp, no smooth gradients */
+  --ink: #07070f;
+  --ink-2: #0c0c18;
+  --panel: #111120;
+  --panel-2: #181828;
+  --line: #2a2a3c;
+  --line-soft: #1e1e2e;
+
+  --gold: #ffa500;
+  --gold-hi: #ffd166;
+  --gold-deep: #7a4a05;
+  --mint: #2ee6c0;
+  --mint-hi: #9af7df;
+  --sand: #c8a96e;
+  --danger: #ff6b5e;
+
+  --text: #f2ede4;
+  --muted: #a79c86;
+
+  /* pixel geometry */
+  --u: 4px;
+  --border: 2px;
+  --gap: 8px;
+  --shadow-hard: 4px 4px 0 0 #000;
+  --shadow-lift: 6px 6px 0 0 #000;
+  --shadow-press: 2px 2px 0 0 #000;
+
+  /* type */
+  --font-display: "Handjet", "Cairo", sans-serif;
+  --font-mono: "VT323", "Handjet", monospace;
+  --font-body: "Cairo", sans-serif;
+
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-base: 16px;
+  --fs-md: 18px;
+  --fs-lg: 20px;
+  --fs-xl: 24px;
+  --fs-2xl: 32px;
+  --fs-3xl: 40px;
+  --fs-4xl: 56px;
+  --fs-5xl: 72px;
+
+  --lh-display: 1.16;
+  --lh-tight: 1.3;
+  --lh-body: 1.9;
+
+  /* motion — smooth for layout/entrances, stepped for UI state changes */
+  --ease-out: cubic-bezier(0.16, 0.84, 0.24, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-1: 160ms;
+  --dur-2: 300ms;
+  --dur-3: 560ms;
+  --stagger: 70ms;
+  --t-fast: 110ms;
+  --t-med: 200ms;
+  --t-slow: 340ms;
+  --ease-steps: steps(4, end);
+  --ease-steps-6: steps(6, end);
+
+  /* layout */
+  --container: 1180px;
+  --gutter: clamp(20px, 5vw, 64px);
+  --nav-h: 72px;
+  --radius: 0px;
+}
+
+@media (max-width: 720px) {
+  :root {
+    --fs-3xl: 32px;
+    --fs-4xl: 40px;
+    --fs-5xl: 48px;
+    --nav-h: 64px;
+  }
+}

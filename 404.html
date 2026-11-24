@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الصفحة غير موجودة — Egytronic</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#07070f">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/img/icon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/img/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/css/fonts.css">
+<link rel="stylesheet" href="/assets/css/tokens.css">
+<link rel="stylesheet" href="/assets/css/base.css">
+<link rel="stylesheet" href="/assets/css/components.css">
+<link rel="stylesheet" href="/assets/css/sections.css">
+<style>
+  .nf{min-height:100svh;display:grid;place-items:center;padding:var(--gutter);position:relative;overflow:hidden}
+  .nf__fx{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;opacity:.28;pointer-events:none;
+    -webkit-mask-image:radial-gradient(ellipse at 50% 50%, #000 24%, rgba(0,0,0,.4) 62%, transparent 100%);
+    mask-image:radial-gradient(ellipse at 50% 50%, #000 24%, rgba(0,0,0,.4) 62%, transparent 100%)}
+  .nf__inner{position:relative;z-index:1;text-align:center;max-width:52ch;display:flex;flex-direction:column;align-items:center;gap:20px;
+    padding:44px 34px;
+    background:radial-gradient(closest-side, rgba(7,7,15,.96) 30%, rgba(7,7,15,.7) 72%, rgba(7,7,15,0) 100%)}
+  .nf__code{font-family:var(--font-display);font-size:clamp(96px,18vw,190px);line-height:.85;color:var(--gold)}
+  .nf h1{font-size:var(--fs-4xl)}
+  .nf__en{color:var(--muted);font-size:var(--fs-base)}
+  .nf__links{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+</style>
+</head>
+<body class="nf">
+<canvas class="nf__fx" data-fx="rain" aria-hidden="true" width="320" height="150"></canvas>
+<main class="nf__inner">
+  <p class="nf__code" aria-hidden="true">404</p>
+  <h1>الصفحة غير موجودة</h1>
+  <p>الرابط الذي فتحته غير متاح أو تم نقله. يمكنك العودة إلى الصفحة الرئيسية.</p>
+  <p class="nf__en" lang="en" dir="ltr">The page you opened is not available. You can go back to the home page or open the English version.</p>
+  <div class="nf__links">
+    <a class="px-btn" href="/">العودة إلى الرئيسية</a>
+    <a class="px-btn px-btn--ghost" href="/en/" hreflang="en" lang="en">English version</a>
+  </div>
+</main>
+<script type="module">
+  import { mountFx } from "/assets/js/fx-runner.js";
+  import * as rain from "/assets/js/fx/digital-rain.js";
+  const canvas = document.querySelector("[data-fx='rain']");
+  if (canvas) mountFx(canvas, rain, { palette: ["#05090c", "#06201c", "#0b3a31", "#10604f", "#1fa88b", "#58f0cf", "#e6fff8"], speed: 0.9 });
+</script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+/* Price sheet — the printed menu of the same pixel language.
+   Rows read number → package → price tag; the bundle is the only boxed panel. */
+
+.page-top {
+  padding-block-start: calc(var(--nav-h) + clamp(48px, 7vw, 88px));
+}
+
+.pricelist {
+  list-style: none;
+  max-inline-size: 1000px;
+  border-block-start: 2px solid var(--line);
+}
+
+.pricerow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: clamp(12px, 1.6vw, 20px);
+  row-gap: 8px;
+  padding-block: clamp(20px, 2.6vw, 28px);
+  border-block-end: 2px solid var(--line);
+}
+
+.pricerow__n {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  color: var(--gold-deep);
+}
+
+.pricerow__top {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: baseline;
+  gap: clamp(10px, 2vw, 18px);
+}
+
+.pricerow__top h3 {
+  font-size: var(--fs-2xl);
+  white-space: nowrap;
+}
+
+/* a dotted leader, the way a printed price list joins name and price */
+.pricerow__dots {
+  flex: 1 1 auto;
+  min-inline-size: 20px;
+  height: 2px;
+  align-self: center;
+  background-image: repeating-linear-gradient(to right, var(--line) 0 2px, transparent 2px 8px);
+}
+
+.pricerow__price {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.pricerow__from {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--sand);
+}
+
+.pricerow__amount {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xl);
+  line-height: 1;
+  color: var(--gold);
+}
+
+.pricerow__cur {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.pricerow__desc {
+  grid-column: 2;
+  grid-row: 2;
+  color: var(--muted);
+  font-size: var(--fs-md);
+  max-inline-size: 68ch;
+}
+
+/* ── the all-in-one bundle ─────────────────────────────── */
+.bundle {
+  display: grid;
+  gap: clamp(20px, 3vw, 36px);
+  padding: clamp(24px, 4vw, 48px);
+  background: var(--panel);
+  border: 2px solid var(--gold-deep);
+  box-shadow: var(--shadow-hard);
+}
+
+.bundle__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.bundle__badge {
+  padding: 4px 10px;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.18em;
+  border: 2px solid var(--gold-hi);
+}
+
+.bundle__head h3 {
+  font-size: var(--fs-3xl);
+}
+
+.bundle__lead {
+  color: var(--muted);
+  font-size: var(--fs-md);
+  max-width: 60ch;
+}
+
+.bundle__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 12px 32px;
+  list-style: none;
+}
+
+.bundle__list li {
+  position: relative;
+  padding-inline-start: 22px;
+  color: var(--text);
+  font-size: var(--fs-md);
+}
+
+.bundle__list li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 2px;
+  inset-block-start: 0.62em;
+  inline-size: 8px;
+  block-size: 8px;
+  background: var(--gold);
+}
+
+.bundle__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block-start: clamp(16px, 2.4vw, 24px);
+  border-block-start: 2px solid var(--line);
+}
+
+.bundle__price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.bundle__price .pricerow__from {
+  font-size: var(--fs-sm);
+}
+
+.bundle__price strong {
+  font-family: var(--font-mono);
+  font-size: clamp(32px, 4vw, 44px);
+  font-weight: 400;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.bundle__price span:last-child {
+  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
+  color: var(--muted);
+}
+
+/* ── terms ─────────────────────────────────────────────── */
+.terms {
+  display: grid;
+  gap: 16px;
+  padding: clamp(20px, 3vw, 32px);
+  background: var(--panel);
+  border: 2px solid var(--line);
+}
+
+.terms h3 {
+  font-size: var(--fs-xl);
+}
+
+.terms ul {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+}
+
+.terms li {
+  position: relative;
+  padding-inline-start: 22px;
+  color: var(--muted);
+  font-size: var(--fs-md);
+}
+
+.terms li::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 2px;
+  inset-block-start: 0.55em;
+  border-inline-start: 8px solid var(--mint);
+  border-block: 5px solid transparent;
+}
+
+/* ── sheet foot, like the bottom of a printed price list ── */
+.sheet-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 24px;
+  margin-block-start: clamp(24px, 3vw, 36px);
+  padding-block-start: 18px;
+  border-block-start: 2px dashed var(--line);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.sheet-foot b {
+  color: var(--sand);
+  font-weight: 400;
+}
+
+@media (max-width: 720px) {
+  .pricerow__top {
+    gap: 8px;
+  }
+  .pricerow__top h3 {
+    font-size: var(--fs-xl);
+  }
+  .pricerow__dots {
+    min-inline-size: 8px;
+  }
+  .pricerow__from {
+    font-size: var(--fs-xs);
+  }
+  .pricerow__amount {
+    font-size: var(--fs-xl);
+  }
+  .pricerow__desc {
+    max-inline-size: none;
+  }
+  .bundle__foot {
+    justify-content: flex-start;
+  }
+}
