@@ -1,995 +1,1503 @@
-/* Egytronic operations console.
-   One script, no build step: every view fetches the API the agents use, so what
-   you see here is exactly what an agent can act on. */
+/* egytronic operations console.
+   Plain JS, one delegated click handler, no build step. Every string that comes
+   from the database is escaped before it reaches innerHTML. */
+(() => {
+  "use strict";
 
-const KEY = "egytronic.admin.token";
-const $ = (selector, root = document) => root.querySelector(selector);
-const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  const API = "/api";
+  const KEY = "egx.console.token";
 
-const esc = (value) =>
-  String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-const el = (html) => {
-  const template = document.createElement("template");
-  template.innerHTML = html.trim();
-  return template.content.firstElementChild;
-};
+  const esc = (value) =>
+    String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 
-const when = (value) => {
-  if (!value) return "";
-  const date = new Date(value.includes("T") ? value : value.replace(" ", "T") + "Z");
-  if (Number.isNaN(date.getTime())) return value;
-  const diff = (Date.now() - date.getTime()) / 1000;
-  if (diff < 60) return "الآن";
-  if (diff < 3600) return `قبل ${Math.floor(diff / 60)} د`;
-  if (diff < 86400) return `قبل ${Math.floor(diff / 3600)} س`;
-  return date.toLocaleDateString("ar-EG", { day: "numeric", month: "short" }) + " " + date.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
-};
+  const STAGES = [
+    ["new", "جديد"],
+    ["contacted", "تم التواصل"],
+    ["qualified", "مؤهل"],
+    ["proposal", "عرض سعر"],
+    ["won", "اتكسب"],
+    ["lost", "ضاع"],
+  ];
+  const STAGE_LABEL = Object.fromEntries(STAGES);
+  const OPEN_STAGES = ["new", "contacted", "qualified", "proposal"];
+  const CLIENT_STATUS = { lead: "مهتم", active: "شغال", paused: "متوقف", done: "خلص" };
+  const ROLES = { owner: "مالك", manager: "مدير", member: "عضو", contractor: "متعاقد" };
+  const TASK_LABEL = { todo: "مطلوب", doing: "شغّال", done: "خلص" };
+  const PRIORITY_LABEL = { 1: "عالية", 2: "عادية", 3: "منخفضة" };
 
-const STATUS_AR = {
-  new: "جديد",
-  contacted: "تم التواصل",
-  quoted: "عرض سعر",
-  won: "تم الاتفاق",
-  lost: "مرفوض",
-  lead: "مهتم",
-  active: "شغال",
-  paused: "متوقف",
-  done: "خلص",
-  todo: "مطلوب",
-  doing: "شغال عليه",
-  planned: "مخطط",
-  building: "قيد التنفيذ",
-  review: "مراجعة",
-  shipped: "تم التسليم",
-};
+  const state = {
+    token: sessionStorage.getItem(KEY) || "",
+    me: null,
+    view: "overview",
+    loading: false,
+    data: { metrics: null, leads: [], clients: [], tasks: [], members: [], channels: [], agents: [], activities: [], projects: [] },
+    drawer: null,
+    filters: { tasks: "open", pipeline: "" },
+    activeChannel: null,
+    pomodoro: null,
+    timer: null,
+  };
 
-const PACKAGE_AR = {
-  logo: "لوجو",
-  landing: "لاندنج بيدج",
-  static: "موقع ستاتيك",
-  identity: "هوية كاملة",
-  dynamic: "موقع ديناميك",
-  transform: "تحول رقمي",
-  unsure: "لسه بيحدد",
-};
+  // ── http ───────────────────────────────────────────────────────────
 
-let token = sessionStorage.getItem(KEY) || "";
-const state = {
-  view: (location.hash.replace("#/", "") || "overview"),
-  inquiryStatus: "",
-  query: "",
-  renderSeq: 0,
-  channels: [],
-  channel: null,
-  channelTimer: null,
-  tasks: [],
-  clients: [],
-  agents: [],
-  newAgentKey: "",
-  lastEvent: 0,
-  pollTimer: null,
-  timer: { total: 25 * 60, left: 25 * 60, running: false, taskId: null, interval: null },
-};
-
-// ── api ──────────────────────────────────────────────────────────────
-
-async function api(path, options = {}) {
-  const response = await fetch(path, {
-    method: options.method || "GET",
-    headers: {
-      authorization: `Bearer ${token}`,
-      ...(options.body ? { "content-type": "application/json" } : {}),
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-
-  let payload = {};
-  try {
-    payload = await response.json();
-  } catch {
-    payload = {};
+  async function api(path, { method = "GET", body } = {}) {
+    const res = await fetch(API + path, {
+      method,
+      headers: {
+        authorization: `Bearer ${state.token}`,
+        ...(body ? { "content-type": "application/json" } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (res.status === 401) {
+      lock("انتهت الجلسة. ادخل الكود من تاني.");
+      throw new Error("unauthorized");
+    }
+    const data = await res.json().catch(() => ({ ok: res.ok }));
+    if (!res.ok || data.ok === false) throw new Error(data.code || `http-${res.status}`);
+    return data;
   }
 
-  if (response.status === 401) {
-    lock("التوكن مش مقبول. اعمله دخول تاني.");
-    throw new Error("unauthorized");
+  // ── format ─────────────────────────────────────────────────────────
+
+  const num = (n) => Number(n || 0).toLocaleString("en-US");
+  const egp = (n) => `${num(n)} <small>ج.م</small>`;
+
+  const asDate = (value) => {
+    if (!value) return null;
+    const iso = String(value).includes("T") ? value : String(value).replace(" ", "T") + "Z";
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
+  const dateLabel = (value) => {
+    const d = asDate(value);
+    if (!d) return "";
+    return d.toLocaleDateString("ar-EG", { day: "numeric", month: "short" });
+  };
+
+  const ago = (value) => {
+    const d = asDate(value);
+    if (!d) return "";
+    const mins = Math.round((Date.now() - d.getTime()) / 60000);
+    if (mins < 1) return "الآن";
+    if (mins < 60) return `قبل ${mins} دقيقة`;
+    const hours = Math.round(mins / 60);
+    if (hours < 24) return `قبل ${hours} ساعة`;
+    const days = Math.round(hours / 24);
+    if (days < 30) return `قبل ${days} يوم`;
+    return dateLabel(value);
+  };
+
+  const daysBetween = (value) => {
+    const d = asDate(value);
+    return d ? Math.floor((Date.now() - d.getTime()) / 86400000) : 0;
+  };
+
+  const todayKey = () => new Date().toISOString().slice(0, 10);
+  const isLate = (task) => Boolean(task.due_at) && String(task.due_at).slice(0, 10) < todayKey() && task.status !== "done";
+  const isToday = (task) => Boolean(task.due_at) && String(task.due_at).slice(0, 10) === todayKey() && task.status !== "done";
+
+  const initials = (name) => String(name || "?").trim().charAt(0).toUpperCase();
+  const memberNames = () => state.data.members.filter((m) => m.active).map((m) => m.name);
+  const memberOptions = (selected) =>
+    ['<option value="">مش متأسّن لحد</option>']
+      .concat(memberNames().map((n) => `<option value="${esc(n)}"${n === selected ? " selected" : ""}>${esc(n)}</option>`))
+      .join("");
+
+  // ── chrome ─────────────────────────────────────────────────────────
+
+  const TITLES = {
+    overview: "نظرة عامة",
+    pipeline: "خط الأنابيب",
+    clients: "العملاء",
+    tasks: "المهام",
+    team: "الفريق",
+    channels: "القنوات",
+    agents: "الوكلاء",
+  };
+
+  let toastTimer = null;
+  function toast(message, tone = "") {
+    const node = $("[data-toast]");
+    node.textContent = message;
+    node.dataset.tone = tone;
+    node.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (node.hidden = true), 2800);
   }
-  if (!response.ok || payload.ok === false) {
-    const code = payload.code || response.status;
-    throw Object.assign(new Error(code), { code });
+
+  function setSync(text) {
+    $("[data-sync]").textContent = text;
   }
-  return payload;
-}
 
-// ── shell: gate, nav, toast ──────────────────────────────────────────
-
-const gate = $("[data-gate]");
-const shell = $("[data-shell]");
-const gateStatus = $("[data-gate-status]");
-const toastBox = $("[data-toast]");
-let toastTimer;
-
-function toast(message, tone = "ok") {
-  if (!toastBox) return;
-  toastBox.textContent = message;
-  toastBox.dataset.tone = tone;
-  toastBox.hidden = false;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    toastBox.hidden = true;
-  }, 3200);
-}
-
-function lock(message = "") {
-  token = "";
-  sessionStorage.removeItem(KEY);
-  if (gate) gate.hidden = false;
-  if (shell) shell.hidden = true;
-  stopChannelPoll();
-  clearInterval(state.pollTimer);
-  if (message) {
-    gateStatus.textContent = message;
-    gateStatus.dataset.tone = "error";
+  function lock(message = "") {
+    state.token = "";
+    sessionStorage.removeItem(KEY);
+    $("[data-shell]").hidden = true;
+    $("[data-gate]").hidden = false;
+    const status = $("[data-gate-status]");
+    status.textContent = message;
+    status.dataset.state = message ? "error" : "";
+    $("[data-gate-form] input[name=token]").focus();
   }
-}
 
-function normalize(raw) {
-  const match = String(raw || "").match(/egx_[A-Za-z0-9_]+/);
-  return (match ? match[0] : String(raw || "").trim()).replace(/\s+/g, "");
-}
+  function setView(view, push = true) {
+    if (!TITLES[view]) view = "overview";
+    state.view = view;
+    $$("[data-panel]").forEach((panel) => (panel.hidden = panel.dataset.panel !== view));
+    $$("[data-nav] .ops__nav-btn").forEach((btn) => {
+      const on = btn.dataset.view === view;
+      if (on) btn.setAttribute("aria-current", "page");
+      else btn.removeAttribute("aria-current");
+    });
+    $("[data-title]").textContent = TITLES[view];
+    document.title = `${TITLES[view]} | Egytronic`;
+    if (push && location.hash !== `#${view}`) history.replaceState(null, "", `#${view}`);
+    render();
+    window.scrollTo({ top: 0 });
+  }
 
-async function enter() {
-  gate.hidden = true;
-  shell.hidden = false;
-  await refreshCounts();
-  setView(TITLES[state.view] ? state.view : "overview");
-  startPolling();
-}
+  function closeDrawer() {
+    state.drawer = null;
+    $("[data-drawer]").hidden = true;
+  }
 
-const TITLES = {
-  overview: "نظرة عامة",
-  inquiries: "الطلبات",
-  clients: "العملاء",
-  channels: "القنوات",
-  tasks: "المهام",
-  agents: "الوكلاء",
-};
+  // ── data ───────────────────────────────────────────────────────────
 
-function setView(view) {
-  state.view = view;
-  location.hash = `#/${view}`;
-  $$(".ops__nav-btn").forEach((button) => {
-    button.toggleAttribute("aria-current", button.dataset.view === view);
-    if (button.dataset.view === view) button.setAttribute("aria-current", "page");
-    else button.removeAttribute("aria-current");
-  });
-  $("[data-title]").textContent = TITLES[view] || "";
-  $$("[data-view-panel]").forEach((panel) => {
-    panel.hidden = panel.dataset.viewPanel !== view;
-  });
-  if (state.view === "channels" && !state.channel) stopChannelPoll();
-  render(view);
-}
-
-async function render(view) {
-  try {
-    if (view === "overview") return await renderOverview();
-    if (view === "inquiries") return await renderInquiries();
-    if (view === "clients") return renderClients();
-    if (view === "channels") return await renderChannels();
-    if (view === "tasks") return await renderTasks();
-    if (view === "agents") return await renderAgents();
-  } catch (error) {
-    const panel = $(`[data-view-panel="${view}"]`);
-    if (panel && error.message !== "unauthorized") {
-      panel.innerHTML = `<div class="ops-empty">تعذّر التحميل: ${esc(error.code || error.message)}</div>`;
+  async function loadAll() {
+    state.loading = true;
+    setSync("بيحدّث…");
+    try {
+      const [metrics, leads, clients, tasks, members, channels, agents, activities, projects] = await Promise.all([
+        api("/metrics"),
+        api("/inquiries?limit=300"),
+        api("/clients"),
+        api("/tasks"),
+        api("/members"),
+        api("/channels"),
+        api("/agents"),
+        api("/activities?limit=40"),
+        api("/projects"),
+      ]);
+      Object.assign(state.data, {
+        metrics,
+        leads: leads.rows,
+        clients: clients.rows,
+        tasks: tasks.rows,
+        members: members.rows,
+        channels: channels.rows,
+        agents: agents.rows,
+        activities: activities.rows,
+        projects: projects.rows || [],
+      });
+      setSync("متصل");
+      const clock = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+      const sub = $("[data-sub]");
+      if (sub) sub.textContent = `آخر تحديث ${clock}`;
+      render();
+    } catch (err) {
+      if (String(err.message) !== "unauthorized") {
+        setSync("مشكلة في الاتصال");
+        toast("مش قادر أحمّل البيانات", "bad");
+      }
+    } finally {
+      state.loading = false;
     }
   }
-}
 
-async function refreshCounts() {
-  try {
-    const data = await api("/api/overview");
-    $("[data-who]").textContent = `${data.who?.name || "—"} · ${data.who?.role === "admin" ? "مدير" : "وكيل"}`;
-    setCount("inquiries", data.new_inquiries);
-    setCount("tasks", data.open_tasks);
-  } catch {
-    /* the view will surface the error */
+  const openLeads = () => state.data.leads.filter((l) => OPEN_STAGES.includes(l.status));
+  const pipelineValue = () => openLeads().reduce((sum, l) => sum + Number(l.value || 0), 0);
+  const openTasks = () => state.data.tasks.filter((t) => t.status !== "done");
+
+  // ── overview ───────────────────────────────────────────────────────
+
+  function kpi(label, value, foot, tone = "") {
+    return `
+      <article class="ops-kpi"${tone ? ` data-tone="${tone}"` : ""}>
+        <span class="ops-kpi__label">${esc(label)}</span>
+        <span class="ops-kpi__value">${value}</span>
+        <span class="ops-kpi__foot">${foot}</span>
+      </article>`;
   }
-}
 
-function setCount(name, value) {
-  const node = $(`[data-count="${name}"]`);
-  if (!node) return;
-  node.textContent = value ?? 0;
-  node.toggleAttribute("data-zero", !value);
-}
+  function renderOverview() {
+    const m = state.data.metrics || {};
+    const leads = openLeads();
+    const tasks = openTasks();
+    const late = tasks.filter(isLate).length;
+    const today = tasks.filter(isToday).length;
+    const focusToday = m.focus?.today ?? 0;
+    const focusWeek = m.focus?.week ?? 0;
 
-// ── overview ─────────────────────────────────────────────────────────
+    const funnel = STAGES.map(([key, label]) => {
+      const rows = state.data.leads.filter((l) => l.status === key);
+      const value = rows.reduce((sum, l) => sum + Number(l.value || 0), 0);
+      return { key, label, count: rows.length, value };
+    });
+    const max = Math.max(1, ...funnel.map((f) => f.count));
 
-async function renderOverview() {
-  const [overview, events, time] = await Promise.all([
-    api("/api/overview"),
-    api("/api/events?limit=14"),
-    api("/api/time"),
-  ]);
+    const agenda = tasks
+      .filter((t) => isLate(t) || isToday(t) || !t.due_at)
+      .slice(0, 6);
 
-  const panel = $('[data-view-panel="overview"]');
-  panel.innerHTML = "";
-  panel.append(
-    el(`<div class="ops-grid ops-grid--stats">
-      <div class="ops-card"><div class="ops-stat">${overview.new_inquiries}</div><div class="ops-stat__label">طلب جديد محتاج رد</div></div>
-      <div class="ops-card"><div class="ops-stat">${overview.open_tasks}</div><div class="ops-stat__label">مهمة مفتوحة</div></div>
-      <div class="ops-card"><div class="ops-stat">${time.minutes}</div><div class="ops-stat__label">دقيقة تركيز النهارده</div></div>
-      <div class="ops-card"><div class="ops-stat">${overview.active_clients}</div><div class="ops-stat__label">عميل نشط</div></div>
-      <div class="ops-card"><div class="ops-stat">${overview.agents}</div><div class="ops-stat__label">وكيل متصل</div></div>
-    </div>`)
-  );
+    const recent = state.data.activities.slice(0, 8);
+    const entityLabel = { inquiry: "طلب", client: "عميل", project: "مشروع", task: "مهمة", member: "عضو", channel: "قناة" };
 
-  const quick = el(`<div class="ops-card ops-card--flat" style="padding:16px">
-    <div class="ops-head"><h2>اختصارات</h2></div>
-    <div class="ops-row">
-      <button class="ops-btn ops-btn--quiet" data-quick="inquiries">راجع الطلبات</button>
-      <button class="ops-btn ops-btn--quiet" data-quick="tasks">ابدأ بومودورو</button>
-      <button class="ops-btn ops-btn--quiet" data-quick="agents">وصل وكيل</button>
-    </div>
-  </div>`);
-  quick.addEventListener("click", (event) => {
-    const target = event.target.closest("[data-quick]");
-    if (target) setView(target.dataset.quick);
-  });
-  panel.append(quick);
+    return `
+      <div class="ops-kpis">
+        ${kpi("طلبات مفتوحة", num(leads.length), `${num(m.leads_7d ?? 0)} دخلوا آخر 7 أيام`, "gold")}
+        ${kpi("قيمة خط الأنابيب", egp(pipelineValue()), `${num(leads.length)} طلب لسه بيتناقش`)}
+        ${kpi("مهام مفتوحة", num(tasks.length), `${num(late)} متأخرة · ${num(today)} النهارده`, late ? "danger" : "")}
+        ${kpi("تركيز النهارده", `${num(focusToday)}<small>د</small>`, `${num(Math.round(focusWeek / 60))} ساعة آخر 7 أيام`, "mint")}
+      </div>
 
-  const rows = (events.rows || [])
-    .map(
-      (row) => `<div class="ops-feed__row">
-        <span class="ops-feed__kind">${esc(row.kind)}</span>
-        <span>${esc(row.actor || "")}${row.entity_id ? ` #${esc(row.entity_id)}` : ""}</span>
-        <span class="ops-feed__time">${esc(when(row.created_at))}</span>
-      </div>`
-    )
-    .join("");
+      <div class="ops-split">
+        <section class="ops-panel" aria-labelledby="funnel-title">
+          <div class="ops-panel__head">
+            <h2 id="funnel-title">خط الأنابيب</h2>
+            <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-view="pipeline">افتح البورد</button>
+          </div>
+          <div class="ops-panel__body">
+            <div class="ops-funnel">
+              ${funnel
+                .map(
+                  (row) => `
+                <button class="ops-funnel__row" type="button" data-view="pipeline" data-stage="${row.key}">
+                  <span class="ops-funnel__name">${esc(row.label)}</span>
+                  <span class="ops-funnel__bar"><i style="width:${Math.round((row.count / max) * 100)}%"></i></span>
+                  <span class="ops-funnel__sum">${num(row.count)}${row.value ? " · " + num(row.value) : ""}</span>
+                </button>`
+                )
+                .join("")}
+            </div>
+          </div>
+        </section>
 
-  panel.append(
-    el(`<div class="ops-card"><div class="ops-head"><h2>النشاط الأخير</h2><span class="ops-item__meta">أحداث الـAPI</span></div>
-      <div class="ops-feed">${rows || '<div class="ops-empty">مفيش نشاط لسه.</div>'}</div></div>`)
-  );
+        <section class="ops-panel" aria-labelledby="agenda-title">
+          <div class="ops-panel__head">
+            <h2 id="agenda-title">محتاج تصرّف</h2>
+            <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-view="tasks">كل المهام</button>
+          </div>
+          <div class="ops-panel__body ops-panel__body--flush">
+            ${
+              agenda.length
+                ? `<ul class="ops-list">${agenda
+                    .map(
+                      (t) => `
+                  <li class="ops-list__row" data-action="open-task" data-id="${t.id}">
+                    <span class="ops-avatar">${esc(initials(t.assignee || "—"))}</span>
+                    <span class="ops-list__main">
+                      <span class="ops-list__title">${esc(t.title)}</span>
+                      <span class="ops-list__meta">${isLate(t) ? "متأخرة" : isToday(t) ? "النهارده" : "من غير موعد"} · ${esc(t.assignee || "مش متأسّن")}</span>
+                    </span>
+                    ${isLate(t) ? '<span class="ops-chip ops-chip--danger">متأخرة</span>' : ""}
+                  </li>`
+                    )
+                    .join("")}</ul>`
+                : `<p class="ops-empty">مفيش حاجة متأخرة. سجّل مهمة عشان متتوهش.</p>`
+            }
+          </div>
+        </section>
+      </div>
 
-  state.lastEvent = Math.max(state.lastEvent, ...(events.rows || []).map((row) => row.id), 0);
-  setCount("inquiries", overview.new_inquiries);
-  setCount("tasks", overview.open_tasks);
-}
+      <section class="ops-panel" aria-labelledby="recent-title">
+        <div class="ops-panel__head"><h2 id="recent-title">آخر الحركة</h2></div>
+        <div class="ops-panel__body ops-panel__body--flush">
+          ${
+            recent.length
+              ? `<ul class="ops-timeline" style="padding:16px">${recent
+                  .map(
+                    (a) => `
+                <li data-kind="${esc(a.kind)}">
+                  <time>${esc(ago(a.created_at))} · ${esc(entityLabel[a.entity] || a.entity)} #${a.entity_id}</time>
+                  <p>${esc(a.body)}</p>
+                </li>`
+                  )
+                  .join("")}</ul>`
+              : `<p class="ops-empty">مفيش نشاط مسجّل لسه.</p>`
+          }
+        </div>
+      </section>`;
+  }
 
-// ── inquiries ────────────────────────────────────────────────────────
+  // ── pipeline ───────────────────────────────────────────────────────
 
-async function renderInquiries() {
-  const params = new URLSearchParams();
-  if (state.inquiryStatus) params.set("status", state.inquiryStatus);
-  if (state.query) params.set("q", state.query);
-  const mine = ++state.renderSeq;
-  const { rows } = await api(`/api/inquiries?${params}`);
-  if (mine !== state.renderSeq) return;
-
-  const panel = $('[data-view-panel="inquiries"]');
-  const filters = ["", "new", "contacted", "quoted", "won", "lost"]
-    .map(
-      (value) =>
-        `<button class="ops-chip" data-status="${value}" aria-pressed="${state.inquiryStatus === value}">${
-          value ? STATUS_AR[value] : "الكل"
-        }</button>`
-    )
-    .join("");
-
-  const items = rows
-    .map(
-      (row) => `<button class="ops-item ops-item--button" data-inquiry="${row.id}">
-        <span class="ops-item__top">
-          <span class="ops-item__name">${esc(row.name)}</span>
-          <span class="ops-badge ops-badge--${esc(row.status || "new")}">${esc(STATUS_AR[row.status] || row.status || "جديد")}</span>
+  function leadCard(lead) {
+    const stale = OPEN_STAGES.includes(lead.status) && daysBetween(lead.created_at) > 7;
+    return `
+      <article class="ops-lead" draggable="true" tabindex="0" role="button"
+               data-action="open-lead" data-id="${lead.id}" data-status="${esc(lead.status)}"
+               ${stale ? 'data-stale="true"' : ""} aria-label="افتح ${esc(lead.name)}">
+        <span class="ops-lead__name">${esc(lead.name)}</span>
+        <span class="ops-lead__meta">
+          ${lead.package ? `<span class="ops-chip">${esc(lead.package)}</span>` : ""}
+          ${lead.assignee || lead.assigned_to ? `<span class="ops-chip">${esc(lead.assignee || lead.assigned_to)}</span>` : ""}
+          <span>${esc(ago(lead.created_at))}</span>
         </span>
-        <span class="ops-item__meta">${esc(row.email)} · ${esc(PACKAGE_AR[row.package] || row.package || "باقة غير محددة")} · ${esc(when(row.created_at))}</span>
-        <span class="ops-item__body">${esc((row.message || "").slice(0, 180))}</span>
-      </button>`
-    )
-    .join("");
+        ${lead.value ? `<span class="ops-lead__value">${egp(lead.value)}</span>` : ""}
+      </article>`;
+  }
 
-  panel.innerHTML = "";
-  panel.append(
-    el(`<div class="ops-head">
-      <div class="ops-row">${filters}</div>
-      <input class="ops-form" style="width:220px;padding:8px 10px;border:2px solid var(--line);background:#101010;color:var(--text)"
-             data-search placeholder="بحث بالاسم أو الإيميل" value="${esc(state.query)}" aria-label="بحث في الطلبات">
-    </div>`)
-  );
-  panel.append(el(`<div class="ops-list">${items || '<div class="ops-empty">مفيش طلبات في الفلتر ده.</div>'}</div>`));
+  function renderPipeline() {
+    const q = state.filters.pipeline.trim().toLowerCase();
+    const leads = state.data.leads.filter((l) => (q ? `${l.name} ${l.email} ${l.message}`.toLowerCase().includes(q) : true));
 
-  $$("[data-status]", panel).forEach((chip) =>
-    chip.addEventListener("click", () => {
-      state.inquiryStatus = chip.dataset.status;
-      renderInquiries();
-    })
-  );
-  const search = $("[data-search]", panel);
-  let debounce;
-  search.addEventListener("input", () => {
-    clearTimeout(debounce);
-    debounce = setTimeout(() => {
-      state.query = search.value.trim();
-      renderInquiries();
-    }, 260);
-  });
-
-  $$("[data-inquiry]", panel).forEach((button) =>
-    button.addEventListener("click", () => openInquiry(Number(button.dataset.inquiry)))
-  );
-}
-
-async function openInquiry(id) {
-  const { row } = await api(`/api/inquiries/${id}`);
-  const drawer = el(`<div class="ops-drawer" data-drawer>
-    <div aria-hidden="true" data-close></div>
-    <div class="ops-drawer__panel" role="dialog" aria-modal="true" aria-label="تفاصيل الطلب">
-      <div class="ops-drawer__scroll">
-        <div class="ops-head">
-          <h2>${esc(row.name)}</h2>
-          <button class="ops__ghost ops__ghost--sm" type="button" data-close>إغلاق</button>
+    return `
+      <div class="ops-panel">
+        <div class="ops-panel__head">
+          <h2>الطلبات حسب المرحلة</h2>
+          <button class="ops-btn ops-btn--sm" type="button" data-action="new-lead">+ طلب جديد</button>
         </div>
-
-        <dl class="ops-kv">
-          <dt>الحالة</dt><dd><span class="ops-badge ops-badge--${esc(row.status || "new")}">${esc(STATUS_AR[row.status] || "جديد")}</span></dd>
-          <dt>الإيميل</dt><dd dir="ltr"><a href="mailto:${esc(row.email)}" style="color:var(--gold-hi)">${esc(row.email)}</a></dd>
-          <dt>الموبايل</dt><dd dir="ltr">${row.phone ? `<a href="tel:${esc(row.phone)}" style="color:var(--gold-hi)">${esc(row.phone)}</a>` : "—"}</dd>
-          <dt>الباقة</dt><dd>${esc(PACKAGE_AR[row.package] || row.package || "غير محددة")}</dd>
-          <dt>الوقت</dt><dd>${esc(when(row.created_at))}</dd>
-        </dl>
-
-        <div class="ops-card">
-          <div class="ops-head"><h2>الرسالة</h2></div>
-          <div class="ops-item__body">${esc(row.message)}</div>
+        <div class="ops-panel__body">
+          <label class="ops-field" style="max-width:340px">
+            <span>بحث بالاسم أو الإيميل أو الكلام</span>
+            <input class="ops-input" type="search" data-action="filter-pipeline" value="${esc(state.filters.pipeline)}" placeholder="اكتب حاجة…">
+          </label>
         </div>
+      </div>
 
-        <div class="ops-row">
-          ${["new", "contacted", "quoted", "won", "lost"]
-            .map((value) => `<button class="ops-chip" data-set-status="${value}">${esc(STATUS_AR[value])}</button>`)
-            .join("")}
-          <button class="ops-btn" data-convert>تحويل لعميل + مشروع + مهمة</button>
+      <div class="ops-board">
+        ${STAGES.map(([key, label]) => {
+          const rows = leads.filter((l) => l.status === key);
+          const value = rows.reduce((sum, l) => sum + Number(l.value || 0), 0);
+          return `
+            <section class="ops-col" data-stage="${key}" data-drop="${key}" aria-label="${esc(label)}">
+              <header class="ops-col__head">
+                <span class="ops-col__dot" aria-hidden="true"></span>
+                <span class="ops-col__name">${esc(label)}</span>
+                <span class="ops-col__count">${rows.length}</span>
+              </header>
+              <p class="ops-col__sum">${value ? num(value) + " ج.م" : "—"}</p>
+              <div class="ops-col__list">${rows.map(leadCard).join("")}</div>
+            </section>`;
+        }).join("")}
+      </div>`;
+  }
+
+  // ── clients ────────────────────────────────────────────────────────
+
+  function renderClients() {
+    const rows = state.data.clients;
+    const openValue = rows.filter((c) => c.status !== "done").reduce((s, c) => s + Number(c.value || 0), 0);
+
+    return `
+      <div class="ops-kpis">
+        ${kpi("عملاء", num(rows.length), `${num(rows.filter((c) => c.status === "active").length)} شغالين دلوقتي`)}
+        ${kpi("قيمة متعاقد عليها", egp(openValue), "غير المكتملين", "gold")}
+        ${kpi("مشاريع", num(state.data.projects.length), "كل المشاريع المسجّلة")}
+        ${kpi("متوقفين", num(rows.filter((c) => c.status === "paused").length), "محتاجين متابعة", "danger")}
+      </div>
+
+      <section class="ops-panel">
+        <div class="ops-panel__head">
+          <h2>دفتر العملاء</h2>
+          <button class="ops-btn ops-btn--sm" type="button" data-action="new-client">+ عميل</button>
         </div>
+        <div class="ops-panel__body ops-panel__body--flush">
+          ${
+            rows.length
+              ? `<ul class="ops-list">${rows
+                  .map((c) => {
+                    const projects = state.data.projects.filter((p) => p.client_id === c.id);
+                    return `
+                    <li class="ops-list__row" data-action="open-client" data-id="${c.id}">
+                      <span class="ops-avatar">${esc(initials(c.name))}</span>
+                      <span class="ops-list__main">
+                        <span class="ops-list__title">${esc(c.name)}${c.company ? ` · ${esc(c.company)}` : ""}</span>
+                        <span class="ops-list__meta">${esc(c.email || c.phone || "من غير بيانات تواصل")} · ${projects.length} مشروع</span>
+                      </span>
+                      <span class="ops-chip${c.status === "active" ? " ops-chip--mint" : ""}">${esc(CLIENT_STATUS[c.status] || c.status)}</span>
+                      ${c.value ? `<span class="ops-lead__value">${egp(c.value)}</span>` : ""}
+                    </li>`;
+                  })
+                  .join("")}</ul>`
+              : `<p class="ops-empty">مفيش عملاء لسه. حوّل طلب مقبول لعميل من البورد.</p>`
+          }
+        </div>
+      </section>`;
+  }
 
-        <div class="ops-form">
-          <label for="inquiry-notes">ملاحظات داخلية</label>
-          <textarea id="inquiry-notes" data-notes>${esc(row.notes || "")}</textarea>
-          <div class="ops-row">
-            <button class="ops-btn ops-btn--quiet" data-save-notes>حفظ الملاحظات</button>
-            <a class="ops-btn ops-btn--quiet" href="https://wa.me/${esc((row.phone || "").replace(/\D/g, ""))}" target="_blank" rel="noopener">واتساب</a>
+  // ── tasks ──────────────────────────────────────────────────────────
+
+  function taskRow(task) {
+    const late = isLate(task);
+    const client = state.data.clients.find((c) => c.id === task.client_id);
+    return `
+      <li class="ops-task" data-done="${task.status === "done"}">
+        <button class="ops-task__check" type="button" role="checkbox"
+                aria-checked="${task.status === "done"}" aria-label="علّم ${esc(task.title)}"
+                data-action="toggle-task" data-id="${task.id}">${task.status === "done" ? "✓" : ""}</button>
+        <div class="ops-task__body">
+          <button type="button" class="ops-list__title" style="background:none;border:0;padding:0;color:inherit;text-align:start;cursor:pointer;width:100%"
+                  data-action="open-task" data-id="${task.id}">${esc(task.title)}</button>
+          <div class="ops-task__meta">
+            ${task.assignee ? `<span class="ops-chip">${esc(task.assignee)}</span>` : `<span class="ops-chip">مش متأسّن</span>`}
+            ${task.due_at ? `<span class="ops-chip${late ? " ops-chip--danger" : ""}">${late ? "متأخرة · " : ""}${esc(dateLabel(task.due_at))}</span>` : ""}
+            ${Number(task.priority) === 1 ? '<span class="ops-chip ops-chip--gold">أولوية عالية</span>' : ""}
+            ${client ? `<span class="ops-chip">${esc(client.name)}</span>` : ""}
+            ${task.estimate_minutes ? `<span class="ops-chip">${num(task.estimate_minutes)} د</span>` : ""}
           </div>
         </div>
+      </li>`;
+  }
+
+  function renderTasks() {
+    const filter = state.filters.tasks;
+    const all = state.data.tasks;
+    const rows = all.filter((t) => {
+      if (filter === "open") return t.status !== "done";
+      if (filter === "today") return isToday(t);
+      if (filter === "late") return isLate(t);
+      if (filter === "done") return t.status === "done";
+      return true;
+    });
+    const order = { doing: 0, todo: 1, done: 2 };
+    const sorted = [...rows].sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3) || Number(a.priority) - Number(b.priority));
+
+    return `
+      <div class="ops-kpis">
+        ${kpi("مفتوحة", num(openTasks().length), "شغّالين عليها دلوقتي")}
+        ${kpi("النهارده", num(all.filter(isToday).length), "مستحقة النهارده", "gold")}
+        ${kpi("متأخرة", num(all.filter(isLate).length), "فات موعدها", all.filter(isLate).length ? "danger" : "")}
+        ${kpi("خلّصت آخر 7 أيام", num(state.data.metrics?.tasks?.done_7d ?? 0), "مهام مكتملة", "mint")}
       </div>
-    </div>
-  </div>`);
 
-  document.body.append(drawer);
-  const close = () => drawer.remove();
-  $$("[data-close]", drawer).forEach((node) => node.addEventListener("click", close));
-  document.addEventListener("keydown", function onKey(event) {
-    if (event.key === "Escape") {
-      close();
-      document.removeEventListener("keydown", onKey);
-    }
-  });
-
-  $$("[data-set-status]", drawer).forEach((button) =>
-    button.addEventListener("click", async () => {
-      await api(`/api/inquiries/${id}`, { method: "PATCH", body: { status: button.dataset.setStatus } });
-      toast("الحالة اتحدثت");
-      close();
-      renderInquiries();
-      refreshCounts();
-    })
-  );
-
-  $("[data-save-notes]", drawer).addEventListener("click", async () => {
-    await api(`/api/inquiries/${id}`, { method: "PATCH", body: { notes: $("[data-notes]", drawer).value } });
-    toast("الملاحظات اتحفظت");
-  });
-
-  $("[data-convert]", drawer).addEventListener("click", async (event) => {
-    event.currentTarget.disabled = true;
-    try {
-      const result = await api(`/api/inquiries/${id}/convert`, { method: "POST", body: {} });
-      toast(`اتحول: عميل #${result.client_id} · مشروع #${result.project_id} · مهمة #${result.task_id}`);
-      close();
-      renderInquiries();
-      refreshCounts();
-    } catch {
-      toast("التحويل فشل", "error");
-      event.currentTarget.disabled = false;
-    }
-  });
-}
-
-// ── clients ──────────────────────────────────────────────────────────
-
-async function renderClients() {
-  const [{ rows: clients }, { rows: projects }] = await Promise.all([api("/api/clients"), api("/api/projects")]);
-  state.clients = clients;
-  const panel = $('[data-view-panel="clients"]');
-
-  const projectList = (clientId) => projects.filter((project) => project.client_id === clientId);
-
-  const cards = clients
-    .map((client) => {
-      const own = projectList(client.id);
-      const projectsHtml = own.length
-        ? `<div class="ops-feed">${own
-            .map(
-              (project) =>
-                `<div class="ops-feed__row"><span class="ops-feed__kind">${esc(PACKAGE_AR[project.package] || "مشروع")}</span>
-                 <span>${esc(project.title)}</span><span class="ops-feed__time">${esc(STATUS_AR[project.status] || project.status)}</span></div>`
-            )
-            .join("")}</div>`
-        : "";
-      return `<div class="ops-card">
-        <div class="ops-item__top">
-          <span class="ops-item__name">${esc(client.name)}</span>
-          <span class="ops-badge ops-badge--${esc(client.status)}">${esc(STATUS_AR[client.status] || client.status)}</span>
+      <section class="ops-panel">
+        <div class="ops-panel__head">
+          <h2>المهام</h2>
+          <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="pomodoro">
+            ${state.pomodoro ? `${Math.floor(state.pomodoro.left / 60)}:${String(state.pomodoro.left % 60).padStart(2, "0")} · إيقاف` : "جلسة تركيز 25د"}
+          </button>
+          <button class="ops-btn ops-btn--sm" type="button" data-action="new-task">+ مهمة</button>
         </div>
-        <div class="ops-item__meta" dir="ltr">${esc(client.email || "—")} ${client.phone ? "· " + esc(client.phone) : ""}</div>
-        ${client.value ? `<div class="ops-item__meta">القيمة: ${esc(client.value)} جنيه</div>` : ""}
-        ${projectsHtml}
-        <div class="ops-row" style="margin-top:8px">
-          ${["lead", "active", "paused", "done"]
-            .map((value) => `<button class="ops-chip" data-client="${client.id}" data-client-status="${value}" aria-pressed="${client.status === value}">${esc(STATUS_AR[value])}</button>`)
-            .join("")}
-          <button class="ops-chip" data-project-for="${client.id}">+ مشروع</button>
+        <div class="ops-panel__body">
+          <div class="ops-filters" role="group" aria-label="تصفية المهام">
+            ${[["open", "مفتوحة"], ["today", "النهارده"], ["late", "متأخرة"], ["done", "خلصت"], ["all", "الكل"]]
+              .map(([key, label]) => `<button class="ops-filter" type="button" data-action="filter-tasks" data-value="${key}" aria-pressed="${filter === key}">${label}</button>`)
+              .join("")}
+          </div>
         </div>
+        <div class="ops-panel__body ops-panel__body--flush">
+          ${sorted.length ? `<ul>${sorted.map(taskRow).join("")}</ul>` : `<p class="ops-empty">مفيش مهام في الفلتر ده.</p>`}
+        </div>
+      </section>`;
+  }
+
+  // ── team ───────────────────────────────────────────────────────────
+
+  function renderTeam() {
+    const members = state.data.members;
+    const active = members.filter((m) => m.active);
+    const unassigned = openTasks().filter((t) => !t.assignee).length;
+    const totalOpen = openTasks().length;
+
+    return `
+      <div class="ops-kpis">
+        ${kpi("أفراد الفريق", num(active.length), `${num(members.length - active.length)} مؤرشف`)}
+        ${kpi("مهام مفتوحة", num(totalOpen), `${num(unassigned)} من غير مسؤول`, unassigned ? "danger" : "")}
+        ${kpi("طلبات مفتوحة", num(openLeads().length), "محتاجة متابعة")}
+        ${kpi("تركيز آخر 7 أيام", `${num(state.data.metrics?.focus?.week ?? 0)}<small>د</small>`, "مجموع الجلسات", "mint")}
+      </div>
+
+      <section class="ops-panel">
+        <div class="ops-panel__head">
+          <h2>الفريق والتحميل</h2>
+          <button class="ops-btn ops-btn--sm" type="button" data-action="new-member">+ عضو</button>
+        </div>
+        <div class="ops-panel__body">
+          <div class="ops-team">
+            ${
+              active.length
+                ? active
+                    .map((m) => {
+                      const cap = Math.max(1, Math.round(Number(m.capacity_hours || 32) / 8));
+                      const pct = Math.min(100, Math.round((Number(m.open_tasks || 0) / cap) * 100));
+                      const over = Number(m.open_tasks || 0) > cap;
+                      return `
+                    <article class="ops-member">
+                      <div class="ops-member__top">
+                        <span class="ops-member__avatar">${esc(initials(m.name))}</span>
+                        <div>
+                          <p class="ops-member__name">${esc(m.name)}</p>
+                          <p class="ops-member__focus">${esc(ROLES[m.role] || m.role)}${m.focus ? ` · ${esc(m.focus)}` : ""}</p>
+                        </div>
+                        <span class="ops-chip" style="margin-inline-start:auto">${num(m.open_leads || 0)} طلب</span>
+                      </div>
+                      <div class="ops-meter">
+                        <div class="ops-meter__bar" ${over ? 'data-over="true"' : ""}><i style="width:${pct}%"></i></div>
+                        <div class="ops-meter__legend">
+                          <span>${num(m.open_tasks || 0)} مهمة مفتوحة</span>
+                          <span>${num(m.late_tasks || 0)} متأخرة · ${num(m.minutes_7d || 0)} د/أسبوع</span>
+                        </div>
+                      </div>
+                      <div class="ops-member__actions">
+                        <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="edit-member" data-id="${m.id}">تعديل</button>
+                        <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="open-member" data-id="${m.id}">تفاصيل</button>
+                      </div>
+                    </article>`;
+                    })
+                    .join("")
+                : `<p class="ops-empty">ضيف أول عضو في الفريق، وبعدها أسند الطلبات والمهام له.</p>`
+            }
+          </div>
+        </div>
+      </section>`;
+  }
+
+  // ── channels ───────────────────────────────────────────────────────
+
+  function renderChannels() {
+    const channels = state.data.channels;
+    const active = channels.find((c) => c.id === state.activeChannel) || channels[0];
+    state.activeChannel = active?.id ?? null;
+    return `
+      <div class="ops-split">
+        <section class="ops-panel">
+          <div class="ops-panel__head"><h2>القنوات</h2><span class="ops-chip">${num(channels.length)}</span></div>
+          <div class="ops-panel__body ops-panel__body--flush">
+            ${
+              channels.length
+                ? `<ul class="ops-list">${channels
+                    .map(
+                      (c) => `
+                  <li class="ops-list__row" data-action="open-channel" data-id="${c.id}" ${c.id === active?.id ? 'style="background:var(--surface-2)"' : ""}>
+                    <span class="ops-avatar">#</span>
+                    <span class="ops-list__main">
+                      <span class="ops-list__title">${esc(c.slug)}</span>
+                      <span class="ops-list__meta">${esc(c.topic || "من غير وصف")}</span>
+                    </span>
+                    <span class="ops-chip">${num(c.messages)} رسالة</span>
+                  </li>`
+                    )
+                    .join("")}</ul>`
+                : `<p class="ops-empty">مفيش قنوات لسه.</p>`
+            }
+          </div>
+        </section>
+
+        <section class="ops-panel">
+          <div class="ops-panel__head">
+            <h2>${active ? esc(active.slug) : "اختار قناة"}</h2>
+          </div>
+          <div class="ops-panel__body" data-messages>
+            <p class="ops-empty">بيحمّل…</p>
+          </div>
+          ${
+            active
+              ? `<form class="ops-panel__body" data-form="message" data-channel="${active.id}" style="border-top:1px solid var(--rule)">
+                   <label class="ops-field">
+                     <span>رسالة</span>
+                     <textarea class="ops-textarea" name="body" rows="3" required placeholder="اكتب هنا…"></textarea>
+                   </label>
+                   <button class="ops-btn" type="submit" style="margin-top:8px">إرسال</button>
+                 </form>`
+              : ""
+          }
+        </section>
       </div>`;
-    })
-    .join("");
+  }
 
-  panel.innerHTML = "";
-  panel.append(
-    el(`<div class="ops-card">
-      <div class="ops-head"><h2>عميل جديد</h2></div>
-      <form class="ops-form" data-client-form>
-        <div class="ops-form__grid">
-          <input name="name" placeholder="الاسم" required>
-          <input name="email" type="email" placeholder="الإيميل" dir="ltr">
-          <input name="phone" placeholder="الموبايل" dir="ltr">
-          <input name="value" type="number" placeholder="قيمة التعاقد (جنيه)">
-        </div>
-        <div class="ops-row"><button class="ops-btn" type="submit">إضافة</button></div>
-      </form>
-    </div>`)
-  );
-  panel.append(el(`<div class="ops-list" style="margin-top:14px">${cards || '<div class="ops-empty">مفيش عملاء لسه. حول طلب من صفحة الطلبات.</div>'}</div>`));
-
-  $("[data-client-form]", panel).addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.target));
-    await api("/api/clients", { method: "POST", body: data });
-    toast("العميل اتضاف");
-    render("clients");
-  });
-
-  $$("[data-client-status]", panel).forEach((button) =>
-    button.addEventListener("click", async () => {
-      await api(`/api/clients/${button.dataset.client}`, { method: "PATCH", body: { status: button.dataset.clientStatus } });
-      render("clients");
-    })
-  );
-
-  $$("[data-project-for]", panel).forEach((button) =>
-    button.addEventListener("click", async () => {
-      const title = prompt("اسم المشروع؟", "موقع جديد");
-      if (!title) return;
-      await api("/api/projects", { method: "POST", body: { title, client_id: Number(button.dataset.projectFor) } });
-      toast("المشروع اتضاف");
-      render("clients");
-    })
-  );
-}
-// ── channels ─────────────────────────────────────────────────────────
-
-async function renderChannels() {
-  const { rows } = await api("/api/channels");
-  state.channels = rows;
-  const panel = $('[data-view-panel="channels"]');
-
-  const list = rows
-    .map(
-      (channel) => `<button class="ops-chan" data-channel="${esc(channel.slug)}" aria-current="${state.channel === channel.slug}">
-        <bdi>#${esc(channel.slug)}</bdi>
-        <span>${esc(channel.topic || "")} · ${channel.messages} رسالة</span>
-      </button>`
-    )
-    .join("");
-
-  panel.innerHTML = "";
-  panel.append(el(`<div class="ops-card" style="padding:8px"><div class="ops-head" style="padding:6px 6px 0"><h2>القنوات</h2></div>${list}
-    <button class="ops__ghost ops__ghost--sm" type="button" data-new-channel style="margin-top:8px;width:100%">+ قناة</button></div>`));
-  panel.append(el(`<div class="ops-chat" data-chat>
-    <div class="ops-chat__log" data-chat-log><div class="ops-empty">اختار قناة من الشمال.</div></div>
-    <form class="ops-chat__compose" data-chat-form>
-      <textarea name="body" placeholder="اكتب رسالة…" aria-label="رسالة"></textarea>
-      <button class="ops-btn" type="submit">إرسال</button>
-    </form>
-  </div>`));
-
-  $$("[data-channel]", panel).forEach((button) =>
-    button.addEventListener("click", () => {
-      state.channel = button.dataset.channel;
-      $$("[data-channel]", panel).forEach((node) => node.setAttribute("aria-current", String(node === button)));
-      loadChannel(true);
-      startChannelPoll();
-    })
-  );
-
-  $("[data-new-channel]", panel).addEventListener("click", async () => {
-    const slug = prompt("اسم القناة بالإنجليزي (مثال: client-acme)");
-    if (!slug) return;
+  async function loadMessages(channelId) {
+    const box = $("[data-messages]");
+    if (!box || !channelId) return;
     try {
-      await api("/api/channels", { method: "POST", body: { slug } });
-      toast("القناة اتعملت");
-      render("channels");
-    } catch {
-      toast("الاسم مستخدم أو غير صالح", "error");
-    }
-  });
-
-  $("[data-chat-form]", panel).addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const field = event.target.elements.body;
-    const value = field.value.trim();
-    if (!value || !state.channel) return;
-    field.value = "";
-    try {
-      await api(`/api/channels/${encodeURIComponent(state.channel)}/messages`, { method: "POST", body: { body: value } });
-      await loadChannel(false);
-    } catch {
-      toast("الرسالة مبعتتش", "error");
-    }
-  });
-
-  if (state.channel) {
-    await loadChannel(true);
-    startChannelPoll();
-  }
-}
-
-async function loadChannel(reset) {
-  if (!state.channel) return;
-  const log = $("[data-chat-log]");
-  if (!log) return;
-  const after = reset ? 0 : Number(log.dataset.last || 0);
-  const { rows } = await api(`/api/channels/${encodeURIComponent(state.channel)}/messages?after=${after}`);
-  if (reset) log.innerHTML = "";
-
-  if (!log.children.length && !rows.length) {
-    log.append(el('<div class="ops-empty">القناة فاضية. أول رسالة بتفتح الموضوع.</div>'));
-  }
-
-  rows.forEach((row) => {
-    log.append(
-      el(`<div class="ops-msg" data-kind="${esc(row.kind)}">
-        <div class="ops-msg__head"><span class="ops-msg__author">${esc(row.author)}</span><span>${esc(when(row.created_at))}</span></div>
-        <div>${esc(row.body)}</div>
-      </div>`)
-    );
-    log.dataset.last = row.id;
-  });
-
-  log.scrollTop = log.scrollHeight;
-}
-
-function startChannelPoll() {
-  stopChannelPoll();
-  state.channelTimer = setInterval(() => loadChannel(false).catch(() => {}), 5000);
-}
-
-function stopChannelPoll() {
-  clearInterval(state.channelTimer);
-  state.channelTimer = null;
-}
-
-// ── tasks + pomodoro ─────────────────────────────────────────────────
-
-async function renderTasks() {
-  const [{ rows }, time] = await Promise.all([api("/api/tasks"), api("/api/time")]);
-  state.tasks = rows;
-  const panel = $('[data-view-panel="tasks"]');
-
-  const columns = [
-    ["todo", "مطلوب"],
-    ["doing", "شغال عليه"],
-    ["done", "خلص"],
-  ];
-
-  const card = (task) => `<div class="ops-task" data-priority="${task.priority}">
-      <div class="ops-task__title">${esc(task.title)}</div>
-      <div class="ops-item__meta">#${task.id}${task.assignee ? " · " + esc(task.assignee) : ""}${task.source ? " · " + esc(task.source) : ""}</div>
-      <div class="ops-task__actions">
-        ${task.status !== "doing" ? `<button data-move="${task.id}" data-to="doing">ابدأ</button>` : ""}
-        ${task.status !== "done" ? `<button data-move="${task.id}" data-to="done">خلصت</button>` : `<button data-move="${task.id}" data-to="todo">رجّع</button>`}
-        <button data-focus="${task.id}">بومودورو</button>
-      </div>
-    </div>`;
-
-  const board = columns
-    .map(
-      ([status, label]) => `<div class="ops-col">
-        <div class="ops-col__title">${label} · ${rows.filter((task) => task.status === status).length}</div>
-        ${rows.filter((task) => task.status === status).map(card).join("") || '<div class="ops-empty">فاضي</div>'}
-      </div>`
-    )
-    .join("");
-
-  const timer = state.timer;
-  const minutes = String(Math.floor(timer.left / 60)).padStart(2, "0");
-  const seconds = String(timer.left % 60).padStart(2, "0");
-  const taskTitle = timer.taskId ? rows.find((task) => task.id === timer.taskId)?.title : "";
-
-  panel.innerHTML = "";
-  panel.append(
-    el(`<div class="ops-timer">
-      <div class="ops-item__top">
-        <span class="ops-timer__clock" data-clock>${minutes}:${seconds}</span>
-        <span class="ops-timer__hint">${time.minutes} دقيقة تركيز النهارده · ${time.sessions} جلسة</span>
-      </div>
-      <div class="ops-timer__bar"><div class="ops-timer__fill" data-fill style="width:${(1 - timer.left / timer.total) * 100}%"></div></div>
-      <div class="ops-timer__row">
-        <button class="ops-btn" data-timer="toggle">${timer.running ? "إيقاف مؤقت" : "ابدأ"}</button>
-        <button class="ops-btn ops-btn--quiet" data-timer="reset">تصفير</button>
-        <button class="ops-btn ops-btn--quiet" data-timer="log">سجّل الجلسة</button>
-        <select data-timer-length aria-label="مدة الجلسة">
-          ${[25, 50, 15].map((value) => `<option value="${value}" ${timer.total === value * 60 ? "selected" : ""}>${value} دقيقة</option>`).join("")}
-        </select>
-        <span class="ops-timer__hint">${taskTitle ? "على: " + esc(taskTitle) : "بدون مهمة"}</span>
-      </div>
-    </div>`)
-  );
-
-  panel.append(
-    el(`<div class="ops-card" style="margin:14px 0">
-      <form class="ops-form" data-task-form>
-        <div class="ops-form__grid">
-          <input name="title" placeholder="مهمة جديدة" required>
-          <select name="priority" aria-label="الأولوية">
-            <option value="1">عالية</option>
-            <option value="2" selected>عادية</option>
-            <option value="3">منخفضة</option>
-          </select>
-        </div>
-        <div class="ops-row"><button class="ops-btn" type="submit">إضافة مهمة</button></div>
-      </form>
-    </div>`)
-  );
-
-  panel.append(el(`<div class="ops-board">${board}</div>`));
-
-  $("[data-task-form]", panel).addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.target));
-    await api("/api/tasks", { method: "POST", body: { title: data.title, priority: Number(data.priority) } });
-    toast("المهمة اتضافت");
-    render("tasks");
-  });
-
-  $$("[data-move]", panel).forEach((button) =>
-    button.addEventListener("click", async () => {
-      await api(`/api/tasks/${button.dataset.move}`, { method: "PATCH", body: { status: button.dataset.to } });
-      render("tasks");
-      refreshCounts();
-    })
-  );
-
-  $$("[data-focus]", panel).forEach((button) =>
-    button.addEventListener("click", () => {
-      state.timer.taskId = Number(button.dataset.focus);
-      render("tasks");
-      toast("البومودورو مربوط بالمهمة");
-    })
-  );
-
-  $$("[data-timer]", panel).forEach((button) =>
-    button.addEventListener("click", () => handleTimer(button.dataset.timer))
-  );
-
-  $("[data-timer-length]", panel).addEventListener("change", (event) => {
-    if (state.timer.running) return;
-    state.timer.total = state.timer.left = Number(event.target.value) * 60;
-    render("tasks");
-  });
-}
-
-function paintTimer() {
-  const clock = $("[data-clock]");
-  const fill = $("[data-fill]");
-  const timer = state.timer;
-  if (clock) {
-    clock.textContent = `${String(Math.floor(timer.left / 60)).padStart(2, "0")}:${String(timer.left % 60).padStart(2, "0")}`;
-  }
-  if (fill) fill.style.width = `${(1 - timer.left / timer.total) * 100}%`;
-}
-
-function handleTimer(action) {
-  const timer = state.timer;
-
-  if (action === "toggle") {
-    timer.running = !timer.running;
-    clearInterval(timer.interval);
-    if (timer.running) {
-      timer.interval = setInterval(() => {
-        if (timer.left > 0) {
-          timer.left -= 1;
-          paintTimer();
-          if (timer.left === 0) handleTimer("complete");
-          return;
-        }
-      }, 1000);
-    }
-    const button = $('[data-timer="toggle"]');
-    if (button) button.textContent = timer.running ? "إيقاف مؤقت" : "ابدأ";
-    return;
-  }
-
-  if (action === "reset") {
-    clearInterval(timer.interval);
-    timer.running = false;
-    timer.left = timer.total;
-    paintTimer();
-    const button = $('[data-timer="toggle"]');
-    if (button) button.textContent = "ابدأ";
-    return;
-  }
-
-  if (action === "log" || action === "complete") {
-    clearInterval(timer.interval);
-    timer.running = false;
-    const minutes = Math.max(1, Math.round((timer.total - timer.left) / 60));
-    api("/api/time", { method: "POST", body: { minutes, task_id: timer.taskId, label: "pomodoro" } })
-      .then(() => {
-        toast(`اتسجلت ${minutes} دقيقة`);
-        timer.left = timer.total;
-        render("tasks");
-      })
-      .catch(() => toast("التسجيل فشل", "error"));
-  }
-}
-// ── agents ───────────────────────────────────────────────────────────
-
-async function renderAgents() {
-  const { rows } = await api("/api/agents");
-  state.agents = rows;
-  const panel = $('[data-view-panel="agents"]');
-  const base = location.origin;
-
-  const cards = rows
-    .map(
-      (agent) => `<div class="ops-card">
-        <div class="ops-item__top">
-          <span class="ops-item__name">${esc(agent.name)}</span>
-          <span class="ops-badge ${agent.active ? "ops-badge--done" : "ops-badge--lost"}">${agent.active ? "متصل" : "موقوف"}</span>
-        </div>
-        <div class="ops-item__meta">${esc(agent.model || "أي موديل")} · صلاحيات: ${esc(agent.scopes)} · آخر اتصال: ${esc(agent.last_seen ? when(agent.last_seen) : "لسه")}</div>
-        <div class="ops-row" style="margin-top:8px">
-          <button class="ops-chip" data-agent-toggle="${agent.id}" data-active="${agent.active ? 0 : 1}">${agent.active ? "إيقاف" : "تشغيل"}</button>
-        </div>
-      </div>`
-    )
-    .join("");
-
-  panel.innerHTML = "";
-  panel.append(
-    el(`<div class="ops-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
-      <div class="ops-card">
-        <div class="ops-head"><h2>وكيل جديد</h2></div>
-        <form class="ops-form" data-agent-form>
-          <input name="name" placeholder="اسم الوكيل (مثال: Claude Ops)" required>
-          <input name="model" placeholder="الموديل (اختياري)" dir="ltr">
-          <select name="scopes" aria-label="الصلاحيات">
-            <option value="read">قراءة فقط</option>
-            <option value="read,write" selected>قراءة وكتابة</option>
-            <option value="read,write,admin">كامل (يقدر يعمل وكلاء)</option>
-          </select>
-          <div class="ops-row"><button class="ops-btn" type="submit">إنشاء مفتاح</button></div>
-        </form>
-        <div data-new-key></div>
-      </div>
-
-      <div class="ops-card">
-        <div class="ops-head"><h2>توصيل وكيل — OAuth</h2></div>
-        <p class="ops-item__meta" style="margin-bottom:8px">أي وكيل حديث (Claude Code، Cursor، أو أي عميل MCP) بيفوّض نفسه: أمر واحد، المتصفح بيفتح صفحة التفويض، تدخل رمز المالك، وخلاص. مفيش مفتاح بيتنسخ ولا بيتخزن عند الوكيل — بياخد توكن ساعة ويتجدد لوحده.</p>
-        <pre class="ops-code">claude mcp add --transport http egytronic-ops ${esc(base)}/mcp</pre>
-        <p class="ops-item__meta" style="margin:10px 0 6px">عميل بيقرا JSON وبيتعامل مع OAuth:</p>
-        <pre class="ops-code">{
-  "mcpServers": {
-    "egytronic-ops": {
-      "type": "http",
-      "url": "${esc(base)}/mcp"
-    }
-  }
-}</pre>
-        <p class="ops-item__meta" style="margin:12px 0 6px">لوكيل مش بيعرف OAuth، مفتاح ثابت لسه شغال (من الفورم اللي جنبه):</p>
-        <pre class="ops-code">export EGYTRONIC_AGENT_KEY=egx_agent_...
-claude mcp add --transport http egytronic-ops ${esc(base)}/mcp \\
-  --header "Authorization: Bearer $EGYTRONIC_AGENT_KEY"</pre>
-        <p class="ops-item__meta" style="margin:12px 0 6px">أو REST مباشرة:</p>
-        <pre class="ops-code">curl ${esc(base)}/api/context \\
-  -H "Authorization: Bearer $EGYTRONIC_AGENT_KEY"</pre>
-        <div data-sessions style="margin-top:16px"></div>
-      </div>
-    </div>`)
-  );
-
-  $$(".ops-code", panel).forEach((pre) => {
-    const bar = el(`<div class="ops-code__bar"><button class="ops-chip" type="button">نسخ</button></div>`);
-    bar.firstElementChild.addEventListener("click", async () => {
-      await navigator.clipboard.writeText(pre.innerText).catch(() => {});
-      toast("اتنسخ");
-    });
-    pre.after(bar);
-  });
-
-  const sessionsBox = $("[data-sessions]", panel);
-  if (sessionsBox) {
-    const { rows: sessions } = await api("/api/sessions").catch(() => ({ rows: [] }));
-    const live = sessions.filter((row) => Number(row.live) > 0);
-    sessionsBox.innerHTML = `
-      <div class="ops-head"><h3 style="margin:0;font-size:14px">الجلسات المفوّضة</h3>
-        <span class="ops-item__meta">${live.length} شغّالة من ${sessions.length}</span></div>
-      ${live.length
-        ? `<div class="ops-list">${live
+      const data = await api(`/channels/${channelId}/messages?limit=60`);
+      box.innerHTML = data.rows.length
+        ? `<ul class="ops-timeline">${data.rows
             .map(
-              (row) => `<div class="ops-item" style="align-items:center">
-                <div>
-                  <div class="ops-item__name">${esc(row.client || "وكيل")}</div>
-                  <div class="ops-item__meta" dir="ltr">${esc(row.scopes || "read")} · ${Number(row.live)} توكن · تجديد لحد ${esc(String(row.refresh_until || "").slice(0, 16))}</div>
-                </div>
-                <button class="ops-chip" type="button" data-revoke="${esc(row.client_id)}">قطع الجلسة</button>
-              </div>`
+              (m) => `<li data-kind="${esc(m.kind)}">
+                <time>${esc(m.author)} · ${esc(ago(m.created_at))}</time>
+                <p>${esc(m.body)}</p>
+              </li>`
             )
-            .join("")}</div>`
-        : '<div class="ops-empty">مفيش جلسات OAuth مفتوحة.</div>'}`;
-
-    $$("[data-revoke]", sessionsBox).forEach((btn) =>
-      btn.addEventListener("click", async () => {
-        await api(`/api/sessions/${encodeURIComponent(btn.dataset.revoke)}`, { method: "DELETE" }).catch(() => {});
-        toast("الجلسة اتقطعت");
-        renderAgents();
-      })
-    );
+            .join("")}</ul>`
+        : `<p class="ops-empty">مفيش رسايل في القناة دي.</p>`;
+      box.scrollTop = box.scrollHeight;
+    } catch {
+      box.innerHTML = `<p class="ops-empty">مش قادر أحمّل الرسايل.</p>`;
+    }
   }
 
-  if (state.newAgentKey) {
-    panel.append(
-      el(`<div class="ops-card" style="border-color:var(--gold)">
-        <div class="ops-item__meta" style="margin-bottom:8px">المفتاح بيظهر مرة واحدة بس — انسخه دلوقتي:</div>
-        <div class="ops-key"><code>${esc(state.newAgentKey)}</code><button class="ops-btn ops-btn--quiet" type="button" data-copy>نسخ</button></div>
-      </div>`)
-    );
-    $("[data-copy]", panel).addEventListener("click", async () => {
-      await navigator.clipboard.writeText(state.newAgentKey).catch(() => {});
-      toast("المفتاح اتنسخ");
+  // ── agents ─────────────────────────────────────────────────────────
+
+  function renderAgents() {
+    const rows = state.data.agents;
+    return `
+      <div class="ops-kpis">
+        ${kpi("وكلاء", num(rows.length), `${num(rows.filter((a) => a.active).length)} شغّالين`)}
+        ${kpi("وصلوا مؤخرًا", num(rows.filter((a) => a.last_seen && daysBetween(a.last_seen) < 2).length), "آخر 48 ساعة", "mint")}
+      </div>
+
+      <section class="ops-panel">
+        <div class="ops-panel__head">
+          <h2>مفاتيح الوكلاء</h2>
+          <button class="ops-btn ops-btn--sm" type="button" data-action="new-agent">+ وكيل</button>
+        </div>
+        <div class="ops-panel__body ops-panel__body--flush">
+          ${
+            rows.length
+              ? `<ul class="ops-list">${rows
+                  .map(
+                    (a) => `
+                <li class="ops-list__row" data-action="toggle-agent" data-id="${a.id}">
+                  <span class="ops-avatar">${esc(initials(a.name))}</span>
+                  <span class="ops-list__main">
+                    <span class="ops-list__title">${esc(a.name)}</span>
+                    <span class="ops-list__meta">${esc(a.scopes)} · ${a.last_seen ? "آخر ظهور " + esc(ago(a.last_seen)) : "لسه ما استخدمش"}</span>
+                  </span>
+                  <span class="ops-chip ${a.active ? "ops-chip--mint" : ""}">${a.active ? "شغّال" : "موقوف"}</span>
+                </li>`
+                  )
+                  .join("")}</ul>`
+              : `<p class="ops-empty">مفيش وكلاء. الوكلاء بياخدوا مفاتيح بصلاحيات محددة.</p>`
+          }
+        </div>
+      </section>`;
+  }
+
+
+  // ── drawer scaffolding ─────────────────────────────────────────────
+
+  function drawerHead(title, sub) {
+    return `
+      <header class="ops-drawer__head">
+        <div>
+          <h2>${esc(title)}</h2>
+          <p>${esc(sub)}</p>
+        </div>
+        <button class="ops-btn ops-btn--ghost ops-btn--sm ops-drawer__close" type="button" data-action="close-drawer" aria-label="إغلاق">
+          <svg aria-hidden="true" style="width:14px;height:14px"><use href="#i-x"/></svg>
+        </button>
+      </header>`;
+  }
+
+  const optionsList = (map, selected) =>
+    Object.entries(map)
+      .map(([value, label]) => `<option value="${esc(value)}"${String(value) === String(selected ?? "") ? " selected" : ""}>${esc(label)}</option>`)
+      .join("");
+
+  function timeline(acts) {
+    if (!acts.length) return `<p class="ops-empty">مفيش نشاط مسجّل.</p>`;
+    return `<ul class="ops-timeline">${acts
+      .map(
+        (a) => `<li data-kind="${esc(a.kind)}">
+          <time>${esc(ago(a.created_at))}${a.actor ? " · " + esc(a.actor) : ""}${a.minutes ? " · " + num(a.minutes) + " د" : ""}</time>
+          <p>${esc(a.body)}</p>
+        </li>`
+      )
+      .join("")}</ul>`;
+  }
+
+  function activityForm(entity, id) {
+    return `
+      <form data-form="activity" data-entity="${entity}" data-id="${id}" class="ops-field">
+        <span>سجّل تفاعل</span>
+        <div class="ops-row">
+          <select class="ops-select" name="kind" aria-label="نوع التفاعل">
+            ${optionsList({ note: "ملاحظة", call: "مكالمة", email: "إيميل", meeting: "اجتماع" }, "note")}
+          </select>
+          <input class="ops-input" name="minutes" type="number" min="0" max="240" placeholder="دقايق (اختياري)" dir="ltr">
+        </div>
+        <textarea class="ops-textarea" name="body" rows="2" required placeholder="اتكلمت معاه في…"></textarea>
+        <button class="ops-btn ops-btn--ghost ops-btn--sm" type="submit">أضف</button>
+      </form>`;
+  }
+
+  // ── lead drawer ────────────────────────────────────────────────────
+
+  async function openLead(id) {
+    const lead = state.data.leads.find((l) => l.id === id);
+    if (!lead) return;
+    state.drawer = { type: "lead", id };
+    const box = $("[data-drawer]");
+    box.hidden = false;
+    box.innerHTML = drawerHead(lead.name, `طلب #${lead.id}`) + `<div class="ops-drawer__body"><p class="ops-empty">بيحمّل…</p></div>`;
+
+    let acts = [];
+    try {
+      acts = (await api(`/activities?entity=inquiry&entity_id=${id}`)).rows;
+    } catch {}
+
+    box.innerHTML = `
+      ${drawerHead(lead.name, `طلب #${lead.id} · ${STAGE_LABEL[lead.status] || lead.status}`)}
+      <div class="ops-drawer__body">
+        <dl class="ops-kv">
+          <div class="ops-kv__row"><dt>الإيميل</dt><dd dir="ltr" style="text-align:start">${lead.email ? `<a href="mailto:${esc(lead.email)}">${esc(lead.email)}</a>` : "—"}</dd></div>
+          <div class="ops-kv__row"><dt>التليفون</dt><dd dir="ltr" style="text-align:start">${lead.phone ? `<a href="tel:${esc(lead.phone)}">${esc(lead.phone)}</a>` : "—"}</dd></div>
+          <div class="ops-kv__row"><dt>الباقة</dt><dd>${esc(lead.package || "—")}</dd></div>
+          <div class="ops-kv__row"><dt>وصل</dt><dd>${esc(lead.source || "الموقع")} · ${esc(ago(lead.created_at))}</dd></div>
+        </dl>
+
+        <div class="ops-msg">${esc(lead.message)}</div>
+
+        <form data-form="lead" data-id="${lead.id}" class="ops-field">
+          <span>إدارة الطلب</span>
+          <div class="ops-row">
+            <label class="ops-field"><span>المرحلة</span>
+              <select class="ops-select" name="status">${optionsList(STAGE_LABEL, lead.status)}</select>
+            </label>
+            <label class="ops-field"><span>القيمة (ج.م)</span>
+              <input class="ops-input" name="value" type="number" min="0" step="500" value="${esc(lead.value ?? "")}" placeholder="0" dir="ltr">
+            </label>
+          </div>
+          <div class="ops-row">
+            <label class="ops-field"><span>المسؤول</span>
+              <select class="ops-select" name="assigned_to">${memberOptions(lead.assigned_to)}</select>
+            </label>
+            <label class="ops-field"><span>الخطوة الجاية</span>
+              <input class="ops-input" name="next_action_at" type="date" value="${esc(String(lead.next_action_at || "").slice(0, 10))}" dir="ltr">
+            </label>
+          </div>
+          <label class="ops-field"><span>سبب الخسارة (لو ضاع)</span>
+            <input class="ops-input" name="lost_reason" value="${esc(lead.lost_reason || "")}" placeholder="السعر / التأجيل / اختار حد تاني">
+          </label>
+          <button class="ops-btn" type="submit">حفظ التعديلات</button>
+        </form>
+
+        ${activityForm("inquiry", lead.id)}
+
+        <div>
+          <p style="font-size:12px;color:var(--fg-dim);margin-bottom:8px">السجل</p>
+          ${timeline(acts)}
+        </div>
+      </div>
+      <div class="ops-drawer__foot">
+        ${lead.status !== "won" ? `<button class="ops-btn" type="button" data-action="convert-lead" data-id="${lead.id}">حوّله لعميل + مشروع</button>` : ""}
+        ${lead.email ? `<a class="ops-btn ops-btn--ghost" href="mailto:${esc(lead.email)}">راسله</a>` : ""}
+        <button class="ops-btn ops-btn--ghost" type="button" data-action="close-drawer">إغلاق</button>
+      </div>`;
+  }
+
+  const options = optionsList;
+
+  // ── client drawer ──────────────────────────────────────────────────
+
+  async function openClient(id) {
+    const client = state.data.clients.find((c) => c.id === id);
+    if (!client) return;
+    state.drawer = { type: "client", id };
+    const box = $("[data-drawer]");
+    box.hidden = false;
+    box.innerHTML = drawerHead(client.name, `عميل #${client.id}`);
+
+    let acts = [];
+    try {
+      acts = (await api(`/activities?entity=client&entity_id=${id}`)).rows;
+    } catch {}
+    const projects = state.data.projects.filter((p) => p.client_id === id);
+    const tasks = state.data.tasks.filter((t) => t.client_id === id && t.status !== "done");
+
+    box.innerHTML = `
+      ${drawerHead(client.name, `عميل #${client.id} · ${CLIENT_STATUS[client.status] || client.status}`)}
+      <div class="ops-drawer__body">
+        <form data-form="client" data-id="${client.id}" class="ops-field">
+          <span>بيانات العميل</span>
+          <div class="ops-row">
+            <label class="ops-field"><span>الاسم</span><input class="ops-input" name="name" value="${esc(client.name)}" required></label>
+            <label class="ops-field"><span>الشركة</span><input class="ops-input" name="company" value="${esc(client.company || "")}"></label>
+          </div>
+          <div class="ops-row">
+            <label class="ops-field"><span>الإيميل</span><input class="ops-input" name="email" type="email" dir="ltr" value="${esc(client.email || "")}"></label>
+            <label class="ops-field"><span>التليفون</span><input class="ops-input" name="phone" dir="ltr" value="${esc(client.phone || "")}"></label>
+          </div>
+          <div class="ops-row">
+            <label class="ops-field"><span>الحالة</span><select class="ops-select" name="status">${options(CLIENT_STATUS, client.status)}</select></label>
+            <label class="ops-field"><span>القيمة (ج.م)</span><input class="ops-input" name="value" type="number" min="0" step="500" dir="ltr" value="${esc(client.value ?? "")}"></label>
+          </div>
+          <label class="ops-field"><span>الخطوة الجاية</span>
+            <input class="ops-input" name="next_action_at" type="date" dir="ltr" value="${esc(String(client.next_action_at || "").slice(0, 10))}">
+          </label>
+          <label class="ops-field"><span>ملاحظات</span>
+            <textarea class="ops-textarea" name="notes" rows="3">${esc(client.notes || "")}</textarea>
+          </label>
+          <button class="ops-btn" type="submit">حفظ</button>
+        </form>
+
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <p style="font-size:12px;color:var(--fg-dim)">المشاريع (${projects.length})</p>
+            <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="new-project" data-client="${client.id}" style="margin-inline-start:auto">+ مشروع</button>
+          </div>
+          ${
+            projects.length
+              ? `<ul class="ops-list" style="border:1px solid var(--rule)">${projects
+                  .map(
+                    (p) => `<li class="ops-list__row" style="cursor:default">
+                      <span class="ops-list__main">
+                        <span class="ops-list__title">${esc(p.title)}</span>
+                        <span class="ops-list__meta">${esc(p.package || "من غير باقة")}${p.due_at ? " · مستحق " + esc(dateLabel(p.due_at)) : ""}</span>
+                      </span>
+                      <span class="ops-chip${p.status === "shipped" ? " ops-chip--mint" : ""}">${esc(p.status)}</span>
+                    </li>`
+                  )
+                  .join("")}</ul>`
+              : `<p class="ops-empty" style="border:1px solid var(--rule)">مفيش مشاريع مسجّلة.</p>`
+          }
+        </div>
+
+        <div>
+          <p style="font-size:12px;color:var(--fg-dim);margin-bottom:8px">مهام مفتوحة (${tasks.length})</p>
+          ${
+            tasks.length
+              ? `<ul class="ops-list" style="border:1px solid var(--rule)">${tasks
+                  .map(
+                    (t) => `<li class="ops-list__row" data-action="open-task" data-id="${t.id}">
+                      <span class="ops-list__main">
+                        <span class="ops-list__title">${esc(t.title)}</span>
+                        <span class="ops-list__meta">${esc(t.assignee || "مش متأسّن")}${t.due_at ? " · " + esc(dateLabel(t.due_at)) : ""}</span>
+                      </span>
+                    </li>`
+                  )
+                  .join("")}</ul>`
+              : `<p class="ops-empty" style="border:1px solid var(--rule)">مفيش مهام مفتوحة.</p>`
+          }
+        </div>
+
+        ${activityForm("client", client.id)}
+
+        <div>
+          <p style="font-size:12px;color:var(--fg-dim);margin-bottom:8px">السجل</p>
+          ${timeline(acts)}
+        </div>
+      </div>
+      <div class="ops-drawer__foot">
+        ${client.email ? `<a class="ops-btn" href="mailto:${esc(client.email)}">راسله</a>` : ""}
+        <button class="ops-btn ops-btn--ghost" type="button" data-action="new-task" data-client="${client.id}">+ مهمة</button>
+        <button class="ops-btn ops-btn--ghost" type="button" data-action="close-drawer">إغلاق</button>
+      </div>`;
+  }
+
+  // ── task drawer ────────────────────────────────────────────────────
+
+  async function openTask(id) {
+    const task = state.data.tasks.find((t) => t.id === id);
+    if (!task) return;
+    state.drawer = { type: "task", id };
+    const box = $("[data-drawer]");
+    box.hidden = false;
+    let acts = [];
+    try {
+      acts = (await api(`/activities?entity=task&entity_id=${id}`)).rows;
+    } catch {}
+
+    box.innerHTML = `
+      ${drawerHead(task.title, `مهمة #${task.id} · ${TASK_LABEL[task.status] || task.status}`)}
+      <div class="ops-drawer__body">
+        ${task.detail ? `<div class="ops-msg">${esc(task.detail)}</div>` : ""}
+        <form data-form="task" data-id="${task.id}" class="ops-field">
+          <div class="ops-row">
+            <label class="ops-field"><span>الحالة</span><select class="ops-select" name="status">${options(TASK_LABEL, task.status)}</select></label>
+            <label class="ops-field"><span>الأولوية</span><select class="ops-select" name="priority">${options(PRIORITY_LABEL, task.priority)}</select></label>
+          </div>
+          <div class="ops-row">
+            <label class="ops-field"><span>المسؤول</span><select class="ops-select" name="assignee">${memberOptions(task.assignee)}</select></label>
+            <label class="ops-field"><span>الموعد</span><input class="ops-input" name="due_at" type="date" dir="ltr" value="${esc(String(task.due_at || "").slice(0, 10))}"></label>
+          </div>
+          <label class="ops-field"><span>تقدير بالدقايق</span>
+            <input class="ops-input" name="estimate_minutes" type="number" min="0" step="15" dir="ltr" value="${esc(task.estimate_minutes ?? "")}">
+          </label>
+          <button class="ops-btn" type="submit">حفظ</button>
+        </form>
+
+        ${activityForm("task", task.id)}
+
+        <div>
+          <p style="font-size:12px;color:var(--fg-dim);margin-bottom:8px">السجل</p>
+          ${timeline(acts)}
+        </div>
+      </div>
+      <div class="ops-drawer__foot">
+        <button class="ops-btn" type="button" data-action="toggle-task" data-id="${task.id}">
+          ${task.status === "done" ? "رجّعها مفتوحة" : "علّمها خلصت"}
+        </button>
+        <button class="ops-btn ops-btn--ghost" type="button" data-action="close-drawer">بقفل</button>
+      </div>`;
+  }
+
+  // ── member drawer ──────────────────────────────────────────────────
+
+  function openMember(id) {
+    const m = state.data.members.find((x) => x.id === id);
+    if (!m) return;
+    state.drawer = { type: "member", id };
+    const box = $("[data-drawer]");
+    box.hidden = false;
+    const tasks = openTasks().filter((t) => t.assignee === m.name);
+    const leads = openLeads().filter((l) => l.assigned_to === m.name);
+    box.innerHTML = `
+      ${drawerHead(m.name, `${ROLES[m.role] || m.role}${m.active ? "" : " · مؤرشف"}`)}
+      <div class="ops-drawer__body">
+        <dl class="ops-kv">
+          <div class="ops-kv__row"><dt>التركيز</dt><dd>${esc(m.focus || "—")}</dd></div>
+          <div class="ops-kv__row"><dt>الإيميل</dt><dd dir="ltr" style="text-align:start">${esc(m.email || "—")}</dd></div>
+          <div class="ops-kv__row"><dt>التليفون</dt><dd dir="ltr" style="text-align:start">${esc(m.phone || "—")}</dd></div>
+          <div class="ops-kv__row"><dt>السعة</dt><dd>${num(m.capacity_hours)} ساعة/أسبوع</dd></div>
+          <div class="ops-kv__row"><dt>التحميل</dt><dd>${num(m.open_tasks || 0)} مهمة · ${num(m.open_leads || 0)} طلب · ${num(m.minutes_7d || 0)} د آخر أسبوع</dd></div>
+        </dl>
+        ${m.notes ? `<div class="ops-msg">${esc(m.notes)}</div>` : ""}
+        <div>
+          <p style="font-size:12px;color:var(--fg-dim);margin-bottom:8px">شغله المفتوح</p>
+          ${
+            tasks.length || leads.length
+              ? `<ul class="ops-list" style="border:1px solid var(--rule)">
+                   ${leads.map((l) => `<li class="ops-list__row" data-action="open-lead" data-id="${l.id}">
+                     <span class="ops-list__main"><span class="ops-list__title">${esc(l.name)}</span><span class="ops-list__meta">طلب · ${esc(STAGE_LABEL[l.status] || l.status)}</span></span>
+                   </li>`).join("")}
+                   ${tasks.map((t) => `<li class="ops-list__row" data-action="open-task" data-id="${t.id}">
+                     <span class="ops-list__main"><span class="ops-list__title">${esc(t.title)}</span><span class="ops-list__meta">مهمة${isLate(t) ? " · متأخرة" : ""}</span></span>
+                   </li>`).join("")}
+                 </ul>`
+              : `<p class="ops-empty" style="border:1px solid var(--rule)">مفيش شغل مسند ليه دلوقتي.</p>`
+          }
+        </div>
+      </div>
+      <div class="ops-drawer__foot">
+        <button class="ops-btn ops-btn--ghost" type="button" data-action="edit-member" data-id="${m.id}">تعديل البيانات</button>
+        <button class="ops-btn ops-btn--ghost" type="button" data-action="close-drawer">إغلاق</button>
+      </div>`;
+  }
+
+  // ── dialogs ────────────────────────────────────────────────────────
+
+  function openDialog({ title, body, submit = "حفظ", onSubmit }) {
+    const dlg = $("[data-dialog]");
+    dlg.innerHTML = `
+      <form data-dialog-form novalidate>
+        <header class="ops-dialog__head">
+          <h2>${esc(title)}</h2>
+          <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="close-dialog" style="margin-inline-start:auto">إغلاق</button>
+        </header>
+        <div class="ops-dialog__body">${body}</div>
+        <footer class="ops-dialog__foot">
+          <button class="ops-btn ops-btn--ghost" type="button" data-action="close-dialog">إلغاء</button>
+          <button class="ops-btn" type="submit">${esc(submit)}</button>
+        </footer>
+      </form>`;
+    state.dialogSubmit = onSubmit;
+    dlg.showModal();
+    dlg.querySelector("input, select, textarea")?.focus();
+  }
+
+  const dialogNewLead = () =>
+    openDialog({
+      title: "طلب جديد",
+      body: `
+        <div class="ops-row">
+          <label class="ops-field"><span>الاسم</span><input class="ops-input" name="name" required></label>
+          <label class="ops-field"><span>الباقة</span><input class="ops-input" name="package" placeholder="logo / site / pos…"></label>
+        </div>
+        <div class="ops-row">
+          <label class="ops-field"><span>الإيميل</span><input class="ops-input" name="email" type="email" dir="ltr"></label>
+          <label class="ops-field"><span>التليفون</span><input class="ops-input" name="phone" dir="ltr"></label>
+        </div>
+        <label class="ops-field"><span>الكلام</span><textarea class="ops-textarea" name="message" required rows="3"></textarea></label>`,
+      onSubmit: async (fd) => {
+        await api("/inquiries", {
+          method: "POST",
+          body: {
+            name: fd.get("name"),
+            email: fd.get("email"),
+            phone: fd.get("phone"),
+            package: fd.get("package"),
+            message: fd.get("message"),
+            source: "console",
+          },
+        });
+        toast("الطلب اتضاف", "ok");
+      },
     });
+
+  const dialogNewClient = () =>
+    openDialog({
+      title: "عميل جديد",
+      body: `
+        <div class="ops-row">
+          <label class="ops-field"><span>الاسم</span><input class="ops-input" name="name" required></label>
+          <label class="ops-field"><span>الشركة</span><input class="ops-input" name="company"></label>
+        </div>
+        <div class="ops-row">
+          <label class="ops-field"><span>الإيميل</span><input class="ops-input" name="email" type="email" dir="ltr"></label>
+          <label class="ops-field"><span>التليفون</span><input class="ops-input" name="phone" dir="ltr"></label>
+        </div>
+        <div class="ops-row">
+          <label class="ops-field"><span>الحالة</span><select class="ops-select" name="status">${options(CLIENT_STATUS, "active")}</select></label>
+          <label class="ops-field"><span>القيمة (ج.م)</span><input class="ops-input" name="value" type="number" min="0" step="500" dir="ltr"></label>
+        </div>
+        <label class="ops-field"><span>ملاحظات</span><textarea class="ops-textarea" name="notes" rows="2"></textarea></label>`,
+      onSubmit: async (fd) => {
+        await api("/clients", {
+          method: "POST",
+          body: {
+            name: fd.get("name"),
+            company: fd.get("company"),
+            email: fd.get("email"),
+            phone: fd.get("phone"),
+            status: fd.get("status"),
+            value: fd.get("value") ? Number(fd.get("value")) : null,
+            notes: fd.get("notes"),
+          },
+        });
+        toast("العميل اتضاف", "ok");
+      },
+    });
+
+  const dialogNewTask = (clientId = "") =>
+    openDialog({
+      title: "مهمة جديدة",
+      body: `
+        <label class="ops-field"><span>العنوان</span><input class="ops-input" name="title" required></label>
+        <label class="ops-field"><span>التفاصيل</span><textarea class="ops-textarea" name="detail" rows="2"></textarea></label>
+        <div class="ops-row">
+          <label class="ops-field"><span>المسؤول</span><select class="ops-select" name="assignee">${memberOptions("")}</select></label>
+          <label class="ops-field"><span>الموعد</span><input class="ops-input" name="due_at" type="date" dir="ltr"></label>
+        </div>
+        <div class="ops-row">
+          <label class="ops-field"><span>الأولوية</span><select class="ops-select" name="priority">${options(PRIORITY_LABEL, 2)}</select></label>
+          <label class="ops-field"><span>تقدير بالدقايق</span><input class="ops-input" name="estimate_minutes" type="number" min="0" step="15" dir="ltr"></label>
+        </div>
+        <label class="ops-field"><span>العميل</span>
+          <select class="ops-select" name="client_id">
+            <option value="">من غير عميل</option>
+            ${state.data.clients.map((c) => `<option value="${c.id}"${String(c.id) === String(clientId) ? " selected" : ""}>${esc(c.name)}</option>`).join("")}
+          </select>
+        </label>`,
+      onSubmit: async (fd) => {
+        await api("/tasks", {
+          method: "POST",
+          body: {
+            title: fd.get("title"),
+            detail: fd.get("detail"),
+            assignee: fd.get("assignee"),
+            due_at: fd.get("due_at"),
+            priority: Number(fd.get("priority") || 2),
+            estimate_minutes: fd.get("estimate_minutes") ? Number(fd.get("estimate_minutes")) : null,
+            client_id: fd.get("client_id") ? Number(fd.get("client_id")) : null,
+          },
+        });
+        toast("المهمة اتضافت", "ok");
+      },
+    });
+
+  const dialogMember = (member = null) =>
+    openDialog({
+      title: member ? `تعديل ${member.name}` : "عضو جديد",
+      body: `
+        <div class="ops-row">
+          <label class="ops-field"><span>الاسم</span><input class="ops-input" name="name" required value="${esc(member?.name || "")}"></label>
+          <label class="ops-field"><span>الدور</span><select class="ops-select" name="role">${options(ROLES, member?.role || "member")}</select></label>
+        </div>
+        <div class="ops-row">
+          <label class="ops-field"><span>الإيميل</span><input class="ops-input" name="email" type="email" dir="ltr" value="${esc(member?.email || "")}"></label>
+          <label class="ops-field"><span>التليفون</span><input class="ops-input" name="phone" dir="ltr" value="${esc(member?.phone || "")}"></label>
+        </div>
+        <div class="ops-row">
+          <label class="ops-field"><span>بيشتغل على</span><input class="ops-input" name="focus" placeholder="تصميم / برمجة / متابعة" value="${esc(member?.focus || "")}"></label>
+          <label class="ops-field"><span>ساعات الأسبوع</span><input class="ops-input" name="capacity_hours" type="number" min="1" max="80" dir="ltr" value="${esc(member?.capacity_hours ?? 32)}"></label>
+        </div>
+        <label class="ops-field"><span>ملاحظات</span><textarea class="ops-textarea" name="notes" rows="2">${esc(member?.notes || "")}</textarea></label>
+        ${member ? `<label class="ops-field" style="grid-auto-flow:column;justify-content:start;align-items:center;gap:8px"><input type="checkbox" name="active" ${member.active ? "checked" : ""}> <span>شغّال معانا</span></label>` : ""}`,
+      onSubmit: async (fd) => {
+        const payload = {
+          name: fd.get("name"),
+          role: fd.get("role"),
+          email: fd.get("email"),
+          phone: fd.get("phone"),
+          focus: fd.get("focus"),
+          capacity_hours: Number(fd.get("capacity_hours") || 32),
+          notes: fd.get("notes"),
+        };
+        if (member) {
+          payload.active = fd.get("active") ? 1 : 0;
+          await api(`/members/${member.id}`, { method: "PATCH", body: payload });
+          toast("اتحدّث", "ok");
+        } else {
+          await api("/members", { method: "POST", body: payload });
+          toast("العضو اتضاف", "ok");
+        }
+      },
+    });
+
+  const dialogProject = (clientId) =>
+    openDialog({
+      title: "مشروع جديد",
+      body: `
+        <label class="ops-field"><span>العنوان</span><input class="ops-input" name="title" required></label>
+        <div class="ops-row">
+          <label class="ops-field"><span>الباقة</span><input class="ops-input" name="package"></label>
+          <label class="ops-field"><span>الحالة</span><select class="ops-select" name="status">${options({ planned: "مخطط", building: "تحت التنفيذ", review: "مراجعة", shipped: "اتسلّم" }, "planned")}</select></label>
+        </div>
+        <label class="ops-field"><span>الموعد</span><input class="ops-input" name="due_at" type="date" dir="ltr"></label>`,
+      onSubmit: async (fd) => {
+        await api("/projects", {
+          method: "POST",
+          body: { client_id: Number(clientId), title: fd.get("title"), package: fd.get("package"), status: fd.get("status"), due_at: fd.get("due_at") },
+        });
+        toast("المشروع اتضاف", "ok");
+      },
+    });
+
+  const dialogAgent = () =>
+    openDialog({
+      title: "وكيل جديد",
+      submit: "أنشئ المفتاح",
+      body: `
+        <label class="ops-field"><span>الاسم</span><input class="ops-input" name="name" required placeholder="ops-bot"></label>
+        <fieldset style="border:1px solid var(--rule-strong);padding:10px;display:flex;gap:14px">
+          <legend style="font-size:12px;color:var(--fg-dim);padding:0 6px">الصلاحيات</legend>
+          <label><input type="checkbox" name="scopes" value="read" checked> قراءة</label>
+          <label><input type="checkbox" name="scopes" value="write"> كتابة</label>
+          <label><input type="checkbox" name="scopes" value="admin"> إدارة</label>
+        </fieldset>`,
+      onSubmit: async (fd) => {
+        const scopes = fd.getAll("scopes").join(",") || "read";
+        const data = await api("/agents", { method: "POST", body: { name: fd.get("name"), scopes } });
+        openDialog({
+          title: "المفتاح — بيظهر مرة واحدة",
+          body: `<p style="font-size:13px;color:var(--fg-dim)">انسخه دلوقتي. السيرفر مش بيحتفظ بيه مقروء.</p>
+                 <div class="ops-msg" dir="ltr" style="font-family:var(--font-mono)">${esc(data.row?.key || data.key || "")}</div>`,
+          submit: "تم",
+          onSubmit: async () => {},
+        });
+        return { keepOpen: true };
+      },
+    });
+
+  const dialogRotate = () =>
+    openDialog({
+      title: "تغيير كود الدخول",
+      submit: "غيّر",
+      body: `
+        <p style="font-size:13px;color:var(--fg-dim)">الكود الجديد 12 حرف على الأقل. هيتغير فورًا، وأي جلسة تانية هتخرج.</p>
+        <label class="ops-field"><span>الكود الجديد</span><input class="ops-input" name="next" type="password" required minlength="12" autocomplete="new-password" dir="ltr"></label>
+        <label class="ops-field"><span>أكّده</span><input class="ops-input" name="confirm" type="password" required minlength="12" autocomplete="new-password" dir="ltr"></label>`,
+      onSubmit: async (fd) => {
+        if (fd.get("next") !== fd.get("confirm")) throw new Error("الكودين مش زي بعض");
+        await api("/admin/token", { method: "POST", body: { current: state.token, next: fd.get("next") } });
+        state.token = fd.get("next");
+        sessionStorage.setItem(KEY, state.token);
+        toast("الكود اتغيّر", "ok");
+      },
+    });
+
+  // ── render & refresh ───────────────────────────────────────────────
+
+  function render() {
+    const fns = {
+      overview: renderOverview,
+      pipeline: renderPipeline,
+      clients: renderClients,
+      tasks: renderTasks,
+      team: renderTeam,
+      channels: renderChannels,
+      agents: renderAgents,
+    };
+    const panel = $(`[data-panel="${state.view}"]`);
+    if (panel) panel.innerHTML = fns[state.view]();
+    $$("[data-count]").forEach((node) => {
+      if (node.dataset.count === "pipeline") node.textContent = String(openLeads().length);
+      if (node.dataset.count === "tasks") node.textContent = String(openTasks().length);
+    });
+    if (state.view === "channels" && state.activeChannel) loadMessages(state.activeChannel);
   }
 
-  panel.append(el(`<div class="ops-head" style="margin-top:20px"><h2>الوكلاء المسجلين</h2></div>`));
-  panel.append(el(`<div class="ops-list">${cards || '<div class="ops-empty">مفيش وكلاء. اعمل مفتاح وابدأ.</div>'}</div>`));
+  async function refreshKeepingDrawer() {
+    await loadAll();
+    const d = state.drawer;
+    if (!d) return;
+    if (d.type === "lead") await openLead(d.id);
+    else if (d.type === "client") await openClient(d.id);
+    else if (d.type === "task") await openTask(d.id);
+    else if (d.type === "member") openMember(d.id);
+  }
 
-  $("[data-agent-form]", panel).addEventListener("submit", async (event) => {
+  // ── mutations ──────────────────────────────────────────────────────
+
+  async function moveLead(id, status) {
+    await api(`/inquiries/${id}`, { method: "PATCH", body: { status } });
+    toast(`اتنقل لـ ${STAGE_LABEL[status]}`, "ok");
+    await refreshKeepingDrawer();
+  }
+
+  async function toggleTask(id) {
+    const task = state.data.tasks.find((t) => t.id === id);
+    if (!task) return;
+    await api(`/tasks/${id}`, { method: "PATCH", body: { status: task.status === "done" ? "todo" : "done" } });
+    await refreshKeepingDrawer();
+  }
+
+  async function toggleAgent(id) {
+    const agent = state.data.agents.find((a) => a.id === id);
+    if (!agent) return;
+    await api(`/agents/${id}`, { method: "PATCH", body: { active: agent.active ? 0 : 1 } });
+    await loadAll();
+  }
+
+  async function convertLead(id) {
+    const data = await api(`/inquiries/${id}/convert`, { method: "POST", body: {} });
+    toast("بقى عميل، وفيه مشروع ومهمة", "ok");
+    closeDrawer();
+    await loadAll();
+    setView("clients");
+    if (data.client_id) await openClient(data.client_id);
+  }
+
+  function togglePomodoro() {
+    if (state.pomodoro) {
+      clearInterval(state.timer);
+      state.pomodoro = null;
+      render();
+      return;
+    }
+    state.pomodoro = { left: 25 * 60 };
+    state.timer = setInterval(async () => {
+      if (!state.pomodoro) return;
+      state.pomodoro.left -= 1;
+      if (state.pomodoro.left <= 0) {
+        clearInterval(state.timer);
+        state.pomodoro = null;
+        try {
+          await api("/time", { method: "POST", body: { minutes: 25, label: "جلسة تركيز" } });
+          toast("٢٥ دقيقة اتسجلت. خد بريك ٥.", "ok");
+        } catch {
+          toast("الجلسة خلصت بس مش اتسجلت", "bad");
+        }
+        await loadAll();
+        if (state.view === "tasks") render();
+        return;
+      }
+      const btn = $('[data-action="pomodoro"]');
+      if (btn) btn.textContent = `${Math.floor(state.pomodoro.left / 60)}:${String(state.pomodoro.left % 60).padStart(2, "0")} · إيقاف`;
+    }, 1000);
+    render();
+  }
+
+  async function sendMessage(form) {
+    const body = new FormData(form).get("body");
+    if (!String(body || "").trim()) return;
+    await api(`/channels/${form.dataset.channel}/messages`, { method: "POST", body: { body } });
+    form.reset();
+    await loadAll();
+  }
+
+  // ── events ─────────────────────────────────────────────────────────
+
+  const ACTIONS = {
+    "close-drawer": () => closeDrawer(),
+    "close-dialog": () => $("[data-dialog]").close(),
+    "open-lead": (el) => openLead(Number(el.dataset.id)),
+    "open-client": (el) => openClient(Number(el.dataset.id)),
+    "open-task": (el) => openTask(Number(el.dataset.id)),
+    "open-member": (el) => openMember(Number(el.dataset.id)),
+    "open-channel": (el) => {
+      state.activeChannel = Number(el.dataset.id);
+      render();
+    },
+    "filter-tasks": (el) => {
+      state.filters.tasks = el.dataset.value;
+      render();
+    },
+    "toggle-task": (el) => toggleTask(Number(el.dataset.id)),
+    "toggle-agent": (el) => toggleAgent(Number(el.dataset.id)),
+    "convert-lead": (el) => convertLead(Number(el.dataset.id)),
+    pomodoro: () => togglePomodoro(),
+    "new-lead": () => dialogNewLead(),
+    "new-client": () => dialogNewClient(),
+    "new-task": (el) => dialogNewTask(el.dataset.client || ""),
+    "new-member": () => dialogMember(),
+    "new-project": (el) => dialogProject(el.dataset.client),
+    "new-agent": () => dialogAgent(),
+    "edit-member": (el) => dialogMember(state.data.members.find((m) => m.id === Number(el.dataset.id))),
+  };
+
+  document.addEventListener("click", (event) => {
+    const viewBtn = event.target.closest("[data-view]");
+    if (viewBtn) {
+      setView(viewBtn.dataset.view);
+      return;
+    }
+    const el = event.target.closest("[data-action]");
+    if (!el || ["INPUT", "SELECT", "TEXTAREA"].includes(el.tagName)) return;
+    const fn = ACTIONS[el.dataset.action];
+    if (!fn) return;
     event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.target));
-    const created = await api("/api/agents", { method: "POST", body: data });
-    state.newAgentKey = created.row.key;
-    event.target.reset();
-    renderAgents();
+    Promise.resolve(fn(el)).catch((err) => {
+      if (String(err.message) !== "unauthorized") toast(`مش نفع: ${err.message}`, "bad");
+    });
   });
 
-  $$("[data-agent-toggle]", panel).forEach((button) =>
-    button.addEventListener("click", async () => {
-      await api(`/api/agents/${button.dataset.agentToggle}`, { method: "PATCH", body: { active: button.dataset.active === "1" } });
-      renderAgents();
-    })
-  );
-}
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && state.drawer) closeDrawer();
+    if ((event.key === "Enter" || event.key === " ") && event.target.classList?.contains("ops-lead")) {
+      event.preventDefault();
+      openLead(Number(event.target.dataset.id));
+    }
+  });
 
-// ── polling: badges + new-lead toast ─────────────────────────────────
+  let filterTimer = null;
+  document.addEventListener("input", (event) => {
+    if (event.target.dataset.action !== "filter-pipeline") return;
+    state.filters.pipeline = event.target.value;
+    clearTimeout(filterTimer);
+    filterTimer = setTimeout(() => render(), 150);
+  });
 
-function startPolling() {
-  clearInterval(state.pollTimer);
-  state.pollTimer = setInterval(async () => {
+  document.addEventListener("submit", async (event) => {
+    const form = event.target.closest("form");
+    if (!form || form.matches("[data-gate-form]")) return;
+    event.preventDefault();
+    const fd = new FormData(form);
     try {
-      const events = await api(`/api/events?after=${state.lastEvent}&limit=10`);
-      const fresh = events.rows || [];
-      if (fresh.length) {
-        state.lastEvent = Math.max(...fresh.map((row) => row.id));
-        const lead = fresh.find((row) => row.kind === "inquiry.created");
-        if (lead) toast("طلب جديد وصل من الموقع", "ok");
+      if (form.matches("[data-dialog-form]")) {
+        const result = await state.dialogSubmit(fd);
+        if (!result?.keepOpen) $("[data-dialog]").close();
+        await refreshKeepingDrawer();
+        return;
       }
-      await refreshCounts();
-      if (state.view === "overview") renderOverview();
-    } catch {
-      $("[data-sync]").dataset.stale = "1";
-      $("[data-sync]").textContent = "انقطع الاتصال";
+      const kind = form.dataset.form;
+      if (kind === "lead") {
+        await api(`/inquiries/${form.dataset.id}`, {
+          method: "PATCH",
+          body: {
+            status: fd.get("status"),
+            value: fd.get("value") ? Number(fd.get("value")) : null,
+            assigned_to: fd.get("assigned_to") || "",
+            next_action_at: fd.get("next_action_at") || "",
+            lost_reason: fd.get("lost_reason") || "",
+          },
+        });
+        toast("الطلب اتحدّث", "ok");
+      } else if (kind === "client") {
+        await api(`/clients/${form.dataset.id}`, {
+          method: "PATCH",
+          body: {
+            name: fd.get("name"),
+            company: fd.get("company"),
+            email: fd.get("email"),
+            phone: fd.get("phone"),
+            status: fd.get("status"),
+            value: fd.get("value") ? Number(fd.get("value")) : null,
+            next_action_at: fd.get("next_action_at") || "",
+            notes: fd.get("notes"),
+          },
+        });
+        toast("العميل اتحدّث", "ok");
+      } else if (kind === "task") {
+        await api(`/tasks/${form.dataset.id}`, {
+          method: "PATCH",
+          body: {
+            status: fd.get("status"),
+            priority: Number(fd.get("priority")),
+            assignee: fd.get("assignee") || "",
+            due_at: fd.get("due_at") || "",
+            estimate_minutes: fd.get("estimate_minutes") ? Number(fd.get("estimate_minutes")) : null,
+          },
+        });
+        toast("المهمة اتحدّثت", "ok");
+      } else if (kind === "activity") {
+        await api("/activities", {
+          method: "POST",
+          body: {
+            entity: form.dataset.entity,
+            entity_id: Number(form.dataset.id),
+            kind: fd.get("kind"),
+            body: fd.get("body"),
+            minutes: fd.get("minutes") ? Number(fd.get("minutes")) : null,
+          },
+        });
+        toast("اتسجل", "ok");
+      } else if (kind === "message") {
+        await sendMessage(form);
+        return;
+      }
+      await refreshKeepingDrawer();
+    } catch (err) {
+      if (String(err.message) !== "unauthorized") toast(`مش نفع: ${err.message}`, "bad");
     }
-  }, 20000);
-}
+  });
 
-// ── boot ─────────────────────────────────────────────────────────────
+  document.addEventListener("dragstart", (event) => {
+    const card = event.target.closest(".ops-lead");
+    if (!card) return;
+    event.dataTransfer.setData("text/plain", card.dataset.id);
+    event.dataTransfer.effectAllowed = "move";
+  });
 
-$$(".ops__nav-btn").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
-$("[data-lock]").addEventListener("click", () => lock("اتقفلت اللوحة."));
+  document.addEventListener("dragover", (event) => {
+    const col = event.target.closest("[data-drop]");
+    if (!col) return;
+    event.preventDefault();
+    $$(".ops-col").forEach((c) => c.removeAttribute("data-over"));
+    col.setAttribute("data-over", "true");
+  });
 
-$("[data-rotate]").addEventListener("click", async () => {
-  const next = prompt("التوكن الجديد (16 حرف على الأقل). هتحتاجه في الدخول الجاي:");
-  if (!next || next.trim().length < 16) return;
-  try {
-    await api("/api/admin/token", { method: "POST", body: { current: token, next: next.trim() } });
-    token = next.trim();
-    sessionStorage.setItem(KEY, token);
-    toast("التوكن اتغير. احفظه دلوقتي.");
-  } catch {
-    toast("التغيير فشل", "error");
-  }
-});
-$("[data-refresh]").addEventListener("click", () => {
-  refreshCounts();
-  render(state.view);
-  toast("اتحدث");
-});
+  document.addEventListener("dragend", () => $$(".ops-col").forEach((c) => c.removeAttribute("data-over")));
 
-$("[data-reveal]").addEventListener("click", (event) => {
-  const input = $('[data-gate-form] input');
-  const show = input.type === "password";
-  input.type = show ? "text" : "password";
-  event.currentTarget.textContent = show ? "إخفاء" : "إظهار";
-});
+  document.addEventListener("drop", async (event) => {
+    const col = event.target.closest("[data-drop]");
+    if (!col) return;
+    event.preventDefault();
+    col.removeAttribute("data-over");
+    const id = Number(event.dataTransfer.getData("text/plain"));
+    const lead = state.data.leads.find((l) => l.id === id);
+    if (!lead || lead.status === col.dataset.drop) return;
+    try {
+      await moveLead(id, col.dataset.drop);
+    } catch (err) {
+      toast(`مش نفع: ${err.message}`, "bad");
+    }
+  });
 
-$("[data-gate-form]").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const input = event.target.elements.token;
-  const candidate = normalize(input.value);
-  if (candidate.length < 12) {
-    gateStatus.textContent = "التوكن قصير — انسخه كامل.";
-    return;
-  }
-  gateStatus.textContent = "بنتحقق…";
-  gateStatus.dataset.tone = "";
-  token = candidate;
-  try {
-    await api("/api/overview");
-    sessionStorage.setItem(KEY, token);
-    input.value = "";
-    gateStatus.textContent = "";
-    history.replaceState(null, "", "#/" + state.view);
-    await enter();
-  } catch (error) {
-    if (error.message !== "unauthorized") {
-      gateStatus.textContent = "الشبكة مش راضية ترد. جرّب كمان شوية.";
+  // ── boot ───────────────────────────────────────────────────────────
+
+  async function unlock() {
+    setSync("بيدخل…");
+    state.me = null;
+    try {
+      const overview = await api("/overview");
+      state.me = overview.who;
+      sessionStorage.setItem(KEY, state.token);
+      $("[data-gate]").hidden = true;
+      $("[data-shell]").hidden = false;
+      $("[data-who]").innerHTML = `<i>●</i> ${esc(state.me.name)} · ${esc(state.me.role)}`;
+      await loadAll();
+      setView(location.hash.replace("#", "") || "overview", false);
+    } catch (err) {
+      if (String(err.message) === "unauthorized") lock("الكود مش صح. جرّب تاني.");
+      else lock("مش قادر أوصل للسيرفر دلوقتي.");
     }
   }
-});
 
-window.addEventListener("hashchange", () => {
-  const next = location.hash.replace("#/", "") || "overview";
-  if (next !== state.view && TITLES[next]) setView(next);
-});
+  $("[data-gate-form]").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = event.target.querySelector("input[name=token]");
+    const value = input.value.trim();
+    if (!value) return;
+    state.token = value;
+    $("[data-gate-status]").textContent = "";
+    await unlock();
+    if (!state.me) input.select();
+  });
 
-(async function boot() {
-  if (!token) {
-    gate.hidden = false;
-    return;
-  }
-  try {
-    const me = await api("/api/overview");
-    $("[data-who]").textContent = `${me.who?.name || "—"} · ${me.who?.role === "admin" ? "مدير" : "وكيل"}`;
-    await enter();
-  } catch {
-    lock("");
-  }
+  $("[data-reveal]").addEventListener("click", (event) => {
+    const input = $("[data-gate-form] input[name=token]");
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    event.currentTarget.textContent = show ? "إخفاء" : "إظهار";
+  });
+
+  $$("[data-lock]").forEach((btn) => btn.addEventListener("click", () => lock("خرجت. ادخل الكود تاني.")));
+  $$("[data-rotate]").forEach((btn) => btn.addEventListener("click", () => dialogRotate()));
+  $("[data-refresh]").addEventListener("click", () => loadAll());
+  window.addEventListener("hashchange", () => setView(location.hash.replace("#", "") || "overview", false));
+
+  setInterval(() => {
+    if (!document.hidden && state.token) loadAll();
+  }, 90000);
+
+  if (state.token) unlock();
+  else lock("");
 })();
-
-
-
-

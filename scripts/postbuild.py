@@ -1,5 +1,6 @@
 """Fold the static extras into dist/ and fix each page's document language."""
 
+import hashlib
 import re
 import shutil
 from datetime import date
@@ -20,6 +21,20 @@ def localise() -> None:
     if home.exists():
         html = home.read_text(encoding="utf-8").replace('<html lang="ar" dir="rtl">', '<html lang="en" dir="ltr">', 1)
         home.write_text(html, encoding="utf-8")
+
+
+def fingerprint_admin() -> None:
+    page = DIST / "admin/index.html"
+    if not page.exists():
+        return
+    html = page.read_text(encoding="utf-8")
+    for url in ("/assets/js/admin.js", "/assets/css/admin.css"):
+        asset = DIST / url.lstrip("/")
+        if not asset.exists():
+            continue
+        digest = hashlib.sha256(asset.read_bytes()).hexdigest()[:8]
+        html = re.sub(rf"{re.escape(url)}(\?v=[0-9a-zA-Z]+)?", f"{url}?v={digest}", html)
+    page.write_text(html, encoding="utf-8")
 
 
 def sitemap() -> None:
@@ -73,6 +88,7 @@ def main() -> None:
             shutil.copytree(src, dst)
         elif src.exists():
             shutil.copy2(src, dst)
+    fingerprint_admin()
     not_found = ROOT / "404.html"
     if not_found.exists():
         shutil.copy2(not_found, DIST / "404.html")

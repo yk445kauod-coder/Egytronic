@@ -6,7 +6,7 @@
 // Agents carry scopes — read, write, admin — and only get what they need.
 
 const PACKAGES = new Set(["logo", "landing", "static", "identity", "dynamic", "transform", "unsure"]);
-const INQUIRY_STATUS = new Set(["new", "contacted", "quoted", "won", "lost"]);
+const INQUIRY_STATUS = new Set(["new", "contacted", "qualified", "proposal", "won", "lost"]);
 const TASK_STATUS = new Set(["todo", "doing", "done"]);
 const CLIENT_STATUS = new Set(["lead", "active", "paused", "done"]);
 const PROJECT_STATUS = new Set(["planned", "building", "review", "shipped"]);
@@ -566,10 +566,25 @@ async function patchInquiry(env, id, payload, who) {
     sets.push("assigned_to = ?");
     values.push(clean(payload.assigned_to, 60) || null);
   }
+  if (payload.value !== undefined) {
+    sets.push("value = ?");
+    values.push(int(payload.value, null));
+  }
+  if (payload.next_action_at !== undefined) {
+    sets.push("next_action_at = ?");
+    values.push(clean(payload.next_action_at, 32) || null);
+  }
+  if (payload.lost_reason !== undefined) {
+    sets.push("lost_reason = ?");
+    values.push(clean(payload.lost_reason, 200) || null);
+  }
   if (!sets.length) return json({ ok: false, code: "nothing" }, 400);
 
   sets.push("updated_at = datetime('now')");
   await env.DB.prepare(`UPDATE inquiries SET ${sets.join(", ")} WHERE id = ?`).bind(...values, id).run();
+  if (payload.status) {
+    await act(env, "inquiry", id, "stage", `الحالة بقت ${payload.status}`, who.name);
+  }
   await emit(env, "inquiry.updated", "inquiry", id, who.name, payload);
   return json({ ok: true, row: await env.DB.prepare("SELECT * FROM inquiries WHERE id = ?").bind(id).first() });
 }
@@ -579,8 +594,14 @@ async function convertInquiry(env, id, payload, who) {
   if (!inquiry) return json({ ok: false, code: "missing" }, 404);
 
   const client = await env.DB
-    .prepare("INSERT INTO clients (name, email, phone, status, value) VALUES (?, ?, ?, 'active', ?) RETURNING id")
-    .bind(inquiry.name, inquiry.email, inquiry.phone, int(payload.value, null))
+    .prepare("INSERT INTO clients (name, email, phone, status, value, source) VALUES (?, ?, ?, 'active', ?, ?) RETURNING id")
+    .bind(
+      inquiry.name,
+      inquiry.email,
+      inquiry.phone,
+      int(payload.value, null) ?? inquiry.value ?? null,
+      inquiry.source ? `lead:${inquiry.source}` : "lead"
+    )
     .first();
 
   const project = await env.DB
@@ -795,7 +816,7 @@ async function createTask(env, payload, who) {
   if (title.length < 2) return json({ ok: false, code: "title" }, 400);
   const row = await env.DB
     .prepare(
-      "INSERT INTO tasks (title, detail, status, priority, client_id, project_id, channel_id, inquiry_id, assignee, due_at, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *"
+      "INSERT INTO tasks (title, detail, status, priority, client_id, project_id, channel_id, inquiry_id, assignee, due_at, estimate_minutes, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *"
     )
     .bind(
       title,
@@ -808,6 +829,7 @@ async function createTask(env, payload, who) {
       int(payload.inquiry_id, null),
       clean(payload.assignee, 60) || null,
       clean(payload.due_at, 32) || null,
+      int(payload.estimate_minutes, null),
       who.role === "agent" ? `agent:${who.id}` : "human"
     )
     .first();
@@ -838,6 +860,14 @@ async function patchTask(env, id, payload, who) {
   if (payload.assignee !== undefined) {
     sets.push("assignee = ?");
     values.push(clean(payload.assignee, 60) || null);
+  }
+  if (payload.due_at !== undefined) {
+    sets.push("due_at = ?");
+    values.push(clean(payload.due_at, 32) || null);
+  }
+  if (payload.estimate_minutes !== undefined) {
+    sets.push("estimate_minutes = ?");
+    values.push(int(payload.estimate_minutes, null));
   }
   if (!sets.length) return json({ ok: false, code: "nothing" }, 400);
   await env.DB.prepare(`UPDATE tasks SET ${sets.join(", ")} WHERE id = ?`).bind(...values, id).run();
@@ -1298,6 +1328,164 @@ async function rotateToken(request, env) {
   return json({ ok: true });
 }
 
+
+// ── team roster ──────────────────────────────────────────────────────
+
+const MEMBER_ROLES = new Set(["owner", "manager", "member", "contractor"]);
+
+async function act(env, entity, entityId, kind, body, actor, minutes = null) {
+  await env.DB
+    .prepare("INSERT INTO activities (entity, entity_id, kind, body, actor, minutes) VALUES (?, ?, ?, ?, ?, ?)")
+    .bind(entity, entityId, kind, body, actor || "system", minutes)
+    .run();
+}
+
+async function listMembers(env) {
+  const { results } = await env.DB
+    .prepare(
+      `SELECT m.*,
+              (SELECT COUNT(*) FROM tasks t WHERE t.assignee = m.name AND t.status != 'done') AS open_tasks,
+              (SELECT COUNT(*) FROM tasks t WHERE t.assignee = m.name AND t.status != 'done'
+                 AND t.due_at IS NOT NULL AND t.due_at < datetime('now')) AS late_tasks,
+              (SELECT COUNT(*) FROM inquiries i WHERE i.assigned_to = m.name
+                 AND i.status NOT IN ('won','lost')) AS open_leads,
+              (SELECT COALESCE(SUM(te.minutes), 0) FROM time_entries te
+                 JOIN tasks t2 ON t2.id = te.task_id
+                WHERE t2.assignee = m.name AND te.created_at >= datetime('now','-7 days')) AS minutes_7d
+         FROM members m
+        ORDER BY m.active DESC, m.id`
+    )
+    .all();
+  return json({ ok: true, rows: results });
+}
+
+async function createMember(env, payload, who) {
+  const name = clean(payload.name, 80);
+  if (name.length < 2) return json({ ok: false, code: "name" }, 400);
+  const row = await env.DB
+    .prepare(
+      "INSERT INTO members (name, role, email, phone, focus, capacity_hours, active, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *"
+    )
+    .bind(
+      name,
+      MEMBER_ROLES.has(payload.role) ? payload.role : "member",
+      clean(payload.email, 120) || null,
+      clean(payload.phone, 32) || null,
+      clean(payload.focus, 120) || null,
+      Math.min(Math.max(int(payload.capacity_hours, 32), 1), 80),
+      payload.active === 0 ? 0 : 1,
+      text(payload.notes, 2000) || null
+    )
+    .first();
+  await emit(env, "member.created", "member", row.id, who.name, { name });
+  return json({ ok: true, row });
+}
+
+async function patchMember(env, id, payload, who) {
+  const sets = [];
+  const values = [];
+  for (const key of ["name", "email", "phone", "focus", "notes"]) {
+    if (payload[key] !== undefined) {
+      sets.push(`${key} = ?`);
+      values.push(clean(payload[key], key === "notes" ? 2000 : 120) || null);
+    }
+  }
+  if (payload.role && MEMBER_ROLES.has(payload.role)) {
+    sets.push("role = ?");
+    values.push(payload.role);
+  }
+  if (payload.capacity_hours !== undefined) {
+    sets.push("capacity_hours = ?");
+    values.push(Math.min(Math.max(int(payload.capacity_hours, 32), 1), 80));
+  }
+  if (payload.active !== undefined) {
+    sets.push("active = ?");
+    values.push(payload.active ? 1 : 0);
+  }
+  if (!sets.length) return json({ ok: false, code: "nothing" }, 400);
+
+  await env.DB.prepare(`UPDATE members SET ${sets.join(", ")} WHERE id = ?`).bind(...values, id).run();
+  await emit(env, "member.updated", "member", id, who.name, payload);
+  return json({ ok: true, row: await env.DB.prepare("SELECT * FROM members WHERE id = ?").bind(id).first() });
+}
+
+async function removeMember(env, id, who) {
+  if (!can(who, "admin")) return json({ ok: false, code: "forbidden" }, 403);
+  const row = await env.DB.prepare("SELECT name FROM members WHERE id = ?").bind(id).first();
+  if (!row) return json({ ok: false, code: "missing" }, 404);
+  await env.DB.prepare("UPDATE members SET active = 0 WHERE id = ?").bind(id).run();
+  await emit(env, "member.archived", "member", id, who.name, { name: row.name });
+  return json({ ok: true });
+}
+
+// ── activity log (calls, notes, meetings per record) ─────────────────
+
+async function listActivities(env, url) {
+  const entity = clean(url.searchParams.get("entity"), 20);
+  const entityId = int(url.searchParams.get("entity_id"), null);
+  const limit = Math.min(int(url.searchParams.get("limit"), 60), 200);
+  const stmt =
+    entity && entityId
+      ? env.DB
+          .prepare("SELECT * FROM activities WHERE entity = ? AND entity_id = ? ORDER BY id DESC LIMIT ?")
+          .bind(entity, entityId, limit)
+      : env.DB.prepare("SELECT * FROM activities ORDER BY id DESC LIMIT ?").bind(limit);
+  const { results } = await stmt.all();
+  return json({ ok: true, rows: results });
+}
+
+async function createActivity(env, payload, who) {
+  const entity = clean(payload.entity, 20);
+  const entityId = int(payload.entity_id, null);
+  const bodyText = text(payload.body, 2000).trim();
+  if (!entity || !entityId || bodyText.length < 1) return json({ ok: false, code: "invalid" }, 400);
+  await act(env, entity, entityId, clean(payload.kind, 16) || "note", bodyText, who.name, int(payload.minutes, null));
+  await emit(env, "activity.logged", entity, entityId, who.name, { kind: payload.kind });
+  return json({ ok: true });
+}
+
+// ── dashboard metrics ────────────────────────────────────────────────
+
+async function metrics(env) {
+  const [pipeline, clients, tasks, focus, leads7, won, total, team] = await Promise.all([
+    env.DB.prepare("SELECT status, COUNT(*) AS n, COALESCE(SUM(value),0) AS value FROM inquiries GROUP BY status").all(),
+    env.DB.prepare("SELECT status, COUNT(*) AS n, COALESCE(SUM(value),0) AS value FROM clients GROUP BY status").all(),
+    env.DB
+      .prepare(
+        `SELECT
+           SUM(CASE WHEN status != 'done' THEN 1 ELSE 0 END) AS open,
+           SUM(CASE WHEN status != 'done' AND due_at IS NOT NULL AND due_at < datetime('now') THEN 1 ELSE 0 END) AS late,
+           SUM(CASE WHEN status != 'done' AND due_at IS NOT NULL AND date(due_at) = date('now') THEN 1 ELSE 0 END) AS today,
+           SUM(CASE WHEN status = 'done' AND done_at >= datetime('now','-7 days') THEN 1 ELSE 0 END) AS done_7d
+         FROM tasks`
+      )
+      .first(),
+    env.DB
+      .prepare(
+        `SELECT COALESCE(SUM(CASE WHEN created_at >= datetime('now','start of day') THEN minutes END), 0) AS today,
+                COALESCE(SUM(CASE WHEN created_at >= datetime('now','-7 days') THEN minutes END), 0) AS week
+           FROM time_entries`
+      )
+      .first(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM inquiries WHERE created_at >= datetime('now','-7 days')").first(),
+    env.DB.prepare("SELECT COUNT(*) AS n, COALESCE(SUM(value),0) AS value FROM inquiries WHERE status = 'won'").first(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM inquiries").first(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM members WHERE active = 1").first(),
+  ]);
+
+  return json({
+    ok: true,
+    pipeline: pipeline.results,
+    clients: clients.results,
+    tasks: tasks ?? {},
+    focus: focus ?? {},
+    leads_7d: leads7?.n ?? 0,
+    won: won ?? { n: 0, value: 0 },
+    conversion: total?.n ? Math.round(((won?.n ?? 0) / total.n) * 100) : 0,
+    team: team?.n ?? 0,
+  });
+}
+
 // ── router ───────────────────────────────────────────────────────────
 
 async function api(request, env, url, who) {
@@ -1332,12 +1520,15 @@ async function api(request, env, url, who) {
   }
 
   if (resource === "overview" && method === "GET") {
-    const [inquiries, tasks, minutes, agents, clients] = await Promise.all([
+    const [inquiries, tasks, minutes, agents, clients, pipelineValue, openLeads, memberCount] = await Promise.all([
       env.DB.prepare("SELECT COUNT(*) AS n FROM inquiries WHERE status = 'new'").first(),
       env.DB.prepare("SELECT COUNT(*) AS n FROM tasks WHERE status != 'done'").first(),
       env.DB.prepare("SELECT COALESCE(SUM(minutes),0) AS n FROM time_entries WHERE created_at >= datetime('now','start of day')").first(),
       env.DB.prepare("SELECT COUNT(*) AS n FROM agents WHERE active = 1").first(),
       env.DB.prepare("SELECT COUNT(*) AS n FROM clients WHERE status = 'active'").first(),
+      env.DB.prepare("SELECT COALESCE(SUM(value),0) AS n FROM inquiries WHERE status NOT IN ('won','lost')").first(),
+      env.DB.prepare("SELECT COUNT(*) AS n FROM inquiries WHERE status NOT IN ('won','lost')").first(),
+      env.DB.prepare("SELECT COUNT(*) AS n FROM members WHERE active = 1").first(),
     ]);
     return json({
       ok: true,
@@ -1346,6 +1537,9 @@ async function api(request, env, url, who) {
       minutes_today: minutes?.n ?? 0,
       agents: agents?.n ?? 0,
       active_clients: clients?.n ?? 0,
+      pipeline_value: pipelineValue?.n ?? 0,
+      open_leads: openLeads?.n ?? 0,
+      members: memberCount?.n ?? 0,
       who: { role: who.role, name: who.name, scopes: who.scopes },
     });
   }
@@ -1393,6 +1587,20 @@ async function api(request, env, url, who) {
     if (method === "GET") return todayStats(env);
     if (method === "POST") return logPomodoro(env, await body(request), who);
   }
+
+  if (resource === "members") {
+    if (!id && method === "GET") return listMembers(env);
+    if (!id && method === "POST") return createMember(env, await body(request), who);
+    if (id && method === "PATCH") return patchMember(env, int(id), await body(request), who);
+    if (id && method === "DELETE") return removeMember(env, int(id), who);
+  }
+
+  if (resource === "activities") {
+    if (!id && method === "GET") return listActivities(env, url);
+    if (!id && method === "POST") return createActivity(env, await body(request), who);
+  }
+
+  if (resource === "metrics" && method === "GET") return metrics(env);
 
   if (resource === "agents") {
     if (!id && method === "GET") return listAgents(env);

@@ -2,40 +2,75 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101010">
 <title>غرفة العمليات | Egytronic</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" href="/assets/css/tokens.css?v=50d67802">
-<link rel="stylesheet" href="/assets/css/base.css?v=2f2d8df4">
-<link rel="stylesheet" href="/assets/css/components.css?v=bc44624e">
-<link rel="stylesheet" href="/assets/css/admin.css?v=25ccedc0">
-<script defer src="/assets/js/admin.js?v=81c8c4c7"></script>
+<link rel="stylesheet" href="/assets/css/fonts.css?v=8f2a0f7c">
+<link rel="stylesheet" href="/assets/css/admin.css?v=9d1f7c31">
+<script defer src="/assets/js/admin.js?v=9d1f7c31"></script>
 </head>
 <body class="ops">
 
-<main id="main" class="ops__main">
+<svg hidden aria-hidden="true">
+  <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+    <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+    <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+  </symbol>
+  <symbol id="i-funnel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+    <path d="M3 4h18l-7 8v7l-4 2v-9L3 4Z" />
+  </symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+    <circle cx="9" cy="8" r="3.4" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+    <path d="M16 5.2a3.4 3.4 0 0 1 0 6.6M17.5 14a6.5 6.5 0 0 1 4 6" />
+  </symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+    <path d="m4 6 5 5 11-9" /><path d="M4 15l5 5 11-9" opacity=".45" />
+  </symbol>
+  <symbol id="i-team" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+    <circle cx="12" cy="7" r="3.6" /><path d="M4 21a8 8 0 0 1 16 0" />
+    <path d="M2 11h2M20 11h2" opacity=".5" />
+  </symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+    <path d="M4 5h16v11H9l-5 4V5Z" /><path d="M8 9h8M8 12.5h5" opacity=".6" />
+  </symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+    <rect x="6" y="6" width="12" height="12" /><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" />
+  </symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+    <path d="m5 5 14 14M19 5 5 19" />
+  </symbol>
+</svg>
+
+<a class="ops__skip" href="#main">تخطّ إلى المحتوى</a>
+
+<main id="main">
 
   <section class="ops__gate" data-gate aria-labelledby="gate-title">
     <div class="ops__gate-card">
       <span class="px-tag">EGYTRONIC · OPS</span>
       <h1 id="gate-title">افتح غرفة العمليات</h1>
-      <p>توكن الإدارة بيفتح الطلبات والعملاء والقنوات والمهام والوكلاء. بيتحفظ في التاب ده بس.</p>
+      <p>كود الإدارة بيفتح الطلبات والعملاء والمهام والفريق. بيتحفظ في التاب ده بس.</p>
       <form class="ops__gate-form" data-gate-form novalidate>
-        <input type="password" name="token" autocomplete="current-password" placeholder="egx_…" dir="ltr" required aria-label="توكن الإدارة">
+        <label class="ops-field">
+          <span>كود الدخول</span>
+          <input class="ops-input" type="password" name="token" autocomplete="current-password" placeholder="EGYTRONIC…" dir="ltr" required aria-label="كود الدخول">
+        </label>
         <div class="ops__gate-actions">
-          <button class="px-btn" type="submit">دخول</button>
-          <button class="ops__ghost" type="button" data-reveal>إظهار</button>
+          <button class="ops-btn" type="submit">دخول</button>
+          <button class="ops-btn ops-btn--ghost" type="button" data-reveal>إظهار</button>
         </div>
       </form>
       <p class="ops__status" data-gate-status role="status" aria-live="polite"></p>
-      <p class="ops__hint">التوكن بيبدأ بـ <bdi>egx_</bdi> ومفيهوش مسافات. لو نسخته من رسالة، انسخ سطر التوكن لوحده.</p>
+      <p class="ops__hint">الكود مش بيتحفظ على السيرفر بشكل مقروء — بس بصمته. لو اطّلع عليه حد تاني، غيّره من نفس اللوحة.</p>
     </div>
   </section>
 
   <div class="ops__shell" data-shell hidden>
-    <aside class="ops__side">
+    <aside class="ops__rail">
       <div class="ops__brand">
         <span class="ops__logo" aria-hidden="true">E</span>
         <div>
@@ -44,41 +79,51 @@
         </div>
       </div>
 
-      <nav class="ops__nav" aria-label="أقسام اللوحة">
-        <button type="button" class="ops__nav-btn" data-view="overview"><span aria-hidden="true">▤</span> نظرة عامة</button>
-        <button type="button" class="ops__nav-btn" data-view="inquiries"><span aria-hidden="true">✉</span> الطلبات <b data-count="inquiries">0</b></button>
-        <button type="button" class="ops__nav-btn" data-view="clients"><span aria-hidden="true">▦</span> العملاء</button>
-        <button type="button" class="ops__nav-btn" data-view="channels"><span aria-hidden="true">▞</span> القنوات</button>
-        <button type="button" class="ops__nav-btn" data-view="tasks"><span aria-hidden="true">✓</span> المهام <b data-count="tasks">0</b></button>
-        <button type="button" class="ops__nav-btn" data-view="agents"><span aria-hidden="true">◈</span> الوكلاء</button>
+      <nav class="ops__nav" data-nav aria-label="أقسام اللوحة">
+        <button type="button" class="ops__nav-btn" data-view="overview"><svg aria-hidden="true"><use href="#i-grid"/></svg> نظرة عامة</button>
+        <button type="button" class="ops__nav-btn" data-view="pipeline"><svg aria-hidden="true"><use href="#i-funnel"/></svg> خط الأنابيب <b data-count="pipeline">0</b></button>
+        <button type="button" class="ops__nav-btn" data-view="clients"><svg aria-hidden="true"><use href="#i-users"/></svg> العملاء</button>
+        <button type="button" class="ops__nav-btn" data-view="tasks"><svg aria-hidden="true"><use href="#i-check"/></svg> المهام <b data-count="tasks">0</b></button>
+        <button type="button" class="ops__nav-btn" data-view="team"><svg aria-hidden="true"><use href="#i-team"/></svg> الفريق</button>
+        <button type="button" class="ops__nav-btn" data-view="channels"><svg aria-hidden="true"><use href="#i-chat"/></svg> القنوات</button>
+        <button type="button" class="ops__nav-btn" data-view="agents"><svg aria-hidden="true"><use href="#i-cpu"/></svg> الوكلاء</button>
       </nav>
 
-      <div class="ops__side-foot">
+      <div class="ops__rail-foot">
         <span class="ops__who" data-who>—</span>
-        <button class="ops__ghost ops__ghost--sm" type="button" data-rotate>تغيير التوكن</button>
-        <button class="ops__ghost ops__ghost--sm" type="button" data-lock>خروج</button>
+        <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-rotate>تغيير الكود</button>
+        <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-lock>خروج</button>
       </div>
     </aside>
 
-    <div class="ops__body">
+    <div class="ops__main">
       <header class="ops__top">
-        <h1 data-title>نظرة عامة</h1>
+        <div>
+          <h1 data-title>نظرة عامة</h1>
+          <span class="ops__sub" data-sub></span>
+        </div>
         <div class="ops__top-actions">
           <span class="ops__pulse" data-sync aria-live="polite">متصل</span>
-          <button class="ops__ghost ops__ghost--sm" type="button" data-refresh>تحديث</button>
+          <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-refresh>تحديث</button>
+          <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-lock>خروج</button>
         </div>
       </header>
 
-      <section class="ops__view" data-view-panel="overview" hidden></section>
-      <section class="ops__view" data-view-panel="inquiries" hidden></section>
-      <section class="ops__view" data-view-panel="clients" hidden></section>
-      <section class="ops__view ops__view--split" data-view-panel="channels" hidden></section>
-      <section class="ops__view" data-view-panel="tasks" hidden></section>
-      <section class="ops__view" data-view-panel="agents" hidden></section>
+      <div class="ops__body">
+        <section class="ops__view" data-panel="overview" aria-label="نظرة عامة" hidden></section>
+        <section class="ops__view" data-panel="pipeline" aria-label="خط الأنابيب" hidden></section>
+        <section class="ops__view" data-panel="clients" aria-label="العملاء" hidden></section>
+        <section class="ops__view" data-panel="tasks" aria-label="المهام" hidden></section>
+        <section class="ops__view" data-panel="team" aria-label="الفريق" hidden></section>
+        <section class="ops__view" data-panel="channels" aria-label="القنوات" hidden></section>
+        <section class="ops__view" data-panel="agents" aria-label="الوكلاء" hidden></section>
+      </div>
     </div>
   </div>
 </main>
 
+<aside class="ops-drawer" data-drawer aria-label="تفاصيل" hidden></aside>
+<dialog class="ops-dialog" data-dialog></dialog>
 <div class="ops__toast" data-toast role="status" aria-live="polite" hidden></div>
 </body>
 </html>
