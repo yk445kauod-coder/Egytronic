@@ -28,8 +28,8 @@ export default function Home({ locale }: { locale: Locale }) {
       <Seo
         locale={locale}
         path={path}
-        title="Egytronic | Software and AI systems, public prices"
-        description="We build your site or brand, and install and adapt a management system for your business. Five public-price packages from EGP 5,000, 50% upfront."
+        title="Egytronic | Software delivered ready, at public prices"
+        description="Websites, brand identity, business systems and AI, in five packages from EGP 5,000. Fixed scope, a public price and a delivery date. Hosting and backend free in year one."
         jsonLd={og}
       />
       <main id="main">

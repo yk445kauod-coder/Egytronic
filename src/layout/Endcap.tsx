@@ -8,7 +8,7 @@ export default function Endcap() {
   const p = (href: string) => localePath(locale, href);
 
   const tiles = [
-    { href: p("/pricing/"), kicker: t("الأسعار"), title: t("خمس باقات بسعر معلن"), note: t("من 5,000 جنيه · دفع 50%") },
+    { href: p("/pricing/"), kicker: t("الأسعار"), title: t("خمس باقات بأسعار معلنة"), note: t("من 5,000 جنيه · دفع 50%") },
     { href: p("/software/"), kicker: t("البرمجيات"), title: t("أدوات مفتوحة نستخدمها"), note: t("مستودعات وأدوات حقيقية") },
     { href: p("/contact/"), kicker: t("تواصل"), title: t("ناقش مشروعك معنا"), note: t("رد على نفس البريد") },
   ];
@@ -22,7 +22,7 @@ export default function Endcap() {
             {t("الخطوة التالية")}
           </p>
           <h2 id="endcap-title" className="font-display text-3xl font-normal leading-tight text-text md:text-4xl">
-            {t("الأسعار معلنة. ابدأ بمكالمة قصيرة")}
+            {t("اعرف التكلفة قبل أن تبدأ")}
           </h2>
           <p className="mt-3 max-w-[46ch] text-[15px] leading-7 text-muted">
             {t("نوضح أي باقة تكفي عملك وأيها زائدة عن الحاجة، قبل أي دفع.")}

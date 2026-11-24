@@ -5,8 +5,8 @@ export default function Capabilities() {
     <div className="wrap">
       <div className="section-head reveal">
         <span className="px-tag">Services</span>
-        <h2>What we build</h2>
-        <p>Choose what your project needs now.</p>
+        <h2>Three services, public prices</h2>
+        <p>Each one starts from a package with a fixed scope and is delivered ready to use.</p>
       </div>
       <div className="ledger reveal">
         <article className="ledger__row">

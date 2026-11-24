@@ -17,7 +17,7 @@ export default function Prices() {
             <span className="pricerow__dots" aria-hidden="true"></span>
             <p className="pricerow__price"><span className="pricerow__amount">5,000</span><span className="pricerow__cur">EGP</span></p>
           </div>
-          <p className="pricerow__desc">A logo for your business, delivered ready to use.</p>
+          <p className="pricerow__desc">A logo that distinguishes your business, ready for print and digital.</p>
         </li>
         <li className="pricerow">
           <span className="pricerow__n" aria-hidden="true">02</span>
@@ -44,7 +44,7 @@ export default function Prices() {
             <span className="pricerow__dots" aria-hidden="true"></span>
             <p className="pricerow__price"><span className="pricerow__amount">10,000</span><span className="pricerow__cur">EGP</span></p>
           </div>
-          <p className="pricerow__desc">A complete visual identity for your business.</p>
+          <p className="pricerow__desc">A full identity: logo, colours, type and a usage guide.</p>
         </li>
         <li className="pricerow">
           <span className="pricerow__n" aria-hidden="true">05</span>

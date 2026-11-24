@@ -17,7 +17,7 @@ export default function Prices() {
             <span className="pricerow__dots" aria-hidden="true"></span>
             <p className="pricerow__price"><span className="pricerow__amount">5,000</span><span className="pricerow__cur">جنيه</span></p>
           </div>
-          <p className="pricerow__desc">شعار لمشروعك يُسلَّم جاهزًا للاستخدام.</p>
+          <p className="pricerow__desc">شعار يميّز مشروعك، ويصلح للطباعة والاستخدام الرقمي.</p>
         </li>
         <li className="pricerow">
           <span className="pricerow__n" aria-hidden="true">02</span>
@@ -44,7 +44,7 @@ export default function Prices() {
             <span className="pricerow__dots" aria-hidden="true"></span>
             <p className="pricerow__price"><span className="pricerow__amount">10,000</span><span className="pricerow__cur">جنيه</span></p>
           </div>
-          <p className="pricerow__desc">هوية بصرية متكاملة لمشروعك.</p>
+          <p className="pricerow__desc">هوية كاملة: شعار وألوان وخطوط ودليل استخدام.</p>
         </li>
         <li className="pricerow">
           <span className="pricerow__n" aria-hidden="true">05</span>

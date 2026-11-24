@@ -176,21 +176,21 @@ INDEX.update({
     '<span class="px-tag">الباقات والأسعار</span>': '<span class="px-tag">Packages and prices</span>',
     '<h2 id="products-title">خمس باقات بأسعار معلنة</h2>':
         '<h2 id="products-title">Five packages, price on the label</h2>',
-    '<p>بالجنيه المصري. الدفع 50% عند البدء و50% قبل التسليم.</p>':
-        '<p>In Egyptian pounds. Pay 50% to start and 50% before delivery.</p>',
+    '<p>نطاق محدد وسعر معلن وموعد تسليم مكتوب قبل البدء، والدفع على مرحلتين.</p>':
+        '<p>Fixed scope, a published price and a delivery date agreed before we start. Payment in two instalments.</p>',
     '<h3>لوجو</h3>': '<h3>Logo</h3>',
     '<h3>لاندنج بيدج</h3>': '<h3>Landing page</h3>',
     '<h3>موقع ستاتيك</h3>': '<h3>Static site</h3>',
     '<h3>هوية كاملة</h3>': '<h3>Full identity</h3>',
     '<h3>موقع ديناميك</h3>': '<h3>Dynamic site</h3>',
-    '<p class="prod__desc">شعار لمشروعك يُسلَّم جاهزًا للاستخدام.</p>':
-        '<p class="prod__desc">A logo for your business, delivered ready to use.</p>',
+    '<p class="prod__desc">شعار يميّز مشروعك، ويصلح للطباعة والاستخدام الرقمي.</p>':
+        '<p class="prod__desc">A logo that distinguishes your business, ready for print and digital.</p>',
     '<p class="prod__desc">صفحة واحدة تعرّف بمشروعك وخدماتك.</p>':
         '<p class="prod__desc">One page that introduces your business and services.</p>',
     '<p class="prod__desc">موقع تعريفي بحد أقصى 5 صفحات.</p>':
         '<p class="prod__desc">An informational site of up to 5 pages.</p>',
-    '<p class="prod__desc">هوية بصرية متكاملة لمشروعك.</p>':
-        '<p class="prod__desc">A complete visual identity for your business.</p>',
+    '<p class="prod__desc">هوية كاملة: شعار وألوان وخطوط ودليل استخدام.</p>':
+        '<p class="prod__desc">A full identity: logo, colours, type and a usage guide.</p>',
     '<p class="prod__desc">موقع بباكند يناسب المحتوى والوظائف المتغيرة.</p>':
         '<p class="prod__desc">A site with a backend for changing content and features.</p>',
     '<span class="prod__amt">5,000</span> <span class="prod__cur">جنيه</span>':
@@ -212,7 +212,7 @@ INDEX.update({
 })
 
 INDEX.update({
-    'شركة برمجيات مصرية تبني المواقع والهويات وأنظمة الذكاء الاصطناعي وتسلّمها جاهزة للتشغيل.':
+    'شركة برمجيات مصرية تبني المواقع والهويات والأنظمة الإدارية وأنظمة الذكاء الاصطناعي، بأسعار معلنة تُنشر قبل البدء.':
         'An Egyptian software company building websites, brand identities and AI systems, delivered ready to run.',
 })
 
@@ -309,8 +309,8 @@ CONTACT = {
     '<h3>السعر معلن مقدمًا</h3>': '<h3>The price is public up front</h3>',
     '<p>كل باقة بسعرها المعلن، والدفع 50% عند البدء و50% قبل التسليم.</p>':
         '<p>Every package has its printed price: 50% to start and 50% before delivery.</p>',
-    '<a class="px-btn px-btn--ghost px-btn--sm" href="/pricing/">عرض الأسعار</a>':
-        '<a class="px-btn px-btn--ghost px-btn--sm" href="../pricing/">See pricing</a>',
+    '<a class="px-btn px-btn--ghost px-btn--sm" href="/pricing/">اطّلع على الأسعار</a>':
+        '<a class="px-btn px-btn--ghost px-btn--sm" href="../pricing/">See prices</a>',
     '            تعذّر إرسال الطلب. راسلنا على\n': '            Sending failed. Write to us at\n',
 }
 
@@ -441,10 +441,10 @@ INDEX.update({
 
 # ── 2026-11-24: copy deck approved (UX writer) ─────────────
 INDEX.update({
-    "<title>Egytronic | برمجيات وأنظمة ذكية بأسعار معلنة</title>":
+    "<title>Egytronic | برمجيات تُسلَّم جاهزة، بأسعار معلنة</title>":
         "<title>Egytronic | Software and AI Systems, Public Prices</title>",
-    "نبني موقعك أو هويتك، ونثبّت نظامك الإداري ونكيّفه على طبيعة عملك. خمس باقات بأسعار معلنة تبدأ من 5,000 جنيه، والدفع 50% مقدمًا.":
-        "We build your site or brand, and install and adapt a management system for your business. Five public-price packages from EGP 5,000, 50% upfront.",
+    "مواقع وهوية وأنظمة إدارية وذكاء اصطناعي، بخمس باقات تبدأ من 5,000 جنيه. نطاق محدد وسعر معلن وموعد تسليم، والاستضافة والباكند مجانًا في السنة الأولى.":
+        "Websites, brand identity, business systems and AI, in five packages from EGP 5,000. Fixed scope, a public price and a delivery date. Hosting and backend free in year one.",
     "شركة برمجيات مصرية. نبني موقعك أو هويتك، ونسطّب نظامك الإداري ونكيّفه على شغلك. خمس باقات من 5,000 جنيه.":
         "An Egyptian software company. We build your site or brand, and install and adapt a management system for your business. Five packages from EGP 5,000.",
     '<li><a href="#capabilities">الخدمات</a></li>': '<li><a href="#capabilities">Services</a></li>',
@@ -453,27 +453,27 @@ INDEX.update({
         '<li class="nav-ext"><a href="../pricing/">Book a package ↗</a></li>',
     '<a class="lang" href="/en/" hreflang="en" lang="en" aria-label="التبديل إلى النسخة الإنجليزية" title="عرض الموقع بالإنجليزية">EN</a>':
         '<a class="lang" href="/" hreflang="ar" lang="ar" aria-label="Switch to the Arabic version" title="View the site in Arabic">AR</a>',
-    '<span class="px-tag">برمجيات مصرية جاهزة للتشغيل</span>':
-        '<span class="px-tag">Egyptian software, ready to run</span>',
-    "<span class=\"line\">نبني موقعك وهويتك</span>":
-        "<span class=\"line\">We build your site and brand</span>",
-    "<span class=\"line\"><em>ونسلّمهما جاهزين للتشغيل</em></span>":
-        "<span class=\"line\"><em>and deliver them ready to run</em></span>",
-    "لوجو بـ5,000 جنيه وموقع ستاتيك بـ8,000. الدفع 50% عند البدء و50% قبل التسليم، والاستضافة مجانية في السنة الأولى.":
-        "A logo costs EGP 5,000 and a static site EGP 8,000. Pay 50% to start, 50% before delivery. Hosting is free for the first year.",
-    '<a class="px-btn" href="/pricing/">عرض الأسعار</a>': '<a class="px-btn" href="pricing/">See pricing</a>',
-    '<a class="px-btn px-btn--ghost" href="#contact">تواصل معنا</a>':
-        '<a class="px-btn px-btn--ghost" href="#contact">Contact us</a>',
-    '<span class="stat__n">5,000</span><span class="stat__l">تبدأ من — جنيه</span>':
-        '<span class="stat__n">5,000</span><span class="stat__l">from, in EGP</span>',
-    '<span class="stat__n">50%</span><span class="stat__l">مقدم</span>':
-        '<span class="stat__n">50%</span><span class="stat__l">upfront</span>',
-    '<span class="stat__n">سنة</span><span class="stat__l">استضافة مجانًا</span>':
-        '<span class="stat__n">Year 1</span><span class="stat__l">free hosting</span>',
+    '<span class="px-tag">شركة برمجيات مصرية · أسعار معلنة</span>':
+        '<span class="px-tag">Egyptian software studio · public pricing</span>',
+    "<span class=\"line\">برمجيات تُسلَّم جاهزة</span>":
+        "<span class=\"line\">Software delivered ready</span>",
+    "<span class=\"line\"><em>بسعر معلن قبل أن تبدأ</em></span>":
+        "<span class=\"line\"><em>at a published price</em></span>",
+    "مواقع وهوية وأنظمة إدارية وذكاء اصطناعي، بخمس باقات تبدأ من 5,000 جنيه، ولكل باقة نطاق محدد وموعد تسليم. الاستضافة والباكند مجانًا في السنة الأولى.":
+        "Websites, brand identity, business systems and AI, in five packages from EGP 5,000. Each has a fixed scope and a delivery date. Hosting and backend are free in year one.",
+    '<a class="px-btn" href="/pricing/">اطّلع على الأسعار</a>': '<a class="px-btn" href="pricing/">See prices</a>',
+    '<a class="px-btn px-btn--ghost" href="#contact">أرسل تفاصيل مشروعك</a>':
+        '<a class="px-btn px-btn--ghost" href="#contact">Send your project brief</a>',
+    '<span class="stat__n">5,000</span><span class="stat__l">أقل باقة · جنيه</span>':
+        '<span class="stat__n">5,000</span><span class="stat__l">lowest package · EGP</span>',
+    '<span class="stat__n">50%</span><span class="stat__l">دفعة مقدمة</span>':
+        '<span class="stat__n">50%</span><span class="stat__l">upfront payment</span>',
+    '<span class="stat__n">سنة</span><span class="stat__l">استضافة وباكند</span>':
+        '<span class="stat__n">Year 1</span><span class="stat__l">hosting + backend</span>',
     '<span class="stat__l">عربي وإنجليزي</span>': '<span class="stat__l">Arabic and English</span>',
     '<span class="px-tag">الخدمات</span>': '<span class="px-tag">Services</span>',
-    '<h2>ماذا نبني لك</h2>': '<h2>What we build</h2>',
-    '<p>اختر ما يحتاجه مشروعك الآن.</p>': '<p>Choose what your project needs now.</p>',
+    '<h2>ثلاث خدمات، بأسعار معلنة</h2>': '<h2>Three services, public prices</h2>',
+    '<p>كل خدمة تبدأ من باقة محددة النطاق، وتُسلَّم جاهزة للاستخدام.</p>': '<p>Each one starts from a package with a fixed scope and is delivered ready to use.</p>',
     '<span class="ledger__k">WEB</span>': '<span class="ledger__k">WEB</span>',
     '<h3>مواقع</h3>': '<h3>Websites</h3>',
     '<p>لاندنج بيدج، أو موقع ستاتيك حتى 5 صفحات، أو موقع ديناميك بباكند.</p>':
@@ -496,8 +496,8 @@ INDEX.update({
         '<p>We check every output for security and structure before release.</p>',
     '<p>ننشر العمل ونسلّمه لك جاهزًا للتشغيل.</p>': '<p>We publish the work and hand it over ready to run.</p>',
     '<h2>من يبني مشروعك</h2>': '<h2>Who builds your project</h2>',
-    '<p>شركة برمجيات مصرية يقودها مؤسسها، وتسلّم العمل جاهزًا للتشغيل.</p>':
-        '<p>An Egyptian software company led by its founder, delivering work ready to run.</p>',
+    '<p>شركة برمجيات مصرية يعمل عليها المؤسس مباشرة، من تحديد النطاق حتى التشغيل.</p>':
+        '<p>An Egyptian software company where the founder works directly, from scope to launch.</p>',
     '<p>يتولى رؤية المنتج ومعمارية الأنظمة والإطلاق.</p>':
         '<p>Leads product vision, system architecture and launch.</p>',
     '<span class="principle__k">01 / DELIVERY</span>': '<span class="principle__k">01 / DELIVERY</span>',
@@ -507,7 +507,7 @@ INDEX.update({
     '<h3>أسعار معلنة</h3>': '<h3>Public prices</h3>',
     "<p>ترى سعر كل باقة قبل أن تتواصل معنا.</p>": "<p>You see each package's price before you contact us.</p>",
     '<h3>أدوات مفتوحة</h3>': '<h3>Open tools</h3>',
-    '<p>ننشر بعض أدواتنا علنًا ليراها الجميع.</p>': '<p>We publish some of our tools publicly for anyone to see.</p>',
+    '<p>ننشر بعض أدواتنا على GitHub، متاحة للاستخدام والمراجعة.</p>': '<p>We publish some of our tools on GitHub, open to use and review.</p>',
     '<span class="px-tag">الأسئلة</span>': '<span class="px-tag">FAQ</span>',
     '<h2>أسئلة قبل الحجز</h2>': '<h2>Questions before booking</h2>',
     '<p>إجابات عن التسليم والاستضافة والدفع.</p>': '<p>Answers on delivery, hosting and payment.</p>',
@@ -545,14 +545,14 @@ PRICING.update({
     '<h2 id="prices-title">خمس باقات بأسعار واضحة</h2>': '<h2 id="prices-title">Five packages, clear prices</h2>',
     '<p>الدفع 50% مقدمًا عند البدء و50% قبل التسليم النهائي، بالجنيه المصري.</p>':
         '<p>Pay 50% upfront to start and 50% before final delivery, in Egyptian pounds.</p>',
-    '<p class="pricerow__desc">شعار لمشروعك يُسلَّم جاهزًا للاستخدام.</p>':
-        '<p class="pricerow__desc">A logo for your business, delivered ready to use.</p>',
+    '<p class="pricerow__desc">شعار يميّز مشروعك، ويصلح للطباعة والاستخدام الرقمي.</p>':
+        '<p class="pricerow__desc">A logo that distinguishes your business, ready for print and digital.</p>',
     '<p class="pricerow__desc">صفحة واحدة تعرّف بمشروعك وخدماتك.</p>':
         '<p class="pricerow__desc">One page that introduces your business and services.</p>',
     '<p class="pricerow__desc">موقع تعريفي بحد أقصى 5 صفحات.</p>':
         '<p class="pricerow__desc">An informational site of up to 5 pages.</p>',
-    '<p class="pricerow__desc">هوية بصرية متكاملة لمشروعك.</p>':
-        '<p class="pricerow__desc">A complete visual identity for your business.</p>',
+    '<p class="pricerow__desc">هوية كاملة: شعار وألوان وخطوط ودليل استخدام.</p>':
+        '<p class="pricerow__desc">A full identity: logo, colours, type and a usage guide.</p>',
     '<p class="pricerow__desc">موقع بباكند يناسب المحتوى والوظائف المتغيرة.</p>':
         '<p class="pricerow__desc">A site with a backend for changing content and features.</p>',
     '<p class="bundle__lead">من 28,000 جنيه. للمشاريع الأكبر، ونحدد النطاق معك بعد التواصل.</p>':

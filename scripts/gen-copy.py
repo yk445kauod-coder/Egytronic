@@ -93,18 +93,18 @@ OVERRIDES = {
         "What Egytronic builds: websites, AI systems and tools published in the open, delivered ready to run.",
     "ابدأ مشروعك مع Egytronic: اكتب الباقة التي تهمك ووسيلة التواصل، وسنرد عليك في أقرب وقت.":
         "Start your project with Egytronic: tell us the package you want and how to reach you, and we will get back to you.",
-    "نبني موقعك أو هويتك، ونثبّت نظامك الإداري ونكيّفه على طبيعة عملك. خمس باقات بأسعار معلنة تبدأ من 5,000 جنيه، والدفع 50% مقدمًا.":
-        "We build your site or brand, and install and adapt a management system for your business. Five public-price packages from EGP 5,000, 50% upfront.",
+    "مواقع وهوية وأنظمة إدارية وذكاء اصطناعي، بخمس باقات تبدأ من 5,000 جنيه. نطاق محدد وسعر معلن وموعد تسليم، والاستضافة والباكند مجانًا في السنة الأولى.":
+        "Websites, brand identity, business systems and AI, in five packages from EGP 5,000. Fixed scope, a public price and a delivery date. Hosting and backend free in year one.",
     "أسعار باقات Egytronic | من 5,000 جنيه": "Egytronic package prices | from EGP 5,000",
     "البرمجيات والأدوات المفتوحة | Egytronic": "Software and open tools | Egytronic",
     "بوابة التواصل | Egytronic": "Contact portal | Egytronic",
-    "Egytronic | برمجيات وأنظمة ذكية بأسعار معلنة": "Egytronic | Software and AI systems, public prices",
+    "Egytronic | برمجيات تُسلَّم جاهزة، بأسعار معلنة": "Egytronic | Software delivered ready, at public prices",
     "أقسام الصفحة": "Page sections",
     "الخطوة التالية": "Next step",
-    "الأسعار معلنة. ابدأ بمكالمة قصيرة": "Prices are public. Start with a short call.",
+    "اعرف التكلفة قبل أن تبدأ": "Know the cost before you start.",
     "نوضح أي باقة تكفي عملك وأيها زائدة عن الحاجة، قبل أي دفع.":
         "We tell you which package covers your work and which is overkill, before any payment.",
-    "خمس باقات بسعر معلن": "Five packages, public prices",
+    "خمس باقات بأسعار معلنة": "Five packages, public prices",
     "من 5,000 جنيه · دفع 50%": "From EGP 5,000 · 50% upfront",
     "أدوات مفتوحة نستخدمها": "Open tools we use",
     "مستودعات وأدوات حقيقية": "Real repositories and tools",

@@ -6,7 +6,7 @@ export default function Products() {
       <div className="section-head reveal">
         <span className="px-tag">الباقات والأسعار</span>
         <h2 id="products-title">خمس باقات بأسعار معلنة</h2>
-        <p>بالجنيه المصري. الدفع 50% عند البدء و50% قبل التسليم.</p>
+        <p>نطاق محدد وسعر معلن وموعد تسليم مكتوب قبل البدء، والدفع على مرحلتين.</p>
       </div>
 
       <ul className="prods reveal">
@@ -14,7 +14,7 @@ export default function Products() {
           <span className="prod__n">01</span>
           <img className="prod__art" src="/assets/img/pixel/g-logo.svg" alt="" width="44" height="44" loading="lazy" decoding="async" />
           <h3>لوجو</h3>
-          <p className="prod__desc">شعار لمشروعك يُسلَّم جاهزًا للاستخدام.</p>
+          <p className="prod__desc">شعار يميّز مشروعك، ويصلح للطباعة والاستخدام الرقمي.</p>
           <p className="prod__who"><span>مناسب لـ</span> مشروع في بدايته</p>
           <ul className="prod__inc">
             <li>لوجو أساسي بنسختين</li>
@@ -57,7 +57,7 @@ export default function Products() {
           <span className="prod__n">04</span>
           <img className="prod__art" src="/assets/img/pixel/g-identity.svg" alt="" width="44" height="44" loading="lazy" decoding="async" />
           <h3>هوية كاملة</h3>
-          <p className="prod__desc">هوية بصرية متكاملة لمشروعك.</p>
+          <p className="prod__desc">هوية كاملة: شعار وألوان وخطوط ودليل استخدام.</p>
           <p className="prod__who"><span>مناسب لـ</span> علامة تتوسّع وتحتاج تطبيقات</p>
           <ul className="prod__inc">
             <li>لوجو وألوان وخطوط</li>

@@ -8,22 +8,22 @@ export default function Block0() {
 
     <div className="wrap hero__inner">
       <div className="hero__copy">
-        <span className="px-tag">Egyptian software, ready to run</span>
+        <span className="px-tag">Egyptian software studio · public pricing</span>
         <h1>
-          <span className="line">We build your site and brand</span>
-          <span className="line"><em>and deliver them ready to run</em></span>
+          <span className="line">Software delivered ready</span>
+          <span className="line"><em>at a published price</em></span>
         </h1>
         <p className="hero__sub">
-          A logo costs EGP 5,000 and a static site EGP 8,000. Pay 50% to start, 50% before delivery. Hosting is free for the first year.
+          Websites, brand identity, business systems and AI, in five packages from EGP 5,000. Each has a fixed scope and a delivery date. Hosting and backend are free in year one.
         </p>
         <div className="hero__actions">
-          <a className="px-btn" href="/pricing/">See pricing</a>
-          <a className="px-btn px-btn--ghost" href="#contact">Contact us</a>
+          <a className="px-btn" href="/pricing/">See prices</a>
+          <a className="px-btn px-btn--ghost" href="#contact">Send your project brief</a>
         </div>
         <div className="hero__stats">
-          <div className="stat"><span className="stat__n">5,000</span><span className="stat__l">Starting — EGP</span></div>
-          <div className="stat"><span className="stat__n">50%</span><span className="stat__l">upfront</span></div>
-          <div className="stat"><span className="stat__n">Year 1</span><span className="stat__l">free hosting</span></div>
+          <div className="stat"><span className="stat__n">5,000</span><span className="stat__l">lowest package · EGP</span></div>
+          <div className="stat"><span className="stat__n">50%</span><span className="stat__l">upfront payment</span></div>
+          <div className="stat"><span className="stat__n">Year 1</span><span className="stat__l">hosting + backend</span></div>
           <div className="stat"><span className="stat__n"><bdi>AR / EN</bdi></span><span className="stat__l">Arabic and English</span></div>
         </div>
       </div>

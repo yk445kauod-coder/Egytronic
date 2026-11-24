@@ -5,8 +5,8 @@ export default function Capabilities() {
     <div className="wrap">
       <div className="section-head reveal">
         <span className="px-tag">الخدمات</span>
-        <h2>ماذا نبني لك</h2>
-        <p>اختر ما يحتاجه مشروعك الآن.</p>
+        <h2>ثلاث خدمات، بأسعار معلنة</h2>
+        <p>كل خدمة تبدأ من باقة محددة النطاق، وتُسلَّم جاهزة للاستخدام.</p>
       </div>
       <div className="ledger reveal">
         <article className="ledger__row">

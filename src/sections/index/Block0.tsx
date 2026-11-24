@@ -8,22 +8,22 @@ export default function Block0() {
 
     <div className="wrap hero__inner">
       <div className="hero__copy">
-        <span className="px-tag">برمجيات مصرية جاهزة للتشغيل</span>
+        <span className="px-tag">شركة برمجيات مصرية · أسعار معلنة</span>
         <h1>
-          <span className="line">نبني موقعك وهويتك</span>
-          <span className="line"><em>ونسلّمهما جاهزين للتشغيل</em></span>
+          <span className="line">برمجيات تُسلَّم جاهزة</span>
+          <span className="line"><em>بسعر معلن قبل أن تبدأ</em></span>
         </h1>
         <p className="hero__sub">
-          لوجو بـ5,000 جنيه وموقع ستاتيك بـ8,000. الدفع 50% عند البدء و50% قبل التسليم، والاستضافة مجانية في السنة الأولى.
+          مواقع وهوية وأنظمة إدارية وذكاء اصطناعي، بخمس باقات تبدأ من 5,000 جنيه، ولكل باقة نطاق محدد وموعد تسليم. الاستضافة والباكند مجانًا في السنة الأولى.
         </p>
         <div className="hero__actions">
-          <a className="px-btn" href="/pricing/">عرض الأسعار</a>
-          <a className="px-btn px-btn--ghost" href="#contact">تواصل معنا</a>
+          <a className="px-btn" href="/pricing/">اطّلع على الأسعار</a>
+          <a className="px-btn px-btn--ghost" href="#contact">أرسل تفاصيل مشروعك</a>
         </div>
         <div className="hero__stats">
-          <div className="stat"><span className="stat__n">5,000</span><span className="stat__l">تبدأ من — جنيه</span></div>
-          <div className="stat"><span className="stat__n">50%</span><span className="stat__l">مقدم</span></div>
-          <div className="stat"><span className="stat__n">سنة</span><span className="stat__l">استضافة مجانًا</span></div>
+          <div className="stat"><span className="stat__n">5,000</span><span className="stat__l">أقل باقة · جنيه</span></div>
+          <div className="stat"><span className="stat__n">50%</span><span className="stat__l">دفعة مقدمة</span></div>
+          <div className="stat"><span className="stat__n">سنة</span><span className="stat__l">استضافة وباكند</span></div>
           <div className="stat"><span className="stat__n"><bdi>AR / EN</bdi></span><span className="stat__l">عربي وإنجليزي</span></div>
         </div>
       </div>

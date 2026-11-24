@@ -5,8 +5,8 @@ export default function Products() {
     <div className="wrap">
       <div className="section-head reveal">
         <span className="px-tag">Packages and prices</span>
-        <h2 id="products-title">Five packages, price on the label</h2>
-        <p>In Egyptian pounds. Pay 50% to start and 50% before delivery.</p>
+        <h2 id="products-title">Five packages, public prices</h2>
+        <p>Fixed scope, a published price and a delivery date agreed before we start. Payment in two instalments.</p>
       </div>
 
       <ul className="prods reveal">
@@ -14,7 +14,7 @@ export default function Products() {
           <span className="prod__n">01</span>
           <img className="prod__art" src="/assets/img/pixel/g-logo.svg" alt="" width="44" height="44" loading="lazy" decoding="async" />
           <h3>Logo</h3>
-          <p className="prod__desc">A logo for your business, delivered ready to use.</p>
+          <p className="prod__desc">A logo that distinguishes your business, ready for print and digital.</p>
           <p className="prod__who"><span>For whom</span> A project just starting</p>
           <ul className="prod__inc">
             <li>A primary logo in two versions</li>
@@ -57,7 +57,7 @@ export default function Products() {
           <span className="prod__n">04</span>
           <img className="prod__art" src="/assets/img/pixel/g-identity.svg" alt="" width="44" height="44" loading="lazy" decoding="async" />
           <h3>Full brand identity</h3>
-          <p className="prod__desc">A complete visual identity for your business.</p>
+          <p className="prod__desc">A full identity: logo, colours, type and a usage guide.</p>
           <p className="prod__who"><span>For whom</span> A growing brand that needs applications</p>
           <ul className="prod__inc">
             <li>Logo, colours and type</li>

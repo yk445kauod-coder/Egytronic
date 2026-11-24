@@ -6,7 +6,7 @@ export default function About() {
       <div className="section-head reveal">
         <span className="px-tag">Company</span>
         <h2>Who builds your project</h2>
-        <p>An Egyptian software company led by its founder, delivering work ready to run.</p>
+        <p>An Egyptian software company where the founder works directly, from scope to launch.</p>
       </div>
 
       <div className="founder reveal">
@@ -39,7 +39,7 @@ export default function About() {
         <div className="principle">
           <span className="principle__k">03 / OPEN</span>
           <h3>Open tools</h3>
-          <p>We publish some of our tools publicly for anyone to see.</p>
+          <p>We publish some of our tools on GitHub, open to use and review.</p>
         </div>
       </div>
     </div>
