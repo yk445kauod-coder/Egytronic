@@ -583,7 +583,7 @@ async function patchInquiry(env, id, payload, who) {
   sets.push("updated_at = datetime('now')");
   await env.DB.prepare(`UPDATE inquiries SET ${sets.join(", ")} WHERE id = ?`).bind(...values, id).run();
   if (payload.status) {
-    await act(env, "inquiry", id, "stage", `الحالة بقت ${payload.status}`, who.name);
+    await act(env, "inquiry", id, "stage", `نُقل الطلب إلى مرحلة «${STAGE_AR[payload.status] || payload.status}».`, who.name);
   }
   await emit(env, "inquiry.updated", "inquiry", id, who.name, payload);
   return json({ ok: true, row: await env.DB.prepare("SELECT * FROM inquiries WHERE id = ?").bind(id).first() });
@@ -1332,6 +1332,8 @@ async function rotateToken(request, env) {
 // ── team roster ──────────────────────────────────────────────────────
 
 const MEMBER_ROLES = new Set(["owner", "manager", "member", "contractor"]);
+
+const STAGE_AR = { new: "جديد", contacted: "تم التواصل", qualified: "مؤهّل", proposal: "عرض سعر", won: "تم التعاقد", lost: "مفقود" };
 
 async function act(env, entity, entityId, kind, body, actor, minutes = null) {
   await env.DB
