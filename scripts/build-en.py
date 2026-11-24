@@ -228,6 +228,11 @@ PRICING.update({
     'اطلب عرضًا': 'Request a quote',
 })
 
+INDEX.update({
+    'data-fail="تعذّر النسخ. انسخ البريد يدويًا."':
+        'data-fail="Copy failed. Please copy the email manually."',
+})
+
 PAGES = [
     {
         "src": "index.html",

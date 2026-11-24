@@ -107,15 +107,18 @@ if (copyButton) {
   const note = document.querySelector("[data-copy-note]");
   const address = copyButton.dataset.copyMail;
 
+  const flash = (text) => {
+    if (!note) return;
+    note.textContent = text;
+    window.setTimeout(() => (note.textContent = ""), 2400);
+  };
+
   copyButton.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(address);
-      if (note) {
-        note.textContent = note.dataset.message || "تم نسخ البريد الإلكتروني";
-        window.setTimeout(() => (note.textContent = ""), 1600);
-      }
+      flash(note?.dataset.message || "تم نسخ البريد");
     } catch {
-      window.location.href = `mailto:${address}`;
+      flash(note?.dataset.fail || "تعذّر النسخ. انسخ البريد يدويًا.");
     }
   });
 }
