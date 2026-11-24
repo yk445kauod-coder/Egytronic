@@ -1,5 +1,7 @@
 import Layout from "../layout/Layout";
 import Seo from "../layout/Seo";
+import { contactNode } from "../layout/Schema";
+
 import type { Locale } from "../i18n/useLocale";
 import { Portal } from "../sections/contact/index";
 
@@ -12,6 +14,7 @@ export default function ContactPage({ locale }: { locale: Locale }) {
         path={path}
         title="بوابة التواصل | Egytronic"
         description="ابدأ مشروعك مع Egytronic: اكتب الباقة التي تهمك ووسيلة التواصل، وسنرد عليك في أقرب وقت."
+        jsonLd={contactNode(locale, path)}
       />
       <main id="main">
         <Portal />

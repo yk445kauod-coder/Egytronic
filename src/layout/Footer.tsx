@@ -18,6 +18,7 @@ export default function Footer() {
         <ul className="footer__links">
           <li><a href={`${p("/")}#faq`}>{t("الأسئلة")}</a></li>
           <li><a href={p("/pricing/")}>{t("الأسعار")}</a></li>
+          <li><a href={p("/blog/")}>{t("المدونة")}</a></li>
           <li><a href={p("/software/")}>{t("البرمجيات")}</a></li>
           <li>
             <a href="https://github.com/yk445kauod-coder/Egytronic" target="_blank" rel="noopener">

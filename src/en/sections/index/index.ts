@@ -7,3 +7,4 @@ export { default as How } from "./How";
 export { default as About } from "./About";
 export { default as Faq } from "./Faq";
 export { default as Contact } from "./Contact";
+export { default as Journal } from "./Journal";

@@ -1,4 +1,9 @@
+import catalog from "../../../data/catalog.json";
+import { useLocale } from "../../../i18n/useLocale";
+
 export default function Faq() {
+  const locale = useLocale();
+
   return (
     <>
       <section className="section" id="faq">
@@ -9,22 +14,12 @@ export default function Faq() {
         <p>Answers on delivery, hosting and payment.</p>
       </div>
       <div className="faq reveal">
-        <details className="faq__item">
-          <summary>What do I get at the end?</summary>
-          <div className="faq__a"><p>Work that is ready to run, according to the package you chose: a logo, landing page, website or full identity.</p></div>
-        </details>
-        <details className="faq__item">
-          <summary>Is hosting included?</summary>
-          <div className="faq__a"><p>Hosting and backend are free in the first year with every package. The domain is bought separately or added by invoice.</p></div>
-        </details>
-        <details className="faq__item">
-          <summary>How does payment work?</summary>
-          <div className="faq__a"><p>50% upfront when we start and 50% before final delivery. Prices are in Egyptian pounds.</p></div>
-        </details>
-        <details className="faq__item">
-          <summary>How many pages in the static site?</summary>
-          <div className="faq__a"><p>Up to 5 pages for EGP 8,000. The dynamic site starts from EGP 18,000.</p></div>
-        </details>
+        {catalog.faq.map((item) => (
+          <details className="faq__item" key={item.id}>
+            <summary>{item[locale].q}</summary>
+            <div className="faq__a"><p>{item[locale].a}</p></div>
+          </details>
+        ))}
       </div>
     </div>
   </section>

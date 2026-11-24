@@ -14,7 +14,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
 OUT = SRC / "en"
 DIRS = ["sections", "pages"]
-ESCAPES = ("js/", "vendor/", "i18n/", "styles/", "layout/")
+# Pages that carry both languages in one component (blog) are not mirrored.
+SKIP = {"pages/Blog.tsx", "pages/Post.tsx"}
+ESCAPES = ("js/", "vendor/", "i18n/", "styles/", "layout/", "data/")
 ARABIC = re.compile(r"[\u0600-\u06FF]")
 
 pairs = json.loads((SRC / "i18n/copy.json").read_text(encoding="utf-8"))
@@ -29,9 +31,10 @@ def convert(text: str) -> str:
 
 
 def fix_imports(text: str, depth: int) -> str:
+    """Shared trees sit at src/<name>, one level higher than the mirror's own copy."""
     prefix = "../" * depth
     for name in ESCAPES:
-        text = text.replace(f'from "../{name}', f'from "{prefix}{name}')
+        text = re.sub(rf'from "(?:\.\./)+{re.escape(name)}', f'from "{prefix}{name}', text)
     return text
 
 
@@ -45,6 +48,8 @@ def main() -> int:
             if src.is_dir() or src.suffix not in {".tsx", ".ts"}:
                 continue
             rel = src.relative_to(SRC)
+            if rel.as_posix() in SKIP:
+                continue
             depth = 1 + len(rel.parts) - 1  # ../ per directory between src/ and the file
             out = OUT / rel
             out.parent.mkdir(parents=True, exist_ok=True)

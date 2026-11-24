@@ -94,8 +94,12 @@ OVERRIDES = {
     "ابدأ مشروعك مع Egytronic: اكتب الباقة التي تهمك ووسيلة التواصل، وسنرد عليك في أقرب وقت.":
         "Start your project with Egytronic: tell us the package you want and how to reach you, and we will get back to you.",
     "مواقع وهوية وأنظمة إدارية وذكاء اصطناعي، بخمس باقات تبدأ من 5,000 جنيه. نطاق محدد وسعر معلن وموعد تسليم، والاستضافة والباكند مجانًا في السنة الأولى.":
-        "Websites, brand identity, business systems and AI, in five packages from EGP 5,000. Fixed scope, a public price and a delivery date. Hosting and backend free in year one.",
+        "Websites, brand identity, business systems and AI, in five packages from EGP 5,000. A published price and delivery date. Hosting and backend free in year one.",
     "أسعار باقات Egytronic | من 5,000 جنيه": "Egytronic package prices | from EGP 5,000",
+    "المدونة": "Journal",
+    "التحول الرقمي والذكاء الاصطناعي": "Digital transformation and artificial intelligence",
+    "مقالات من عمل فعلي: القرار، التكلفة، والخطوة التالية.": "Notes from real work: the decision, the cost and the next step.",
+    "دقائق قراءة": "min read",
     "البرمجيات والأدوات المفتوحة | Egytronic": "Software and open tools | Egytronic",
     "بوابة التواصل | Egytronic": "Contact portal | Egytronic",
     "Egytronic | برمجيات تُسلَّم جاهزة، بأسعار معلنة": "Egytronic | Software delivered ready, at public prices",

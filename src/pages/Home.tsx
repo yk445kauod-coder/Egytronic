@@ -1,7 +1,8 @@
 import Layout from "../layout/Layout";
 import Seo from "../layout/Seo";
+import { faqNode, offerCatalogNode } from "../layout/Schema";
 import type { Locale } from "../i18n/useLocale";
-import { Block0, Products, Systems, Transform, Capabilities, How, About, Faq, Contact } from "../sections/index/index";
+import { Block0, Products, Systems, Transform, Capabilities, How, About, Faq, Contact, Journal } from "../sections/index/index";
 
 const og = {
   "@context": "https://schema.org",
@@ -30,7 +31,7 @@ export default function Home({ locale }: { locale: Locale }) {
         path={path}
         title="Egytronic | برمجيات تُسلَّم جاهزة، بأسعار معلنة"
         description="مواقع وهوية وأنظمة إدارية وذكاء اصطناعي، بخمس باقات تبدأ من 5,000 جنيه. نطاق محدد وسعر معلن وموعد تسليم، والاستضافة والباكند مجانًا في السنة الأولى."
-        jsonLd={og}
+        jsonLd={[faqNode(locale), offerCatalogNode(locale)]}
       />
       <main id="main">
         <Block0 />
@@ -40,6 +41,7 @@ export default function Home({ locale }: { locale: Locale }) {
         <Capabilities />
         <How />
         <About />
+        <Journal />
         <Faq />
         <Contact />
       </main>

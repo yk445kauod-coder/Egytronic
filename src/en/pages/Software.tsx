@@ -1,5 +1,7 @@
 import Layout from "../../layout/Layout";
 import Seo from "../../layout/Seo";
+import { systemsNode } from "../../layout/Schema";
+
 import type { Locale } from "../../i18n/useLocale";
 import { Software, OpenTools, Build } from "../sections/software/index";
 
@@ -21,6 +23,7 @@ export default function SoftwarePage({ locale }: { locale: Locale }) {
         path={path}
         title="Software and open tools | Egytronic"
         description="What Egytronic builds: websites, AI systems and tools published in the open, delivered ready to run."
+        jsonLd={systemsNode(locale, path)}
       />
       <main id="main">
         <Software />

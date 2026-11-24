@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite-react-ssg dev",
-    "build": "vite-react-ssg build && python3 scripts/postbuild.py",
-    "preview": "vite preview"
+    "build": "vite-react-ssg build && python3 scripts/postbuild.py && node scripts/seo-check.mjs",
+    "preview": "vite preview",
+    "seo": "node scripts/seo-check.mjs"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.5",

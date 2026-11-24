@@ -5,7 +5,7 @@ export default function Prices() {
     <div className="wrap">
       <div className="section-head reveal">
         <span className="px-tag">Public pricing</span>
-        <h2 id="prices-title">Five packages, clear prices</h2>
+        <h1 id="prices-title">Five packages, public prices</h1>
         <p>Pay 50% upfront to start and 50% before final delivery, in Egyptian pounds.</p>
       </div>
 

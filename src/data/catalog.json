@@ -1,0 +1,100 @@
+{
+  "brand": "Egytronic",
+  "currency": "EGP",
+  "site": "https://egytronic.pages.dev",
+  "email": "egytronic.official@googlemail.com",
+  "region": "EG",
+  "languages": ["ar", "en"],
+  "founder": {
+    "ar": "يوسف خميس",
+    "en": "Yousef Khamis",
+    "github": "https://github.com/yk445kauod-coder"
+  },
+  "facts": {
+    "ar": "Egytronic شركة برمجيات مصرية تبني المواقع والهويات والأنظمة الإدارية وأنظمة الذكاء الاصطناعي، وتسلّمها جاهزة للتشغيل. أسعارها معلنة بالجنيه المصري قبل بدء العمل: خمس باقات من 5,000 إلى 28,000 جنيه، ودفع على مرحلتين 50% عند البدء و50% قبل التسليم.",
+    "en": "Egytronic is an Egyptian software company that builds websites, brand identities, business systems and AI systems, delivered ready to run. Prices are published in Egyptian pounds before work starts: five packages from EGP 5,000 to EGP 28,000, paid in two instalments, 50% at kick-off and 50% before delivery."
+  },
+  "packages": [
+    {
+      "id": "logo",
+      "code": "logo",
+      "order": 1,
+      "ar": { "name": "لوجو", "summary": "شعار يميّز مشروعك، ويصلح للطباعة والاستخدام الرقمي.", "for": "مشروع في بدايته", "includes": ["لوجو أساسي بنسختين", "ملفات جاهزة للطباعة ووسائل التواصل"] },
+      "en": { "name": "Logo", "summary": "A logo that distinguishes your business, ready for print and digital.", "for": "A project that is just starting", "includes": ["A primary logo in two versions", "Print-ready and social-ready files"] },
+      "price": 5000,
+      "priceFrom": false,
+      "delivery": { "ar": "تسليم في 3–5 أيام", "en": "Delivered in 3–5 days" }
+    },
+    {
+      "id": "landing",
+      "code": "landing",
+      "order": 2,
+      "ar": { "name": "لاندنج بيدج", "summary": "صفحة واحدة تعرّف بمشروعك وخدماتك.", "for": "خدمة واحدة أو منتج واحد", "includes": ["صفحة واحدة بمحتوى منظم", "نموذج تواصل وزر واتساب"] },
+      "en": { "name": "Landing page", "summary": "One page that introduces your business and services.", "for": "A single service or product", "includes": ["One page with structured content", "Contact form and WhatsApp button"] },
+      "price": 6000,
+      "priceFrom": false,
+      "delivery": { "ar": "تسليم في 5–7 أيام", "en": "Delivered in 5–7 days" }
+    },
+    {
+      "id": "static",
+      "code": "static",
+      "order": 3,
+      "ar": { "name": "موقع ستاتيك", "summary": "موقع تعريفي بحد أقصى 5 صفحات.", "for": "شركة لديها خدمات وصفحات", "includes": ["حتى 5 صفحات", "تهيئة أساسية لمحركات البحث وسرعة تحميل"] },
+      "en": { "name": "Static site", "summary": "An informational site of up to 5 pages.", "for": "A company with services and pages", "includes": ["Up to 5 pages", "Basic search-engine setup and fast loading"] },
+      "price": 8000,
+      "priceFrom": false,
+      "delivery": { "ar": "تسليم في 7–10 أيام", "en": "Delivered in 7–10 days" }
+    },
+    {
+      "id": "identity",
+      "code": "identity",
+      "order": 4,
+      "ar": { "name": "هوية كاملة", "summary": "هوية كاملة: شعار وألوان وخطوط ودليل استخدام.", "for": "علامة تتوسّع وتحتاج تطبيقات", "includes": ["لوجو وألوان وخطوط", "بطاقات أعمال وتصاميم لوسائل التواصل", "دليل استخدام مختصر"] },
+      "en": { "name": "Full brand identity", "summary": "A full identity: logo, colours, type and a usage guide.", "for": "A brand that is growing and needs applications", "includes": ["Logo, colours and type", "Business cards and social designs", "A short usage guide"] },
+      "price": 10000,
+      "priceFrom": false,
+      "delivery": { "ar": "تسليم في 7–10 أيام", "en": "Delivered in 7–10 days" }
+    },
+    {
+      "id": "dynamic",
+      "code": "dynamic",
+      "order": 5,
+      "ar": { "name": "موقع ديناميك", "summary": "موقع بباكند يناسب المحتوى والوظائف المتغيرة.", "for": "محتوى يتغيّر أسبوعيًا", "includes": ["باكند ولوحة تحكم", "قاعدة بيانات ومحتوى تديره بنفسك"] },
+      "en": { "name": "Dynamic site", "summary": "A site with a backend for content and features that change.", "for": "Content that changes every week", "includes": ["Backend and control panel", "Database and content you manage yourself"] },
+      "price": 18000,
+      "priceFrom": true,
+      "delivery": { "ar": "تسليم في 3–4 أسابيع", "en": "Delivered in 3–4 weeks" }
+    }
+  ],
+  "bundle": {
+    "id": "transformation",
+    "price": 28000,
+    "priceFrom": true,
+    "ar": { "name": "التحول الرقمي الكامل", "summary": "من 28,000 جنيه. للمشاريع الأكبر، ونحدد النطاق معك بعد التواصل.", "includes": ["جلسة تشخيص وتقرير بالأولويات", "هوية كاملة (لوجو وألوان وخطوط)", "موقع ديناميك بباكند وقاعدة بيانات", "Google Business وحسابات التواصل جاهزة", "تدريب على الاستخدام", "شهر متابعة بعد التسليم"] },
+    "en": { "name": "End-to-end digital transformation", "summary": "From EGP 28,000. For larger projects, the scope is agreed after we talk.", "includes": ["Diagnostic session and a prioritised report", "Full brand identity (logo, colours, type)", "Dynamic site with backend and database", "Google Business profile and social accounts set up", "Training on how to use it", "One month of follow-up after delivery"] }
+  },
+  "terms": {
+    "ar": ["استضافة وباكند مجانًا في السنة الأولى", "الدومين منفصل أو بفاتورة", "50% مقدمًا و50% قبل التسليم"],
+    "en": ["Hosting and backend free in year one", "Domain separate, or added to the invoice", "50% upfront and 50% before delivery"]
+  },
+  "systems": [
+    { "id": "erp", "ar": "إدارة موارد", "en": "Resource planning" },
+    { "id": "crm", "ar": "علاقات عملاء", "en": "Customer relations" },
+    { "id": "pos", "ar": "نقاط بيع", "en": "Point of sale" },
+    { "id": "hotel", "ar": "إدارة فنادق", "en": "Hotel management" },
+    { "id": "lms", "ar": "منصة تعليم", "en": "Learning platform" },
+    { "id": "clinic", "ar": "إدارة عيادات", "en": "Clinic management" }
+  ],
+  "faq": [
+    { "id": "deliverable", "ar": { "q": "ماذا أستلم في نهاية المشروع؟", "a": "تستلم عملًا جاهزًا للتشغيل حسب الباقة: لوجو بملفاته، أو لاندنج بيدج منشورة، أو موقعًا حتى 5 صفحات، أو هوية كاملة بدليل استخدام. لا يُعدّ العمل منتهيًا قبل تشغيله فعليًا." }, "en": { "q": "What do I receive at the end of the project?", "a": "Work that is ready to run, per package: a logo with its files, a published landing page, a site of up to 5 pages, or a full identity with a usage guide. Work is not considered finished until it is actually running." } },
+    { "id": "hosting", "ar": { "q": "هل الاستضافة مشمولة في السعر؟", "a": "نعم. الاستضافة والباكند مجانًا في السنة الأولى مع كل باقة. الدومين يُشترى منفصلًا أو يُضاف إلى الفاتورة." }, "en": { "q": "Is hosting included in the price?", "a": "Yes. Hosting and backend are free for the first year with every package. The domain is bought separately or added to the invoice." } },
+    { "id": "payment", "ar": { "q": "كيف يتم الدفع؟", "a": "على مرحلتين: 50% عند البدء و50% قبل التسليم. الأسعار بالجنيه المصري، ولا تُدفع كامل القيمة قبل رؤية العمل." }, "en": { "q": "How does payment work?", "a": "In two instalments: 50% at kick-off and 50% before delivery. Prices are in Egyptian pounds, and the full amount is never paid before you see the work." } },
+    { "id": "pages", "ar": { "q": "كم صفحة يشمل الموقع الستاتيك؟", "a": "حتى 5 صفحات بسعر 8,000 جنيه. الموقع الديناميك بباكند وقاعدة بيانات يبدأ من 18,000 جنيه، وتسليمه من 3 إلى 4 أسابيع." }, "en": { "q": "How many pages does the static site include?", "a": "Up to 5 pages for EGP 8,000. A dynamic site with a backend and database starts at EGP 18,000 and is delivered in 3 to 4 weeks." } },
+    { "id": "timeline", "ar": { "q": "كم يستغرق تنفيذ المشروع؟", "a": "اللوجو 3–5 أيام، اللاندنج بيدج 5–7 أيام، الموقع الستاتيك 7–10 أيام، والموقع الديناميك 3–4 أسابيع. المدة تبدأ من تاريخ الاتفاق وتُكتب قبل البدء." }, "en": { "q": "How long does a project take?", "a": "Logo 3–5 days, landing page 5–7 days, static site 7–10 days, dynamic site 3–4 weeks. The timeline starts from the agreed date and is written down before work begins." } },
+    { "id": "scope", "ar": { "q": "هل يمكن تغيير النطاق بعد الاتفاق؟", "a": "النطاق مكتوب في الباقة المختارة، وأي إضافة تُقدَّر بسعرها قبل تنفيذها. لا تتغيّر قيمة الباقة بعد الاتفاق." }, "en": { "q": "Can the scope change after we agree?", "a": "The scope is written into the chosen package. Any addition is priced before it is built, and the package price does not change after the agreement." } },
+    { "id": "languages", "ar": { "q": "هل الموقع يدعم العربية والإنجليزية؟", "a": "نعم. كل موقع نسلّمه يدعم العربية والإنجليزية، بعربية أولًا واتجاه كتابة من اليمين إلى اليسار، ويمكن تسليمه بلغة واحدة عند الطلب." }, "en": { "q": "Does the site support Arabic and English?", "a": "Yes. Every site we deliver supports Arabic and English, Arabic first with right-to-left layout, and can be delivered in a single language on request." } },
+    { "id": "ownership", "ar": { "q": "لمن تعود ملكية الملفات والكود؟", "a": "الملفات والكود ملكك بعد التسليم، وتستلم الوصول إلى الاستضافة والدومين والحسابات التي أُنشئت باسم مشروعك." }, "en": { "q": "Who owns the files and the code?", "a": "The files and the code are yours after delivery, along with access to the hosting, the domain and the accounts created for your project." } },
+    { "id": "systems", "ar": { "q": "هل تبنيون أنظمة إدارية جاهزة أم مخصصة؟", "a": "نختار النظام المناسب لنشاطك ثم نثبّته ونكيّفه: الصلاحيات والتقارير والفواتير والمصطلحات التي يستخدمها فريقك، مع تدريب حتى يعمل عليه بثقة." }, "en": { "q": "Do you build ready-made or custom business systems?", "a": "We choose the system that fits your business, install it, then adapt it: permissions, reports, invoices and the terms your team already uses, with training until the team works on it confidently." } },
+    { "id": "contact", "ar": { "q": "كيف أطلب عرضًا أو أبدأ؟", "a": "أرسل تفاصيل مشروعك من بوابة التواصل أو على egytronic.official@googlemail.com، واذكر الباقة التي تهمك. نرد على البريد أو رقم واتساب الذي أدخلته." }, "en": { "q": "How do I request a quote or start?", "a": "Send your project details through the contact portal or to egytronic.official@googlemail.com, naming the package you are interested in. We reply on the email or WhatsApp number you provide." } }
+  ]
+}

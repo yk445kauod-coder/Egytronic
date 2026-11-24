@@ -407,6 +407,7 @@
   margin-bottom: clamp(32px, 5vw, 56px);
   max-width: 760px;
 }
+.section-head h1,
 .section-head h2 {
   font-size: var(--fs-4xl);
 }

@@ -5,7 +5,7 @@ export default function Portal() {
     <div className="wrap">
       <div className="section-head reveal">
         <span className="px-tag">Contact portal</span>
-        <h2 id="portal-title">Tell us about your project</h2>
+        <h1 id="portal-title">Tell us about your project</h1>
         <p>Choose the package that suits you, leave a way to reach you, and we will reply shortly.</p>
       </div>
 

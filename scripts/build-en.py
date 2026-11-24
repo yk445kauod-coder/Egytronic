@@ -130,7 +130,7 @@ SOFT = {
     '<a class="lang" href="/en/software/" hreflang="en" lang="en" aria-label="التبديل إلى النسخة الإنجليزية" title="عرض الموقع بالإنجليزية">EN</a>':
         '<a class="lang" href="/software/" hreflang="ar" lang="ar" aria-label="Switch to the Arabic version" title="View the site in Arabic">AR</a>',
     '<span class="px-tag">البرمجيات</span>': '<span class="px-tag">Software</span>',
-    '<h2 id="software-title">ما نبنيه من برمجيات</h2>': '<h2 id="software-title">What we build in software</h2>',
+    '<h1 id="software-title">ما نبنيه من برمجيات</h1>': '<h1 id="software-title">What we build in software</h1>',
     '<p>مواقع وأنظمة وأدوات نسلّمها جاهزة للتشغيل، وننشر بعضها للجميع.</p>':
         '<p>Websites, systems and tools delivered ready to run; some of them published for everyone.</p>',
     '<h3>مواقع</h3>': '<h3>Websites</h3>',
@@ -268,7 +268,7 @@ CONTACT = {
     '<a class="lang" href="/en/contact/" hreflang="en" lang="en" aria-label="التبديل إلى النسخة الإنجليزية" title="عرض الموقع بالإنجليزية">EN</a>':
         '<a class="lang" href="/contact/" hreflang="ar" lang="ar" aria-label="Switch to the Arabic version" title="View the site in Arabic">AR</a>',
     '<span class="px-tag">بوابة التواصل</span>': '<span class="px-tag">Contact portal</span>',
-    '<h2 id="portal-title">أخبرنا عن مشروعك</h2>': '<h2 id="portal-title">Tell us about your project</h2>',
+    '<h1 id="portal-title">أخبرنا عن مشروعك</h1>': '<h1 id="portal-title">Tell us about your project</h1>',
     '<p>اختر الباقة المناسبة واترك وسيلة تواصل، وسنرد عليك في أقرب وقت.</p>':
         '<p>Choose the package that suits you, leave a way to reach you, and we will reply shortly.</p>',
     'data-msg-invalid="راجع الحقول الناقصة: الاسم، وبريد إلكتروني صحيح، ورسالة لا تقل عن 10 أحرف."':
@@ -444,7 +444,7 @@ INDEX.update({
     "<title>Egytronic | برمجيات تُسلَّم جاهزة، بأسعار معلنة</title>":
         "<title>Egytronic | Software and AI Systems, Public Prices</title>",
     "مواقع وهوية وأنظمة إدارية وذكاء اصطناعي، بخمس باقات تبدأ من 5,000 جنيه. نطاق محدد وسعر معلن وموعد تسليم، والاستضافة والباكند مجانًا في السنة الأولى.":
-        "Websites, brand identity, business systems and AI, in five packages from EGP 5,000. Fixed scope, a public price and a delivery date. Hosting and backend free in year one.",
+        "Websites, brand identity, business systems and AI, in five packages from EGP 5,000. A published price and delivery date. Hosting and backend free in year one.",
     "شركة برمجيات مصرية. نبني موقعك أو هويتك، ونسطّب نظامك الإداري ونكيّفه على شغلك. خمس باقات من 5,000 جنيه.":
         "An Egyptian software company. We build your site or brand, and install and adapt a management system for your business. Five packages from EGP 5,000.",
     '<li><a href="#capabilities">الخدمات</a></li>': '<li><a href="#capabilities">Services</a></li>',
@@ -542,7 +542,7 @@ PRICING.update({
     "<title>أسعار باقات Egytronic | تبدأ من 5,000 جنيه</title>":
         "<title>Egytronic Pricing | From EGP 5,000</title>",
     '<span class="px-tag">الأسعار المعلنة</span>': '<span class="px-tag">Public pricing</span>',
-    '<h2 id="prices-title">خمس باقات بأسعار واضحة</h2>': '<h2 id="prices-title">Five packages, clear prices</h2>',
+    '<h1 id="prices-title">خمس باقات بأسعار معلنة</h1>': '<h1 id="prices-title">Five packages, public prices</h1>',
     '<p>الدفع 50% مقدمًا عند البدء و50% قبل التسليم النهائي، بالجنيه المصري.</p>':
         '<p>Pay 50% upfront to start and 50% before final delivery, in Egyptian pounds.</p>',
     '<p class="pricerow__desc">شعار يميّز مشروعك، ويصلح للطباعة والاستخدام الرقمي.</p>':
@@ -586,7 +586,7 @@ PRICING.update({
     '<span class="pricerow__cur">جنيه</span>': '<span class="pricerow__cur">EGP</span>',
     '<span>جنيه</span>': '<span>EGP</span>',
     '<span class="pricerow__from">ابتداءً من</span>': '<span class="pricerow__from">Starting at</span>',
-    '<h2 id="prices-title">': '<h2 id="prices-title">',
+
 })
 
 INDEX.update({

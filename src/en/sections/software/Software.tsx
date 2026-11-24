@@ -5,7 +5,7 @@ export default function Software() {
     <div className="wrap">
       <div className="section-head reveal">
         <span className="px-tag">Software</span>
-        <h2 id="software-title">What we build in software</h2>
+        <h1 id="software-title">What we build in software</h1>
         <p>Websites, systems and tools delivered ready to run; some of them published for everyone.</p>
       </div>
 

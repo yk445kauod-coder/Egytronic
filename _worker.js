@@ -502,6 +502,24 @@ async function contact(request, env) {
   return json({ ok: true, id: inserted?.id ?? null });
 }
 
+/* Public, read-only package catalogue for agents and integrations. */
+async function catalog(request, env, url) {
+  const asset = await env.ASSETS.fetch(new Request(new URL("/pricing.json", url), { method: "GET" }));
+  if (!asset.ok) return json({ ok: false, code: "catalog-missing" }, 503);
+  const body = await asset.text();
+  const res = new Response(request.method === "HEAD" ? null : body, {
+    status: 200,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "public, max-age=3600",
+      "access-control-allow-origin": "*",
+      "access-control-allow-methods": "GET, HEAD, OPTIONS",
+      "access-control-allow-headers": "content-type",
+    },
+  });
+  return res;
+}
+
 async function health(env) {
   if (!env.DB) return json({ ok: false, db: false });
   const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM inquiries").first();
@@ -1629,6 +1647,9 @@ export default {
     if (url.pathname === "/token") return token(request, env);
 
     if (url.pathname === "/api/health") return health(env);
+    if (url.pathname === "/api/catalog" && (request.method === "GET" || request.method === "HEAD")) {
+      return catalog(request, env, url);
+    }
     if (url.pathname === "/api/contact" && request.method === "POST") return contact(request, env);
     if (url.pathname === "/api/admin/token" && request.method === "POST") return rotateToken(request, env);
     if (url.pathname === "/mcp") return mcp(request, env, url);
