@@ -947,3 +947,305 @@
   .prods { grid-template-columns: 1fr; }
   .prod:last-child { grid-column: auto; }
 }
+
+/* ── products band v2: airier, one recommendation, stronger hooks ───── */
+.section--products {
+  padding-block: 92px;
+  background:
+    radial-gradient(1200px 420px at 80% -10%, rgba(255, 106, 0, 0.12), transparent 70%),
+    var(--panel);
+}
+
+.prods {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 46px;
+  align-items: stretch;
+}
+
+.prod {
+  padding: 28px 22px 22px;
+  border-width: 2px;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 55%), var(--ink);
+}
+
+.prod__n {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+}
+
+.prod h3 {
+  font-size: 21px;
+  letter-spacing: -0.01em;
+}
+
+.prod__desc {
+  font-size: 14.5px;
+  line-height: 1.9;
+}
+
+.prod__price {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top-width: 2px;
+  gap: 8px;
+}
+
+.prod__amt {
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 24px rgba(255, 106, 0, 0.35);
+}
+
+/* one tile carries the recommendation: bigger, brighter, lifted */
+.prod--pick {
+  border-color: var(--gold);
+  background:
+    linear-gradient(180deg, rgba(255, 106, 0, 0.16), rgba(255, 106, 0, 0.03) 55%),
+    var(--ink);
+  box-shadow: 0 18px 46px -22px rgba(255, 106, 0, 0.65);
+  transform: translateY(-8px);
+}
+
+.prod--pick:hover,
+.prod--pick:focus-within {
+  transform: translateY(-12px);
+}
+
+.prod__flag {
+  position: absolute;
+  inset-block-start: -13px;
+  inset-inline-start: 22px;
+  padding: 4px 10px;
+  background: var(--gold);
+  color: #17110b;
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.prod__link {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.prod__link::after {
+  content: " ↗";
+  color: var(--gold);
+}
+
+.prods__foot {
+  margin-top: 40px;
+  gap: 24px;
+}
+
+.prods__note {
+  font-size: 13.5px;
+  line-height: 1.9;
+}
+
+/* benefit strip under the tiles */
+.prods__why {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 44px;
+  padding: 0;
+  list-style: none;
+  border-top: 2px solid var(--line-soft);
+  padding-top: 30px;
+}
+
+.prods__why li {
+  display: grid;
+  gap: 6px;
+}
+
+.prods__why b {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--text);
+}
+
+.prods__why span {
+  font-size: 14px;
+  line-height: 1.85;
+  color: var(--muted);
+}
+
+@media (max-width: 1100px) {
+  .prod--pick { transform: none; }
+  .prods__why { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 620px) {
+  .section--products { padding-block: 64px; }
+  .prod__amt { font-size: 30px; }
+}
+
+/* ── contact portal ─────────────────────────────────────── */
+.portal__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: 36px;
+  margin-top: 44px;
+  align-items: start;
+}
+
+.portal__form {
+  display: grid;
+  gap: 20px;
+  padding: 34px;
+  border: 2px solid var(--line);
+  background: var(--ink);
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field label {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.field__opt {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 13px 14px;
+  border: 2px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  border-radius: 0;
+  min-block-size: 48px;
+}
+
+.field textarea {
+  resize: vertical;
+  line-height: 1.8;
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-color: var(--gold);
+}
+
+.field--trap {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.portal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+
+.portal__mail {
+  font-size: 14px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding-block: 6px;
+}
+
+.portal__status {
+  font-size: 14px;
+  line-height: 1.8;
+  min-block-size: 1.6em;
+}
+
+.portal__status[data-tone="ok"] { color: #7ee2a8; }
+.portal__status[data-tone="warn"] { color: #ffb27a; }
+
+.portal__fallback {
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--muted);
+}
+
+.linkish {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--gold);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.portal__side {
+  display: grid;
+  gap: 18px;
+}
+
+.portal__card {
+  padding: 28px;
+  border: 2px solid var(--line);
+  background: var(--panel);
+}
+
+.portal__card--quiet {
+  background: transparent;
+}
+
+.portal__card h3 {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.portal__card p {
+  font-size: 14.5px;
+  line-height: 1.9;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.portal__steps {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.portal__steps li {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 10px;
+  font-size: 14.5px;
+  line-height: 1.85;
+  color: var(--muted);
+}
+
+.portal__steps span {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--gold);
+}
+
+@media (max-width: 900px) {
+  .portal__grid { grid-template-columns: 1fr; }
+  .portal__form { padding: 24px; }
+}

@@ -1,0 +1,13 @@
+# Pages project config: the contact portal binds one tiny D1 database.
+# Nothing else is bound, so a static page load costs one ASSETS.fetch.
+name = "egytronic"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = ".deploy"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "egytronic-contact"
+database_id = "46e72c41-a131-4b28-89ec-a2a583a54f2c"
+
+[vars]
+CONTACT_SALT = "egytronic-contact-2026"

@@ -30,11 +30,11 @@
 <link rel="apple-touch-icon" sizes="180x180" href="assets/img/apple-touch-icon.png">
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/handjet-arabic-400-900.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/handjet-latin-400-900.woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/fonts.css?v=20261124c">
-<link rel="stylesheet" href="assets/css/tokens.css?v=20261124c">
-<link rel="stylesheet" href="assets/css/base.css?v=20261124c">
-<link rel="stylesheet" href="assets/css/components.css?v=20261124c">
-<link rel="stylesheet" href="assets/css/sections.css?v=20261124c">
+<link rel="stylesheet" href="assets/css/fonts.css?v=20261124d">
+<link rel="stylesheet" href="assets/css/tokens.css?v=20261124d">
+<link rel="stylesheet" href="assets/css/base.css?v=20261124d">
+<link rel="stylesheet" href="assets/css/components.css?v=20261124d">
+<link rel="stylesheet" href="assets/css/sections.css?v=20261124d">
 <script>document.documentElement.classList.add('js'); setTimeout(function(){var b=document.querySelector('.boot'); if(b) b.classList.add('is-done'); document.documentElement.classList.add('ui-ready');}, 2200);</script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Organization","name":"Egytronic","url":"https://egytronic.pages.dev/","logo":"https://egytronic.pages.dev/assets/img/icon-512.png","description":"شركة برمجيات مصرية تبني المواقع والهويات وأنظمة الذكاء الاصطناعي وتسلّمها جاهزة للتشغيل.","founder":{"@type":"Person","name":"Yousef Khamis"},"sameAs":["https://github.com/yk445kauod-coder/Egytronic"]}
@@ -70,7 +70,7 @@
         <li><a href="/pricing/">الأسعار</a></li>
         <li><a href="#how">المنهجية</a></li>
         <li><a href="#about">عن الشركة</a></li>
-        <li><a href="#contact">تواصل</a></li>
+        <li><a href="/contact/">تواصل</a></li>
         <li class="nav-ext"><a href="/pricing/">احجز باقتك ↗</a></li>
       </ul>
     </nav>
@@ -152,11 +152,13 @@
           <p class="prod__desc">شعار لمشروعك يُسلَّم جاهزًا للاستخدام.</p>
           <p class="prod__price"><span class="prod__amt">5,000</span> <span class="prod__cur">جنيه</span></p>
         </li>
-        <li class="prod">
+        <li class="prod prod--pick">
+          <span class="prod__flag">الأنسب للبدء</span>
           <span class="prod__n">02</span>
           <h3>لاندنج بيدج</h3>
           <p class="prod__desc">صفحة واحدة تعرّف بمشروعك وخدماتك.</p>
           <p class="prod__price"><span class="prod__amt">6,000</span> <span class="prod__cur">جنيه</span></p>
+          <a class="prod__link" href="/contact/">احجز الباقة</a>
         </li>
         <li class="prod">
           <span class="prod__n">03</span>
@@ -175,6 +177,21 @@
           <h3>موقع ديناميك</h3>
           <p class="prod__desc">موقع بباكند يناسب المحتوى والوظائف المتغيرة.</p>
           <p class="prod__price"><span class="prod__cur">من</span> <span class="prod__amt">18,000</span> <span class="prod__cur">جنيه</span></p>
+        </li>
+      </ul>
+
+      <ul class="prods__why reveal">
+        <li>
+          <b>السعر مكتوب قبل الكلام</b>
+          <span>خمس باقات بأرقامها، ومفيش مفاوضات على السعر بعد الاتفاق.</span>
+        </li>
+        <li>
+          <b>استضافة مجانًا سنة</b>
+          <span>الاستضافة والباكند على حسابنا في السنة الأولى مع كل باقة.</span>
+        </li>
+        <li>
+          <b>بتدفع على مرحلتين</b>
+          <span>50% عند البدء و50% قبل التسليم. مش بتدفع كله قبل ما تشوف حاجة.</span>
         </li>
       </ul>
 
@@ -358,7 +375,11 @@
           <p>راسلنا على البريد التالي، ونرد عليك في أقرب وقت.</p>
           <a class="cta__mail" href="mailto:egytronic.official@googlemail.com">egytronic.official@googlemail.com</a>
           <div class="cta__actions">
-            <a class="px-btn" href="mailto:egytronic.official@googlemail.com" data-confetti>
+            <a class="px-btn" href="/contact/">
+              افتح بوابة التواصل
+              <svg class="icon" aria-hidden="true"><use href="#i-mail"></use></svg>
+            </a>
+            <a class="px-btn px-btn--ghost" href="mailto:egytronic.official@googlemail.com" data-confetti>
               إرسال بريد
               <svg class="icon" aria-hidden="true"><use href="#i-mail"></use></svg>
             </a>
@@ -409,6 +430,6 @@
   </div>
 </footer>
 
-<script type="module" src="assets/js/app.js?v=20261124c"></script>
+<script type="module" src="assets/js/app.js?v=20261124d"></script>
 </body>
 </html>

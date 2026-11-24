@@ -2,3 +2,5 @@
 _*.html
 .DS_Store
 .deploy/
+
+.admin-token.local

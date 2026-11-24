@@ -33,7 +33,7 @@ INDEX = {
     '<a href="#top">الرئيسية</a>': '<a href="#top">Home</a>',
     '<a href="#about">عن الشركة</a>': '<a href="#about">Company</a>',
     '<li><a href="/pricing/">الأسعار</a></li>': '<li><a href="/en/pricing/">Prices</a></li>',
-    '<a href="#contact">تواصل</a>': '<a href="#contact">Contact</a>',
+    '<a href="/contact/">تواصل</a>': '<a href="contact/">Contact</a>',
     '<li><a href="#faq">الأسئلة</a></li>': '<li><a href="#faq">FAQ</a></li>',
 
     # ── hero ────────────────────────────────────────────────
@@ -85,7 +85,7 @@ PRICING = {
     '<a href="/pricing/" class="is-active" aria-current="page">الأسعار</a>':
         '<a href="./" class="is-active" aria-current="page">Prices</a>',
     '<a href="/#about">عن الشركة</a>': '<a href="../#about">Company</a>',
-    '<a href="/#contact">تواصل</a>': '<a href="../#contact">Contact</a>',
+    '<a href="/contact/">تواصل</a>': '<a href="../contact/">Contact</a>',
     '<a href="/#faq">الأسئلة</a>': '<a href="../#faq">FAQ</a>',
     '<li><a href="/pricing/">الأسعار</a></li>': '<li><a href="./">Prices</a></li>',
 
@@ -164,7 +164,7 @@ SOFT.update({
     '<li><a href="/pricing/">الأسعار</a></li>': '<li><a href="../pricing/">Prices</a></li>',
     '<li><a href="/#how">المنهجية</a></li>': '<li><a href="../#how">Process</a></li>',
     '<li><a href="/#about">عن الشركة</a></li>': '<li><a href="../#about">Company</a></li>',
-    '<li><a href="/#contact">تواصل</a></li>': '<li><a href="../#contact">Contact</a></li>',
+    '<li><a href="/contact/">تواصل</a></li>': '<li><a href="../contact/">Contact</a></li>',
     '<li class="nav-ext"><a href="mailto:egytronic.official@googlemail.com">احجز باقتك ↗</a></li>':
         '<li class="nav-ext"><a href="mailto:egytronic.official@googlemail.com">Book a package ↗</a></li>',
     '<li><a href="/#faq">الأسئلة</a></li>': '<li><a href="../#faq">FAQ</a></li>',
@@ -233,6 +233,102 @@ INDEX.update({
         'data-fail="Copy failed. Please copy the email manually."',
 })
 
+INDEX.update({
+    '<span class="prod__flag">الأنسب للبدء</span>':
+        '<span class="prod__flag">Best place to start</span>',
+    '<a class="prod__link" href="/contact/">احجز الباقة</a>':
+        '<a class="prod__link" href="contact/">Book this package</a>',
+    '<b>السعر مكتوب قبل الكلام</b>': '<b>The price is on the table</b>',
+    '<span>خمس باقات بأرقامها، ومفيش مفاوضات على السعر بعد الاتفاق.</span>':
+        '<span>Five packages with their numbers, and no price renegotiation after we agree.</span>',
+    '<b>استضافة مجانًا سنة</b>': '<b>Hosting free for a year</b>',
+    '<span>الاستضافة والباكند على حسابنا في السنة الأولى مع كل باقة.</span>':
+        '<span>Hosting and backend are on us in the first year with every package.</span>',
+    '<b>بتدفع على مرحلتين</b>': '<b>You pay in two steps</b>',
+    '<span>50% عند البدء و50% قبل التسليم. مش بتدفع كله قبل ما تشوف حاجة.</span>':
+        '<span>50% when we start and 50% before delivery. You do not pay it all before you see anything.</span>',
+    '<a class="px-btn" href="/contact/">\n              افتح بوابة التواصل\n':
+        '<a class="px-btn" href="contact/">\n              Open the contact portal\n',
+})
+
+CONTACT = {
+    "<title>بوابة التواصل | Egytronic</title>": "<title>Contact Portal | Egytronic</title>",
+    '<meta name="description" content="ابدأ مشروعك مع Egytronic: اكتب لنا الباقة اللي تهمك ووسيلة التواصل، ونرد عليك في أقرب وقت.">':
+        '<meta name="description" content="Start your project with Egytronic: tell us the package you want and how to reach you, and we will get back to you.">',
+    '<meta property="og:title" content="بوابة التواصل | Egytronic">':
+        '<meta property="og:title" content="Contact Portal | Egytronic">',
+    '<meta property="og:description" content="ابدأ مشروعك مع Egytronic: اكتب لنا الباقة اللي تهمك ووسيلة التواصل، ونرد عليك في أقرب وقت.">':
+        '<meta property="og:description" content="Start your project with Egytronic: tell us the package you want and how to reach you, and we will get back to you.">',
+    '<meta name="twitter:title" content="بوابة التواصل | Egytronic">':
+        '<meta name="twitter:title" content="Contact Portal | Egytronic">',
+    '<meta name="twitter:description" content="ابدأ مشروعك مع Egytronic: اكتب لنا الباقة اللي تهمك ووسيلة التواصل، ونرد عليك في أقرب وقت.">':
+        '<meta name="twitter:description" content="Start your project with Egytronic: tell us the package you want and how to reach you, and we will get back to you.">',
+    '<meta property="og:image:alt" content="Egytronic — بوابة التواصل">':
+        '<meta property="og:image:alt" content="Egytronic — contact portal">',
+    '<a class="lang" href="/en/contact/" hreflang="en" lang="en" aria-label="التبديل إلى النسخة الإنجليزية" title="عرض الموقع بالإنجليزية">EN</a>':
+        '<a class="lang" href="/contact/" hreflang="ar" lang="ar" aria-label="Switch to the Arabic version" title="View the site in Arabic">AR</a>',
+    '<span class="px-tag">بوابة التواصل</span>': '<span class="px-tag">Contact portal</span>',
+    '<h2 id="portal-title">قولنا على مشروعك</h2>': '<h2 id="portal-title">Tell us about your project</h2>',
+    '<p>اختار الباقة اللي تهمك، وسيب وسيلة تواصل. بنرد عليك في أقرب وقت.</p>':
+        '<p>Pick the package you are interested in and leave a way to reach you. We get back to you shortly.</p>',
+    'data-msg-invalid="راجع الحقول الناقصة: الاسم، بريد صحيح، ورسالة 10 أحرف على الأقل."':
+        'data-msg-invalid="Check the missing fields: a name, a valid email and a message of at least 10 characters."',
+    'data-msg-sending="جاري الإرسال…"': 'data-msg-sending="Sending…"',
+    'data-msg-ok="وصلتنا رسالتك. هنرد عليك على وسيلة التواصل اللي كتبتها."':
+        'data-msg-ok="We received your message and will reply using the contact details you left."',
+    'data-msg-rate="وصلتنا رسايل كتير من نفس الجهاز. استنى شوية وحاول تاني."':
+        'data-msg-rate="Too many messages from this device. Wait a little and try again."',
+    'data-msg-down="الإرسال مش متاح دلوقتي."': 'data-msg-down="Sending is unavailable right now."',
+    'data-msg-offline="مفيش اتصال بالشبكة."': 'data-msg-offline="No network connection."',
+    'data-msg-button="إرسال الطلب"': 'data-msg-button="Send the request"',
+    '<label for="cf-name">الاسم</label>': '<label for="cf-name">Name</label>',
+    'placeholder="اسمك أو اسم المشروع"': 'placeholder="Your name or business"',
+    '<label for="cf-phone">واتساب أو موبايل <span class="field__opt">(اختياري)</span></label>':
+        '<label for="cf-phone">WhatsApp or mobile <span class="field__opt">(optional)</span></label>',
+    '<label for="cf-package">الباقة</label>': '<label for="cf-package">Package</label>',
+    '<option value="unsure">مش محدد لسه</option>': '<option value="unsure">Not sure yet</option>',
+    '<option value="logo">لوجو — 5,000 جنيه</option>': '<option value="logo">Logo — EGP 5,000</option>',
+    '<option value="landing">لاندنج بيدج — 6,000 جنيه</option>': '<option value="landing">Landing page — EGP 6,000</option>',
+    '<option value="static">موقع ستاتيك — 8,000 جنيه</option>': '<option value="static">Static site — EGP 8,000</option>',
+    '<option value="identity">هوية كاملة — 10,000 جنيه</option>': '<option value="identity">Full identity — EGP 10,000</option>',
+    '<option value="dynamic">موقع ديناميك — من 18,000 جنيه</option>': '<option value="dynamic">Dynamic site — from EGP 18,000</option>',
+    '<option value="transform">تحول كامل — من 28,000 جنيه</option>': '<option value="transform">Full transformation — from EGP 28,000</option>',
+    '<label for="cf-message">الرسالة</label>': '<label for="cf-message">Message</label>',
+    'placeholder="إيه المشروع؟ وإيه أهم حاجة محتاجها؟"': 'placeholder="What is the project, and what matters most to you?"',
+    '<label for="cf-website">موقعك</label>': '<label for="cf-website">Your website</label>',
+    '<button class="px-btn" type="submit" data-submit>إرسال الطلب</button>':
+        '<button class="px-btn" type="submit" data-submit>Send the request</button>',
+    '<a class="portal__mail" href="mailto:egytronic.official@googlemail.com">أو راسلنا على البريد</a>':
+        '<a class="portal__mail" href="mailto:egytronic.official@googlemail.com">Or email us directly</a>',
+    'data-message="تم نسخ البريد" data-fail="تعذّر النسخ. انسخ البريد يدويًا.">نسخ البريد</button>':
+        'data-message="Email copied" data-fail="Copy failed. Please copy the email manually.">Copy email</button>',
+    '<h3>إيه اللي بيحصل بعد الإرسال</h3>': '<h3>What happens after you send</h3>',
+    '<li><span>01</span> بنقرأ الطلب والباقة المختارة.</li>': '<li><span>01</span> We read the request and the package you picked.</li>',
+    '<li><span>02</span> بنرد عليك على البريد أو الواتساب اللي كتبته.</li>': '<li><span>02</span> We reply on the email or WhatsApp you left.</li>',
+    '<li><span>03</span> لو مناسب، بنحدد النطاق ونبدأ.</li>': '<li><span>03</span> If it fits, we agree the scope and start.</li>',
+    '<h3>السعر معلن مقدمًا</h3>': '<h3>The price is public up front</h3>',
+    '<p>كل باقة بسعرها المكتوب، والدفع 50% عند البدء و50% قبل التسليم.</p>':
+        '<p>Every package has its printed price: 50% to start and 50% before delivery.</p>',
+    '<a class="px-btn px-btn--ghost px-btn--sm" href="/pricing/">شوف الأسعار</a>':
+        '<a class="px-btn px-btn--ghost px-btn--sm" href="../pricing/">See pricing</a>',
+    '            تعذّر إرسال الطلب. راسلنا على\n': '            Sending failed. Write to us at\n',
+}
+
+CONTACT.update({
+    '<li><a href="/">الرئيسية</a></li>': '<li><a href="../">Home</a></li>',
+    '<li><a href="/#capabilities">الخدمات</a></li>': '<li><a href="../#capabilities">Services</a></li>',
+    '<li><a href="/pricing/">الأسعار</a></li>': '<li><a href="../pricing/">Prices</a></li>',
+    '<li><a href="/#how">المنهجية</a></li>': '<li><a href="../#how">Process</a></li>',
+    '<li><a href="/#about">عن الشركة</a></li>': '<li><a href="../#about">Company</a></li>',
+    '<li><a href="/contact/">تواصل</a></li>': '<li><a href="../contact/">Contact</a></li>',
+    '<li class="nav-ext"><a href="mailto:egytronic.official@googlemail.com">احجز باقتك ↗</a></li>':
+        '<li class="nav-ext"><a href="mailto:egytronic.official@googlemail.com">Book a package ↗</a></li>',
+    'اطلب عرضًا': 'Request a quote',
+    '<li><a href="/#faq">الأسئلة</a></li>': '<li><a href="../#faq">FAQ</a></li>',
+    '<p class="footer__note">صُنع في مصر — <bdi>Egytronic</bdi></p>':
+        '<p class="footer__note">Made in Egypt — <bdi>Egytronic</bdi></p>',
+})
+
 PAGES = [
     {
         "src": "index.html",
@@ -240,6 +336,13 @@ PAGES = [
         "tables": [INDEX],
         "urls": ("https://egytronic.pages.dev/", "https://egytronic.pages.dev/en/"),
         "prefix": "",
+    },
+    {
+        "src": "contact/index.html",
+        "out": "en/contact/index.html",
+        "tables": [SHARED, CONTACT],
+        "urls": ("https://egytronic.pages.dev/contact/", "https://egytronic.pages.dev/en/contact/"),
+        "prefix": "../",
     },
     {
         "src": "software/index.html",

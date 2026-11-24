@@ -261,3 +261,28 @@
     justify-content: flex-start;
   }
 }
+
+/* ── prices read first: bigger amount, tighter rhythm ───── */
+.pricerow {
+  padding-block: 30px;
+}
+
+.pricerow__amount {
+  font-size: clamp(34px, 3.4vw, 46px);
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 26px rgba(255, 106, 0, 0.32);
+}
+
+.pricerow h3 {
+  font-size: 22px;
+}
+
+.pricerow__desc {
+  max-width: 52ch;
+  line-height: 1.9;
+}
+
+@media (max-width: 720px) {
+  .pricerow { padding-block: 24px; }
+  .pricerow__amount { font-size: 30px; }
+}
