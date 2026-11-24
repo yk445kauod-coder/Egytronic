@@ -8,7 +8,10 @@ if (form) {
   const fallback = form.querySelector("[data-fallback]");
   const submit = form.querySelector("[data-submit]");
 
+  const okArt = form.querySelector("[data-ok-art]");
+
   const setStatus = (text, tone) => {
+    if (okArt) okArt.hidden = tone !== "ok";
     if (!status) return;
     status.textContent = text;
     status.dataset.tone = tone || "";
