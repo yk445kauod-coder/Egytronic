@@ -798,32 +798,26 @@ async function renderAgents() {
       </div>
 
       <div class="ops-card">
-        <div class="ops-head"><h2>ازاي توصّل وكيل</h2></div>
-        <p class="ops-item__meta" style="margin-bottom:8px">أي وكيل MCP (Claude Code، Cursor، Claude Desktop، أو سكربتك) بيكلمنا على نفس العنوان. المفتاح ده بيدير الطلبات والعملاء والمهام والقنوات، والريبو فيه ملفات جاهزة: <bdi>.mcp.json</bdi> و <bdi>.cursor/mcp.json</bdi> — بس حدّد المفتاح في <bdi>EGYTRONIC_AGENT_KEY</bdi>.</p>
-        <pre class="ops-code">export EGYTRONIC_AGENT_KEY=egx_agent_...</pre>
-        <pre class="ops-code">claude mcp add --transport http egytronic-ops \\
-  ${esc(base)}/mcp \\
-  --header "Authorization: Bearer egx_agent_..."</pre>
-        <p class="ops-item__meta" style="margin:10px 0 6px">Claude Desktop أو أي عميل بيقرا JSON:</p>
+        <div class="ops-head"><h2>توصيل وكيل — OAuth</h2></div>
+        <p class="ops-item__meta" style="margin-bottom:8px">أي وكيل حديث (Claude Code، Cursor، أو أي عميل MCP) بيفوّض نفسه: أمر واحد، المتصفح بيفتح صفحة التفويض، تدخل رمز المالك، وخلاص. مفيش مفتاح بيتنسخ ولا بيتخزن عند الوكيل — بياخد توكن ساعة ويتجدد لوحده.</p>
+        <pre class="ops-code">claude mcp add --transport http egytronic-ops ${esc(base)}/mcp</pre>
+        <p class="ops-item__meta" style="margin:10px 0 6px">عميل بيقرا JSON وبيتعامل مع OAuth:</p>
         <pre class="ops-code">{
   "mcpServers": {
     "egytronic-ops": {
-      "command": "npx",
-      "args": [
-        "-y", "mcp-remote", "${esc(base)}/mcp",
-        "--header", "Authorization: Bearer egx_agent_..."
-      ]
+      "type": "http",
+      "url": "${esc(base)}/mcp"
     }
   }
 }</pre>
-        <p class="ops-item__meta" style="margin:10px 0 6px">أو REST مباشرة:</p>
+        <p class="ops-item__meta" style="margin:12px 0 6px">لوكيل مش بيعرف OAuth، مفتاح ثابت لسه شغال (من الفورم اللي جنبه):</p>
+        <pre class="ops-code">export EGYTRONIC_AGENT_KEY=egx_agent_...
+claude mcp add --transport http egytronic-ops ${esc(base)}/mcp \\
+  --header "Authorization: Bearer $EGYTRONIC_AGENT_KEY"</pre>
+        <p class="ops-item__meta" style="margin:12px 0 6px">أو REST مباشرة:</p>
         <pre class="ops-code">curl ${esc(base)}/api/context \\
-  -H "Authorization: Bearer egx_agent_..."
-
-curl -X POST ${esc(base)}/api/tasks \\
-  -H "Authorization: Bearer egx_agent_..." \\
-  -H "content-type: application/json" \\
-  -d '{"title":"رد على العميل","priority":1}'</pre>
+  -H "Authorization: Bearer $EGYTRONIC_AGENT_KEY"</pre>
+        <div data-sessions style="margin-top:16px"></div>
       </div>
     </div>`)
   );
@@ -836,6 +830,36 @@ curl -X POST ${esc(base)}/api/tasks \\
     });
     pre.after(bar);
   });
+
+  const sessionsBox = $("[data-sessions]", panel);
+  if (sessionsBox) {
+    const { rows: sessions } = await api("/api/sessions").catch(() => ({ rows: [] }));
+    const live = sessions.filter((row) => Number(row.live) > 0);
+    sessionsBox.innerHTML = `
+      <div class="ops-head"><h3 style="margin:0;font-size:14px">الجلسات المفوّضة</h3>
+        <span class="ops-item__meta">${live.length} شغّالة من ${sessions.length}</span></div>
+      ${live.length
+        ? `<div class="ops-list">${live
+            .map(
+              (row) => `<div class="ops-item" style="align-items:center">
+                <div>
+                  <div class="ops-item__name">${esc(row.client || "وكيل")}</div>
+                  <div class="ops-item__meta" dir="ltr">${esc(row.scopes || "read")} · ${Number(row.live)} توكن · تجديد لحد ${esc(String(row.refresh_until || "").slice(0, 16))}</div>
+                </div>
+                <button class="ops-chip" type="button" data-revoke="${esc(row.client_id)}">قطع الجلسة</button>
+              </div>`
+            )
+            .join("")}</div>`
+        : '<div class="ops-empty">مفيش جلسات OAuth مفتوحة.</div>'}`;
+
+    $$("[data-revoke]", sessionsBox).forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        await api(`/api/sessions/${encodeURIComponent(btn.dataset.revoke)}`, { method: "DELETE" }).catch(() => {});
+        toast("الجلسة اتقطعت");
+        renderAgents();
+      })
+    );
+  }
 
   if (state.newAgentKey) {
     panel.append(

@@ -790,6 +790,8 @@
 .ops-code {
   margin: 0;
   padding: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   background: #0d0d0d;
   border: 2px solid var(--line);
   color: #cfcfcf;

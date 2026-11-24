@@ -11,7 +11,7 @@ const TASK_STATUS = new Set(["todo", "doing", "done"]);
 const CLIENT_STATUS = new Set(["lead", "active", "paused", "done"]);
 const PROJECT_STATUS = new Set(["planned", "building", "review", "shipped"]);
 
-const json = (body, status = 200) =>
+const json = (body, status = 200, extra = {}) =>
   new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -20,6 +20,7 @@ const json = (body, status = 200) =>
       "access-control-allow-origin": "*",
       "access-control-allow-headers": "content-type, authorization, x-admin-token",
       "access-control-allow-methods": "GET, POST, PATCH, DELETE, OPTIONS",
+      ...extra,
     },
   });
 
@@ -71,6 +72,20 @@ async function identify(request, env, url) {
     return { role: "admin", name: "yousef", scopes: ["read", "write", "admin"] };
   }
 
+  if (token.startsWith("egx_at_")) {
+    const grant = await env.DB
+      .prepare(
+        `SELECT t.scope, c.name AS client FROM oauth_tokens t
+         LEFT JOIN oauth_clients c ON c.id = t.client_id
+         WHERE t.token_sha256 = ? AND t.kind = 'access' AND t.revoked = 0 AND t.expires_at > datetime('now')`
+      )
+      .bind(digest)
+      .first();
+    if (!grant) return null;
+    const scopes = String(grant.scope || "read").split(/\s+/).filter(Boolean);
+    return { role: "agent", name: grant.client || "oauth client", scopes };
+  }
+
   const agent = await env.DB
     .prepare("SELECT id, name, scopes, active FROM agents WHERE key_sha256 = ?")
     .bind(digest)
@@ -86,6 +101,336 @@ async function identify(request, env, url) {
 }
 
 const can = (who, scope) => Boolean(who?.scopes?.includes(scope) || who?.scopes?.includes("admin"));
+
+// ── OAuth 2.1: authorization code + PKCE ─────────────────────────────
+// Any MCP client can authorise itself: discover, register, ask the owner on a page,
+// then trade a one-time code for a short-lived bearer token. Static admin tokens and
+// agent keys keep working, so nothing that already talks to us has to change.
+
+const OAUTH_SCOPES = ["read", "write", "admin"];
+const ACCESS_TTL = 3600;
+const REFRESH_TTL = 2592000;
+const CODE_TTL = 300;
+// a per-isolate speed bump on credential guessing; D1 would be stronger but slower
+const authFails = new Map();
+
+const b64url = (bytes) =>
+  btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+const randomToken = (prefix) => prefix + b64url(crypto.getRandomValues(new Uint8Array(32)));
+
+const s256 = async (verifier) =>
+  b64url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))));
+
+const normalizeScopes = (raw) => {
+  const asked = String(raw || "").split(/[\s,]+/).filter(Boolean);
+  const kept = asked.filter((scope) => OAUTH_SCOPES.includes(scope));
+  return (kept.length ? kept : ["read", "write"]).join(" ");
+};
+
+async function requestParams(request) {
+  const type = request.headers.get("content-type") || "";
+  if (type.includes("application/json")) {
+    const data = (await body(request)) || {};
+    return Object.fromEntries(Object.entries(data).map(([key, value]) => [key, String(value)]));
+  }
+  const form = await request.formData().catch(() => null);
+  return form ? Object.fromEntries([...form.entries()].map(([key, value]) => [key, String(value)])) : {};
+}
+
+const challengeHeader = (request) => {
+  const origin = new URL(request.url).origin;
+  return { "www-authenticate": `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource"` };
+};
+
+const protectedResource = (request) => {
+  const origin = new URL(request.url).origin;
+  return json({
+    resource: origin,
+    authorization_servers: [origin],
+    scopes_supported: OAUTH_SCOPES,
+    bearer_methods_supported: ["header"],
+    resource_name: "Egytronic ops",
+  });
+};
+
+const authorizationServer = (request) => {
+  const origin = new URL(request.url).origin;
+  return json({
+    issuer: origin,
+    authorization_endpoint: `${origin}/authorize`,
+    token_endpoint: `${origin}/token`,
+    registration_endpoint: `${origin}/register`,
+    scopes_supported: OAUTH_SCOPES,
+    response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code", "refresh_token"],
+    token_endpoint_auth_methods_supported: ["none"],
+    code_challenge_methods_supported: ["S256"],
+    resource_indicators_supported: true,
+  });
+};
+
+async function registerClient(request, env) {
+  if (!env.DB) return json({ error: "server_error" }, 500);
+  const data = (await body(request)) || {};
+  const uris = Array.isArray(data.redirect_uris) ? data.redirect_uris.filter((u) => typeof u === "string") : [];
+  if (!uris.length || uris.length > 5) return json({ error: "invalid_redirect_uri" }, 400);
+  for (const uri of uris) {
+    let parsed;
+    try {
+      parsed = new URL(uri);
+    } catch {
+      return json({ error: "invalid_redirect_uri", error_description: uri }, 400);
+    }
+    const loopback = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+    if (parsed.protocol !== "https:" && !(loopback && parsed.protocol === "http:")) {
+      return json({ error: "invalid_redirect_uri", error_description: uri }, 400);
+    }
+  }
+
+  const clientId = randomToken("egxc_");
+  const name = clean(data.client_name, 60) || "MCP client";
+  await env.DB
+    .prepare("INSERT INTO oauth_clients (id, name, redirect_uris) VALUES (?, ?, ?)")
+    .bind(clientId, name, JSON.stringify(uris))
+    .run();
+
+  return json(
+    {
+      client_id: clientId,
+      client_name: name,
+      redirect_uris: uris,
+      token_endpoint_auth_method: "none",
+      grant_types: ["authorization_code", "refresh_token"],
+      response_types: ["code"],
+      scope: OAUTH_SCOPES.join(" "),
+    },
+    201
+  );
+}
+
+const escapeHtml = (value) =>
+  String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+
+function authorizePage(params, client, error) {
+  const host = (() => {
+    try {
+      return new URL(params.redirect_uri).host || params.redirect_uri;
+    } catch {
+      return params.redirect_uri || "";
+    }
+  })();
+  const hidden = Object.entries({
+    response_type: params.response_type || "code",
+    client_id: params.client_id || "",
+    redirect_uri: params.redirect_uri || "",
+    state: params.state || "",
+    code_challenge: params.code_challenge || "",
+    code_challenge_method: params.code_challenge_method || "S256",
+    scope: params.scope || "",
+    resource: params.resource || "",
+  })
+    .map(([key, value]) => `<input type="hidden" name="${key}" value="${escapeHtml(value)}">`)
+    .join("");
+
+  return `<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تفويض وكيل · Egytronic</title>
+<style>
+  :root { color-scheme: dark }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; background:#0a0a0a;
+    color:#f4f4f4; font-family:"Cairo","Segoe UI",system-ui,sans-serif; padding:24px }
+  .card { width:min(560px,100%); border:2px solid #262626; background:#101010; padding:28px }
+  .brand { font-family:ui-monospace,monospace; letter-spacing:.18em; color:#ff6b1a; font-size:13px; margin-bottom:18px }
+  h1 { font-size:20px; margin:0 0 10px }
+  p { color:#9a9a9a; font-size:14px; line-height:1.9; margin:0 0 16px }
+  dl { display:grid; grid-template-columns:auto 1fr; gap:8px 14px; font-size:13px; margin:0 0 18px;
+    border:1px solid #232323; padding:14px; background:#0d0d0d }
+  dt { color:#7d7d7d } dd { margin:0; color:#e8e8e8; word-break:break-all }
+  label { display:block; font-size:13px; color:#9a9a9a; margin-bottom:8px }
+  input[type=password] { width:100%; box-sizing:border-box; background:#0a0a0a; border:2px solid #2b2b2b;
+    color:#f4f4f4; padding:12px 14px; font-family:ui-monospace,monospace; font-size:13px; direction:ltr }
+  input[type=password]:focus { outline:2px solid #ff6b1a; outline-offset:1px }
+  .row { display:flex; gap:10px; margin-top:18px }
+  button { flex:1; padding:13px 16px; font-family:inherit; font-size:14px; cursor:pointer; border:2px solid }
+  .ok { background:#ff6b1a; border-color:#ff6b1a; color:#0a0a0a; font-weight:700 }
+  .no { background:transparent; border-color:#333; color:#bdbdbd }
+  .err { border-color:#7f2a2a; background:#1a0d0d; color:#ff9b9b; padding:10px 12px; font-size:13px; margin-bottom:14px }
+  .note { font-size:12px; color:#6f6f6f; margin-top:16px; line-height:1.8 }
+</style>
+<div class="card">
+  <div class="brand">EGYTRONIC · AUTHORIZE</div>
+  <h1>وكيل بيطلب يدخل على غرفة العمليات</h1>
+  <p>لو انت اللي فتحت ده من برنامج بتثق فيه، ادخل رمز المالك ووافق. الرمز مش بيتخزن عند الوكيل — بياخد توكن مؤقت بدلًا منه.</p>
+  ${error ? `<div class="err">${escapeHtml(error)}</div>` : ""}
+  <dl>
+    <dt>الوكيل</dt><dd>${escapeHtml(client?.name || params.client_id || "—")}</dd>
+    <dt>هيرجع لـ</dt><dd dir="ltr">${escapeHtml(host)}</dd>
+    <dt>الصلاحيات</dt><dd dir="ltr">${escapeHtml(normalizeScopes(params.scope))}</dd>
+  </dl>
+  <form method="post" action="/authorize">
+    ${hidden}
+    <label for="owner_token">رمز المالك (المفتاح اللي بتدخل بيه الكونسول)</label>
+    <input id="owner_token" name="owner_token" type="password" autocomplete="current-password" required autofocus>
+    <div class="row">
+      <button class="ok" type="submit" name="decision" value="allow">موافق، ادخّله</button>
+      <button class="no" type="submit" name="decision" value="deny">لأ، ارجعه</button>
+    </div>
+  </form>
+  <p class="note">التوكن بيخلص بعد ساعة، والتجديد بيتم بتوكن تحديث لمدة ٣٠ يوم. تقدر تلغي أي جلسة من الكونسول.</p>
+</div></html>`;
+}
+
+async function authorize(request, env, url) {
+  if (!env.DB) return json({ error: "server_error" }, 500);
+  const params = request.method === "POST" ? await requestParams(request) : Object.fromEntries(url.searchParams);
+  const client = params.client_id
+    ? await env.DB.prepare("SELECT * FROM oauth_clients WHERE id = ?").bind(params.client_id).first()
+    : null;
+  const page = (error, status = 200) =>
+    new Response(authorizePage(params, client, error), {
+      status,
+      headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+    });
+
+  if (!client) return page("العميل ده مش مسجل عندنا — لازم يعمل register الأول.", 400);
+  let redirects = [];
+  try {
+    redirects = JSON.parse(client.redirect_uris || "[]");
+  } catch {
+    redirects = [];
+  }
+  if (!redirects.includes(params.redirect_uri)) return page("عنوان الرجوع مش مطابق للمسجل.", 400);
+  if (params.response_type && params.response_type !== "code") return page("نوع الاستجابة لازم يكون code.", 400);
+  if (!params.code_challenge || (params.code_challenge_method || "S256") !== "S256")
+    return page("PKCE مطلوب بـ S256.", 400);
+
+  const back = (extra) => {
+    const target = new URL(params.redirect_uri);
+    for (const [key, value] of Object.entries(extra)) if (value) target.searchParams.set(key, value);
+    if (params.state) target.searchParams.set("state", params.state);
+    return Response.redirect(target.toString(), 302);
+  };
+
+  if (request.method !== "POST") return page("");
+  if (params.decision !== "allow") return back({ error: "access_denied" });
+
+  const ip = request.headers.get("cf-connecting-ip") || "local";
+  const attempt = authFails.get(ip);
+  if (attempt && attempt.count >= 8 && Date.now() - attempt.at < 15 * 60 * 1000) {
+    return page("محاولات كتير غلط. استنى ربع ساعة وجرب تاني.", 429);
+  }
+
+  const digest = await sha256(String(params.owner_token || "").trim());
+  const stored = await env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_token_sha256'").first();
+  if (!stored || stored.value !== digest) {
+    authFails.set(ip, { count: (attempt?.count || 0) + 1, at: Date.now() });
+    return page("رمز المالك غلط.", 403);
+  }
+  authFails.delete(ip);
+
+  const code = randomToken("egxcode_");
+  await env.DB
+    .prepare(
+      `INSERT INTO oauth_codes (code_sha256, client_id, redirect_uri, code_challenge, scope, resource, expires_at)
+       VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+${CODE_TTL} seconds'))`
+    )
+    .bind(
+      await sha256(code),
+      client.id,
+      params.redirect_uri,
+      params.code_challenge,
+      normalizeScopes(params.scope),
+      params.resource || ""
+    )
+    .run();
+  await emit(env, "oauth.authorized", "client", client.id, client.name, { scope: normalizeScopes(params.scope) });
+
+  return back({ code });
+}
+
+async function issueTokens(env, clientId, scope) {
+  const access = randomToken("egx_at_");
+  const refresh = randomToken("egx_rt_");
+  await env.DB
+    .prepare(
+      `INSERT INTO oauth_tokens (token_sha256, kind, client_id, scope, expires_at)
+       VALUES (?, 'access', ?, ?, datetime('now', '+${ACCESS_TTL} seconds')),
+              (?, 'refresh', ?, ?, datetime('now', '+${REFRESH_TTL} seconds'))`
+    )
+    .bind(await sha256(access), clientId, scope, await sha256(refresh), clientId, scope)
+    .run();
+  return {
+    access_token: access,
+    token_type: "Bearer",
+    expires_in: ACCESS_TTL,
+    refresh_token: refresh,
+    scope,
+  };
+}
+
+async function token(request, env) {
+  if (!env.DB) return json({ error: "server_error" }, 500);
+  if (request.method !== "POST") return json({ error: "invalid_request" }, 405);
+  const params = await requestParams(request);
+  const fail = (error, description) => json({ error, error_description: description }, 400);
+
+  if (params.grant_type === "authorization_code") {
+    if (!params.code || !params.code_verifier) return fail("invalid_request", "code and code_verifier are required");
+    if (params.client_id && !String(params.client_id).startsWith("egxc_")) return fail("invalid_client", "unknown client");
+
+    const row = await env.DB
+      .prepare("SELECT * FROM oauth_codes WHERE code_sha256 = ?")
+      .bind(await sha256(params.code))
+      .first();
+    if (!row || row.used) return fail("invalid_grant", "code is unknown or already used");
+    if (row.client_id !== params.client_id) return fail("invalid_grant", "code belongs to another client");
+    if (params.redirect_uri && row.redirect_uri !== params.redirect_uri) return fail("invalid_grant", "redirect_uri mismatch");
+
+    const expired = await env.DB
+      .prepare("SELECT 1 AS gone FROM oauth_codes WHERE code_sha256 = ? AND expires_at <= datetime('now')")
+      .bind(await sha256(params.code))
+      .first();
+    if (expired) return fail("invalid_grant", "code expired");
+
+    if ((await s256(params.code_verifier)) !== row.code_challenge) return fail("invalid_grant", "PKCE verification failed");
+
+    await env.DB.prepare("UPDATE oauth_codes SET used = 1 WHERE code_sha256 = ?").bind(row.code_sha256).run();
+    return json(await issueTokens(env, row.client_id, row.scope || "read write"));
+  }
+
+  if (params.grant_type === "refresh_token") {
+    if (!params.refresh_token) return fail("invalid_request", "refresh_token is required");
+    const row = await env.DB
+      .prepare(
+        "SELECT * FROM oauth_tokens WHERE token_sha256 = ? AND kind = 'refresh' AND revoked = 0 AND expires_at > datetime('now')"
+      )
+      .bind(await sha256(params.refresh_token))
+      .first();
+    if (!row) return fail("invalid_grant", "refresh token is unknown, revoked or expired");
+
+    await env.DB.prepare("UPDATE oauth_tokens SET revoked = 1 WHERE token_sha256 = ?").bind(row.token_sha256).run();
+    // refresh keeps the original grant; asking for more scope than you have is refused, not widened
+    const asked = normalizeScopes(params.scope).split(" ");
+    const held = String(row.scope || "read").split(" ");
+    const scope = asked.every((s) => held.includes(s)) ? asked.join(" ") : held.join(" ");
+    return json(await issueTokens(env, row.client_id, scope));
+  }
+
+  return fail("unsupported_grant_type", "use authorization_code or refresh_token");
+}
+
+// a session is one client's grant: cutting it kills every access and refresh token it holds
+async function revokeSession(env, clientId, who) {
+  const client = await env.DB.prepare("SELECT id, name FROM oauth_clients WHERE id = ?").bind(clientId).first();
+  if (!client) return json({ ok: false, code: "missing" }, 404);
+  const res = await env.DB.prepare("UPDATE oauth_tokens SET revoked = 1 WHERE client_id = ? AND revoked = 0")
+    .bind(clientId)
+    .run();
+  await emit(env, "oauth.revoked", "client", clientId, who?.name || "yousef", { tokens: res.meta?.changes ?? 0 });
+  return json({ ok: true, revoked: res.meta?.changes ?? 0 });
+}
+
 
 // ── events: the feed an external agent polls ─────────────────────────
 
@@ -856,7 +1201,7 @@ async function mcpCall(env, who, name, args = {}) {
 async function mcp(request, env, url) {
   const who = await identify(request, env, url);
   if (!who) {
-    return json({ jsonrpc: "2.0", id: null, error: { code: -32001, message: "unauthorized" } }, 401);
+    return json({ jsonrpc: "2.0", id: null, error: { code: -32001, message: "unauthorized" } }, 401, challengeHeader(request));
   }
 
   if (request.method === "GET") {
@@ -962,8 +1307,29 @@ async function api(request, env, url, who) {
   const action = parts[3];
   const method = request.method;
 
-  if (!who) return json({ ok: false, code: "unauthorized" }, 401);
+  if (!who) return json({ ok: false, code: "unauthorized" }, 401, challengeHeader(request));
   if (!can(who, method === "GET" ? "read" : "write")) return json({ ok: false, code: "forbidden" }, 403);
+
+  if (resource === "sessions" && method === "GET") {
+    const { results } = await env.DB
+      .prepare(
+        `SELECT c.id AS client_id, c.name AS client,
+                MIN(t.created_at) AS first_seen,
+                MAX(CASE WHEN t.kind = 'access' THEN t.expires_at END) AS access_until,
+                MAX(CASE WHEN t.kind = 'refresh' THEN t.expires_at END) AS refresh_until,
+                SUM(CASE WHEN t.revoked = 0 AND t.expires_at > datetime('now') THEN 1 ELSE 0 END) AS live,
+                GROUP_CONCAT(DISTINCT t.scope) AS scopes
+         FROM oauth_tokens t JOIN oauth_clients c ON c.id = t.client_id
+         GROUP BY c.id ORDER BY first_seen DESC LIMIT 50`
+      )
+      .all();
+    return json({ ok: true, rows: results });
+  }
+
+  if (resource === "sessions" && method === "DELETE" && id) {
+    if (!can(who, "admin")) return json({ ok: false, code: "forbidden" }, 403);
+    return revokeSession(env, id, who);
+  }
 
   if (resource === "overview" && method === "GET") {
     const [inquiries, tasks, minutes, agents, clients] = await Promise.all([
@@ -1045,6 +1411,12 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") return json({ ok: true });
+
+    if (url.pathname.startsWith("/.well-known/oauth-protected-resource")) return protectedResource(request);
+    if (url.pathname.startsWith("/.well-known/oauth-authorization-server")) return authorizationServer(request);
+    if (url.pathname === "/register" && request.method === "POST") return registerClient(request, env);
+    if (url.pathname === "/authorize") return authorize(request, env, url);
+    if (url.pathname === "/token") return token(request, env);
 
     if (url.pathname === "/api/health") return health(env);
     if (url.pathname === "/api/contact" && request.method === "POST") return contact(request, env);
