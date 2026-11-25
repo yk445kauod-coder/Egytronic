@@ -115,15 +115,16 @@ server.registerTool(
     description: "Generate a voice-over WAV with Gemini TTS. Returns the path; pass it to studio_reel audio[] as a data URI or file path.",
     inputSchema: {
       text: z.string(),
-      voice: z.string().optional().describe("Kore, Puck, Zephyr, Charon, Fenrir, Aoede, Leda, Orus"),
+      voice: z.string().optional().describe("Gemini: Kore, Puck, Zephyr… | OpenRouter: alloy, verse, shimmer"),
       style: z.string().optional().describe("Delivery instruction, e.g. 'حماسي وهادئ'"),
+      provider: z.enum(["auto", "gemini", "openrouter"]).optional(),
       out: z.string().optional(),
     },
   },
-  async ({ text, voice, style, out }) => {
+  async ({ text, voice, style, provider, out }) => {
     try {
       const { tts } = await import("./lib/voice.js");
-      return json(await tts({ text, voice, style, out }));
+      return json(await tts({ text, voice, style, provider, out }));
     } catch (error) {
       return fail(error);
     }

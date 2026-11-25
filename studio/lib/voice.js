@@ -4,11 +4,27 @@ import { extname, join, dirname } from "node:path";
 import { ARTIFACT_DIR, resolveArtifact } from "./artifacts.js";
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+const OPENROUTER = "https://openrouter.ai/api/v1/chat/completions";
 export const DEFAULT_VOICES = ["Kore", "Puck", "Zephyr", "Charon", "Fenrir", "Aoede", "Leda", "Orus"];
+
+export const PROVIDERS = {
+  gemini: () => Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY),
+  openrouter: () => Boolean(process.env.OPENROUTER_API_KEY),
+};
+
+function pickProvider(requested) {
+  if (requested && requested !== "auto") {
+    if (!PROVIDERS[requested]) throw new Error(`${requested} is not configured (missing ${requested === "gemini" ? "GEMINI_API_KEY" : "OPENROUTER_API_KEY"})`);
+    return requested;
+  }
+  if (PROVIDERS.gemini()) return "gemini";
+  if (PROVIDERS.openrouter()) return "openrouter";
+  throw new Error("no voice provider configured: set GEMINI_API_KEY or OPENROUTER_API_KEY");
+}
 
 function key() {
   const value = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  if (!value) throw new Error("GEMINI_API_KEY is not set (needed for TTS/STT)");
+  if (!value) throw new Error("GEMINI_API_KEY is not set (needed for Gemini TTS/STT)");
   return value;
 }
 
@@ -44,25 +60,58 @@ function pcmToWav(pcm, sampleRate = 24000, channels = 1, bits = 16) {
   return Buffer.concat([header, pcm]);
 }
 
-export async function tts({ text, voice = "Kore", style = "", model = "gemini-2.5-flash-preview-tts", out = "voice.wav" }) {
+function saveAudio(buffer, outPath) {
+  const target = outPath.startsWith("/") ? outPath : join(ARTIFACT_DIR, outPath);
+  mkdirSync(dirname(target), { recursive: true });
+  let wav = buffer;
+  const isWav = buffer.length > 12 && buffer.toString("ascii", 0, 4) === "RIFF";
+  if (!isWav) wav = pcmToWav(buffer, 24000);
+  writeFileSync(target, wav);
+  const sampleRate = isWav ? wav.readUInt32LE(24) : 24000;
+  const seconds = Math.max(0, (wav.length - 44) / (sampleRate * 2));
+  return { path: target, sampleRate, seconds: Number(seconds.toFixed(2)), bytes: wav.length };
+}
+
+async function ttsOpenRouter({ text, voice = "alloy", style, model, out }) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY is not set");
+  const prompt = style ? `${style}\n\nRead this text verbatim:\n${text}` : text;
+  const response = await fetch(OPENROUTER, {
+    method: "POST",
+    headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json", "x-title": "Egytronic Studio" },
+    body: JSON.stringify({
+      model: model || "openai/gpt-audio-mini",
+      modalities: ["text", "audio"],
+      audio: { voice, format: "wav" },
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+  const text_ = await response.text();
+  if (!response.ok) throw new Error(`openrouter ${response.status}: ${text_.slice(0, 300)}`);
+  const payload = JSON.parse(text_);
+  const base64 = payload.choices?.[0]?.message?.audio?.data;
+  if (!base64) throw new Error("openrouter returned no audio");
+  const saved = saveAudio(Buffer.from(base64, "base64"), out);
+  return { ...saved, voice, provider: "openrouter", model: model || "openai/gpt-audio-mini" };
+}
+
+export async function tts({ text, voice, style = "", model, out = "voice.wav", provider = "auto" }) {
   if (!text) throw new Error("tts needs text");
+  const chosen = pickProvider(provider);
+  if (chosen === "openrouter") return ttsOpenRouter({ text, voice, style, model, out });
+  const voiceName = voice || "Kore";
   const prompt = style ? `${style}\n\nاقرأ النص التالي حرفيًا:\n${text}` : text;
-  const data = await callModel(model, {
+  const data = await callModel(model || "gemini-2.5-flash-preview-tts", {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
       responseModalities: ["AUDIO"],
-      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } },
+      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } } },
     },
   });
   const inline = data.candidates?.[0]?.content?.parts?.find((part) => part.inlineData)?.inlineData;
   if (!inline?.data) throw new Error("gemini returned no audio");
   const rate = Number((/rate=(\d+)/.exec(inline.mimeType || "") || [])[1] || 24000);
-  const wav = pcmToWav(Buffer.from(inline.data, "base64"), rate);
-  const target = out.startsWith("/") ? out : join(ARTIFACT_DIR, out);
-  mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, wav);
-  const seconds = (wav.length - 44) / (rate * 2);
-  return { path: target, voice, sampleRate: rate, seconds: Number(seconds.toFixed(2)), bytes: wav.length };
+  return { ...saveAudio(Buffer.from(inline.data, "base64"), out), voice: voiceName, provider: "gemini" };
 }
 
 export function wavDataUri(path) {
