@@ -4,7 +4,9 @@ import { buildGraph } from "./Schema";
 
 const BASE = catalog.site;
 /* Set at build time by the Search Console step: VITE_GOOGLE_SITE_VERIFICATION=<token>. */
-const GSC_TOKEN = import.meta.env.VITE_GOOGLE_SITE_VERIFICATION as string | undefined;
+// Search Console ownership. The token is public by design (it ships in the HTML), so it lives here
+// as the default and the env var can still override it.
+const GSC_TOKEN = (import.meta.env.VITE_GOOGLE_SITE_VERIFICATION as string | undefined) || "LD42BDyIchUHWtltC7PZsyUi9oT8mic03JhlOuUL9TU";
 const OG_IMAGE = `${BASE}/assets/img/og-image.png`;
 
 export default function Seo({
