@@ -113,3 +113,9 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS events_kind ON events (kind, id);
 
 CREATE INDEX IF NOT EXISTS inquiries_status ON inquiries (status, id);
+
+-- Key/value store for the owner token hash and other single-row settings.
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);

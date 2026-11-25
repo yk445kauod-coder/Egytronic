@@ -64,8 +64,14 @@ function bearer(request, url) {
 async function identify(request, env, url) {
   if (!env.DB) return null;
   const token = bearer(request, url);
-  if (!token) return null;
+  if (token) {
+    const who = await tokenWho(request, env, token);
+    if (who) return who;
+  }
+  return sessionWho(request, env);
+}
 
+async function tokenWho(request, env, token) {
   const digest = await sha256(token);
   const stored = await env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_token_sha256'").first();
   if (stored && stored.value === digest) {
@@ -101,6 +107,144 @@ async function identify(request, env, url) {
 }
 
 const can = (who, scope) => Boolean(who?.scopes?.includes(scope) || who?.scopes?.includes("admin"));
+
+// ── team accounts ───────────────────────────────────────────────────
+// Each person gets a row in members, a password hash and an explicit permission
+// list. The static owner token keeps working as break-glass access.
+
+const SESSION_COOKIE = "egx_session";
+const SESSION_DAYS = 14;
+const PBKDF2_ROUNDS = 150000;
+
+const PERMISSIONS = [
+  "tasks.all",
+  "tasks.manage",
+  "inquiries.view",
+  "inquiries.manage",
+  "clients.view",
+  "clients.manage",
+  "projects.view",
+  "projects.manage",
+  "finance.view",
+  "team.manage",
+  "channels.manage",
+  "channels.post",
+  "agents.manage",
+  "settings.manage",
+];
+
+// What each role can do before anyone edits the checkboxes.
+const ROLE_PERMISSIONS = {
+  owner: PERMISSIONS,
+  manager: PERMISSIONS.filter((p) => !["settings.manage", "agents.manage"].includes(p)),
+  member: ["tasks.manage", "inquiries.view", "clients.view", "projects.view", "channels.manage"],
+  contractor: ["tasks.manage", "projects.view", "channels.manage"],
+};
+
+// Only these stay out of reach for agent keys that hold the write scope.
+const OWNER_ONLY = ["team.manage", "settings.manage", "agents.manage"];
+
+const permList = (value, role) => {
+  if (value === undefined || value === null || value === "") return ROLE_PERMISSIONS[role] ?? ROLE_PERMISSIONS.member;
+  const asked = String(value).split(",").map((p) => p.trim()).filter((p) => PERMISSIONS.includes(p));
+  return [...new Set(asked)];
+};
+
+const memberWho = (row) => ({
+  role: row.role === "owner" ? "admin" : "member",
+  member_role: row.role,
+  id: row.id,
+  name: row.name,
+  email: row.email,
+  permissions: permList(row.permissions, row.role),
+  scopes: row.role === "owner" ? ["read", "write", "admin"] : ["read", "write"],
+});
+
+const allow = (who, permission) => {
+  if (!who) return false;
+  if (who.member_role) return who.permissions.includes(permission);
+  if (who.role === "agent") return can(who, "admin") || !OWNER_ONLY.includes(permission);
+  return true;
+};
+
+const publicMember = (row) => {
+  if (!row) return row;
+  const { password_hash: _hash, ...rest } = row;
+  return rest;
+};
+
+const readCookie = (request, name) => {
+  const header = request.headers.get("cookie") || "";
+  for (const part of header.split(";")) {
+    const index = part.indexOf("=");
+    if (index > 0 && part.slice(0, index).trim() === name) return part.slice(index + 1).trim();
+  }
+  return "";
+};
+
+async function sessionWho(request, env) {
+  const id = readCookie(request, SESSION_COOKIE);
+  if (!id) return null;
+  const row = await env.DB
+    .prepare(
+      `SELECT m.* FROM member_sessions s JOIN members m ON m.id = s.member_id
+        WHERE s.id = ? AND s.expires_at > datetime('now') AND m.active = 1`
+    )
+    .bind(id)
+    .first();
+  if (!row) return null;
+  await env.DB.prepare("UPDATE member_sessions SET last_seen = datetime('now') WHERE id = ?").bind(id).run();
+  return memberWho(row);
+}
+
+const toB64 = (bytes) => btoa(String.fromCharCode(...bytes));
+const fromB64 = (value) => Uint8Array.from(atob(value), (ch) => ch.charCodeAt(0));
+
+async function hashPassword(password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: PBKDF2_ROUNDS, hash: "SHA-256" },
+    key,
+    256
+  );
+  return `pbkdf2$${PBKDF2_ROUNDS}$${toB64(salt)}$${toB64(new Uint8Array(bits))}`;
+}
+
+async function checkPassword(password, stored) {
+  const [scheme, rounds, salt, expected] = String(stored || "").split("$");
+  if (scheme !== "pbkdf2" || !salt || !expected) return false;
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = new Uint8Array(
+    await crypto.subtle.deriveBits(
+      { name: "PBKDF2", salt: fromB64(salt), iterations: Number(rounds) || PBKDF2_ROUNDS, hash: "SHA-256" },
+      key,
+      256
+    )
+  );
+  const want = fromB64(expected);
+  if (bits.length !== want.length) return false;
+  let diff = 0;
+  for (let i = 0; i < bits.length; i += 1) diff |= bits[i] ^ want[i];
+  return diff === 0;
+}
+
+const tempPassword = () =>
+  Array.from(crypto.getRandomValues(new Uint8Array(9)), (b) => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
+
+const sessionCookie = (id, maxAge) =>
+  `${SESSION_COOKIE}=${id}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
+
+/* Members see the channels they were added to; owners and managers see everything. */
+async function joinTeamChannels(env, memberId) {
+  await env.DB
+    .prepare(
+      `INSERT OR IGNORE INTO channel_members (channel_id, member_id)
+       SELECT id, ? FROM channels WHERE kind = 'team'`
+    )
+    .bind(memberId)
+    .run();
+}
 
 // ── OAuth 2.1: authorization code + PKCE ─────────────────────────────
 // Any MCP client can authorise itself: discover, register, ask the owner on a page,
@@ -752,16 +896,41 @@ async function ensureChannels(env) {
     .run();
 }
 
-async function listChannels(env) {
+const CHANNEL_COLUMNS = `c.*, (SELECT COUNT(*) FROM messages m WHERE m.channel_id = c.id) AS messages,
+       (SELECT MAX(id) FROM messages m WHERE m.channel_id = c.id) AS last_message,
+       (SELECT body FROM messages m WHERE m.channel_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_body,
+       (SELECT author FROM messages m WHERE m.channel_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_author`;
+
+const channelOpen = (who) => !who?.member_role || allow(who, "channels.post");
+
+async function listChannels(env, who) {
   await ensureChannels(env);
+  const memberId = who?.member_role ? who.id : null;
+  const scope = channelOpen(who) ? "" : "WHERE cm.member_id IS NOT NULL OR c.kind = 'team'";
   const { results } = await env.DB
     .prepare(
-      `SELECT c.*, (SELECT COUNT(*) FROM messages m WHERE m.channel_id = c.id) AS messages,
-              (SELECT MAX(id) FROM messages m WHERE m.channel_id = c.id) AS last_message
-       FROM channels c ORDER BY c.id`
+      `SELECT ${CHANNEL_COLUMNS}, cm.last_read_id,
+              (SELECT COUNT(*) FROM messages m
+                WHERE m.channel_id = c.id AND m.id > COALESCE(cm.last_read_id, 0)
+                  AND (m.member_id IS NULL OR m.member_id != ?)) AS unread
+         FROM channels c
+         LEFT JOIN channel_members cm ON cm.channel_id = c.id AND cm.member_id = ?
+        ${scope}
+        ORDER BY c.id`
     )
+    .bind(memberId ?? -1, memberId ?? -1)
     .all();
   return json({ ok: true, rows: results });
+}
+
+async function channelAccess(env, channel, who) {
+  if (channelOpen(who)) return true;
+  if (channel.kind === "team") return true;
+  const row = await env.DB
+    .prepare("SELECT 1 AS ok FROM channel_members WHERE channel_id = ? AND member_id = ?")
+    .bind(channel.id, who.id)
+    .first();
+  return Boolean(row);
 }
 
 async function createChannel(env, payload, who) {
@@ -788,7 +957,8 @@ async function channelByAny(env, key) {
     .first();
 }
 
-async function listMessages(env, channel, url) {
+async function listMessages(env, channel, url, who) {
+  if (who && !(await channelAccess(env, channel, who))) return json({ ok: false, code: "forbidden" }, 403);
   const after = int(url.searchParams.get("after"), 0);
   const limit = Math.min(int(url.searchParams.get("limit"), 100), 200);
   // no cursor = open the channel at its newest messages; a cursor = poll what came after
@@ -807,11 +977,12 @@ async function listMessages(env, channel, url) {
 async function postMessage(env, channel, payload, who) {
   const message = text(payload.body, 4000).trim();
   if (!message) return json({ ok: false, code: "body" }, 400);
-  const author = clean(payload.author, 60) || who.name || "yousef";
+  if (!(await channelAccess(env, channel, who))) return json({ ok: false, code: "forbidden" }, 403);
+  const author = who.member_role ? who.name : clean(payload.author, 60) || who.name || "yousef";
   const kind = who.role === "agent" ? "agent" : payload.kind === "system" ? "system" : "human";
   const row = await env.DB
-    .prepare("INSERT INTO messages (channel_id, author, kind, body, meta) VALUES (?, ?, ?, ?, ?) RETURNING *")
-    .bind(channel.id, author, kind, message, payload.meta ? JSON.stringify(payload.meta) : null)
+    .prepare("INSERT INTO messages (channel_id, author, kind, body, meta, member_id) VALUES (?, ?, ?, ?, ?, ?) RETURNING *")
+    .bind(channel.id, author, kind, message, payload.meta ? JSON.stringify(payload.meta) : null, who.member_role ? who.id : null)
     .first();
   await emit(env, "message.posted", "channel", channel.id, author, { message_id: row.id });
   return json({ ok: true, row });
@@ -819,22 +990,39 @@ async function postMessage(env, channel, payload, who) {
 
 // ── console: tasks & pomodoro ────────────────────────────────────────
 
-async function listTasks(env, url) {
+async function listTasks(env, url, who) {
   const status = clean(url.searchParams.get("status"), 12);
-  const stmt =
-    status && TASK_STATUS.has(status)
-      ? env.DB.prepare("SELECT * FROM tasks WHERE status = ? ORDER BY priority ASC, id DESC").bind(status)
-      : env.DB.prepare("SELECT * FROM tasks ORDER BY status = 'done', priority ASC, id DESC");
-  const { results } = await stmt.all();
-  return json({ ok: true, rows: results });
+  const mine = who?.member_role && !allow(who, "tasks.all");
+  const filters = [];
+  const values = [];
+  if (status && TASK_STATUS.has(status)) {
+    filters.push("status = ?");
+    values.push(status);
+  }
+  if (mine) {
+    filters.push("(assignee_member_id = ? OR (assignee_member_id IS NULL AND assignee = ?))");
+    values.push(who.id, who.name);
+  }
+  const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+  const { results } = await env.DB
+    .prepare(`SELECT * FROM tasks ${where} ORDER BY status = 'done', priority ASC, id DESC`)
+    .bind(...values)
+    .all();
+  return json({ ok: true, rows: results, scope: mine ? "mine" : "all" });
 }
 
 async function createTask(env, payload, who) {
   const title = clean(payload.title, 160);
   if (title.length < 2) return json({ ok: false, code: "title" }, 400);
+  // members without tasks.all can only put work on their own plate
+  const selfOnly = who?.member_role && !allow(who, "tasks.all");
+  if (selfOnly) {
+    payload.assignee_member_id = who.id;
+    payload.assignee = who.name;
+  }
   const row = await env.DB
     .prepare(
-      "INSERT INTO tasks (title, detail, status, priority, client_id, project_id, channel_id, inquiry_id, assignee, due_at, estimate_minutes, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *"
+      "INSERT INTO tasks (title, detail, status, priority, client_id, project_id, channel_id, inquiry_id, assignee, due_at, estimate_minutes, source, assignee_member_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *"
     )
     .bind(
       title,
@@ -848,7 +1036,8 @@ async function createTask(env, payload, who) {
       clean(payload.assignee, 60) || null,
       clean(payload.due_at, 32) || null,
       int(payload.estimate_minutes, null),
-      who.role === "agent" ? `agent:${who.id}` : "human"
+      who.role === "agent" ? `agent:${who.id}` : "human",
+      int(payload.assignee_member_id, null)
     )
     .first();
   await emit(env, "task.created", "task", row.id, who.name, { title: row.title });
@@ -856,6 +1045,24 @@ async function createTask(env, payload, who) {
 }
 
 async function patchTask(env, id, payload, who) {
+  const existing = await env.DB.prepare("SELECT * FROM tasks WHERE id = ?").bind(id).first();
+  if (!existing) return json({ ok: false, code: "missing" }, 404);
+  const assignedToMe =
+    existing.assignee_member_id === who?.id || (!existing.assignee_member_id && existing.assignee === who?.name);
+  const unassigned = !existing.assignee_member_id && !existing.assignee;
+
+  if (payload.claim === true && unassigned) {
+    await env.DB
+      .prepare("UPDATE tasks SET assignee_member_id = ?, assignee = ? WHERE id = ?")
+      .bind(who.id, who.name, id)
+      .run();
+    return json({ ok: true, row: await env.DB.prepare("SELECT * FROM tasks WHERE id = ?").bind(id).first() });
+  }
+
+  // "tasks.manage" means manage your own work; only "tasks.all" reaches across the board.
+  if (who?.member_role && !allow(who, "tasks.all") && !assignedToMe) {
+    return json({ ok: false, code: "forbidden" }, 403);
+  }
   const sets = [];
   const values = [];
   if (payload.status && TASK_STATUS.has(payload.status)) {
@@ -878,6 +1085,12 @@ async function patchTask(env, id, payload, who) {
   if (payload.assignee !== undefined) {
     sets.push("assignee = ?");
     values.push(clean(payload.assignee, 60) || null);
+  }
+  if (payload.assignee_member_id !== undefined) {
+    const target = int(payload.assignee_member_id, null);
+    const member = target ? await env.DB.prepare("SELECT id, name FROM members WHERE id = ?").bind(target).first() : null;
+    sets.push("assignee_member_id = ?", "assignee = ?");
+    values.push(member?.id ?? null, member?.name ?? null);
   }
   if (payload.due_at !== undefined) {
     sets.push("due_at = ?");
@@ -1360,48 +1573,90 @@ async function act(env, entity, entityId, kind, body, actor, minutes = null) {
     .run();
 }
 
-async function listMembers(env) {
+async function listMembers(env, who) {
+  const full = allow(who, "team.manage");
   const { results } = await env.DB
     .prepare(
       `SELECT m.*,
-              (SELECT COUNT(*) FROM tasks t WHERE t.assignee = m.name AND t.status != 'done') AS open_tasks,
-              (SELECT COUNT(*) FROM tasks t WHERE t.assignee = m.name AND t.status != 'done'
+              (SELECT COUNT(*) FROM tasks t WHERE (t.assignee_member_id = m.id OR t.assignee = m.name) AND t.status != 'done') AS open_tasks,
+              (SELECT COUNT(*) FROM tasks t WHERE (t.assignee_member_id = m.id OR t.assignee = m.name) AND t.status != 'done'
                  AND t.due_at IS NOT NULL AND t.due_at < datetime('now')) AS late_tasks,
               (SELECT COUNT(*) FROM inquiries i WHERE i.assigned_to = m.name
                  AND i.status NOT IN ('won','lost')) AS open_leads,
               (SELECT COALESCE(SUM(te.minutes), 0) FROM time_entries te
                  JOIN tasks t2 ON t2.id = te.task_id
-                WHERE t2.assignee = m.name AND te.created_at >= datetime('now','-7 days')) AS minutes_7d
+                WHERE t2.assignee_member_id = m.id AND te.created_at >= datetime('now','-7 days')) AS minutes_7d
          FROM members m
         ORDER BY m.active DESC, m.id`
     )
     .all();
-  return json({ ok: true, rows: results });
+  const rows = results.map((row) => {
+    const clean = { ...publicMember(row), has_password: Boolean(row.password_hash) };
+    if (!full) {
+      delete clean.email;
+      delete clean.phone;
+      delete clean.notes;
+      delete clean.permissions;
+    }
+    return clean;
+  });
+  return json({ ok: true, rows });
+}
+
+async function memberPassword(env, id, payload, who) {
+  if (!allow(who, "team.manage")) return json({ ok: false, code: "forbidden" }, 403);
+  const password = String(payload.password || "");
+  if (password.length < 8) return json({ ok: false, code: "password-short" }, 400);
+  const row = await env.DB.prepare("SELECT id, name FROM members WHERE id = ?").bind(id).first();
+  if (!row) return json({ ok: false, code: "missing" }, 404);
+  await env.DB.prepare("UPDATE members SET password_hash = ? WHERE id = ?").bind(await hashPassword(password), id).run();
+  await env.DB.prepare("DELETE FROM member_sessions WHERE member_id = ?").bind(id).run();
+  await emit(env, "member.password", "member", id, who.name, { name: row.name });
+  return json({ ok: true });
 }
 
 async function createMember(env, payload, who) {
+  if (!allow(who, "team.manage")) return json({ ok: false, code: "forbidden" }, 403);
   const name = clean(payload.name, 80);
   if (name.length < 2) return json({ ok: false, code: "name" }, 400);
+  const role = MEMBER_ROLES.has(payload.role) ? payload.role : "member";
+  const email = clean(payload.email, 120).toLowerCase() || null;
+  if (email) {
+    const taken = await env.DB.prepare("SELECT id FROM members WHERE lower(email) = ?").bind(email).first();
+    if (taken) return json({ ok: false, code: "email-taken" }, 409);
+  }
+  const given = String(payload.password || "");
+  const password = given.length >= 8 ? given : email ? tempPassword() : "";
   const row = await env.DB
     .prepare(
-      "INSERT INTO members (name, role, email, phone, focus, capacity_hours, active, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *"
+      `INSERT INTO members (name, role, email, phone, focus, capacity_hours, active, notes, handle, permissions, password_hash)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`
     )
     .bind(
       name,
-      MEMBER_ROLES.has(payload.role) ? payload.role : "member",
-      clean(payload.email, 120) || null,
+      role,
+      email,
       clean(payload.phone, 32) || null,
       clean(payload.focus, 120) || null,
       Math.min(Math.max(int(payload.capacity_hours, 32), 1), 80),
       payload.active === 0 ? 0 : 1,
-      text(payload.notes, 2000) || null
+      text(payload.notes, 2000) || null,
+      clean(payload.handle, 40) || email?.split("@")[0] || null,
+      permList(payload.permissions, role).join(","),
+      password ? await hashPassword(password) : null
     )
     .first();
-  await emit(env, "member.created", "member", row.id, who.name, { name });
-  return json({ ok: true, row });
+  await joinTeamChannels(env, row.id);
+  await emit(env, "member.created", "member", row.id, who.name, { name, role });
+  return json({
+    ok: true,
+    row: publicMember(row),
+    ...(email && given.length < 8 ? { temp_password: password } : {}),
+  });
 }
 
 async function patchMember(env, id, payload, who) {
+  if (!allow(who, "team.manage")) return json({ ok: false, code: "forbidden" }, 403);
   const sets = [];
   const values = [];
   for (const key of ["name", "email", "phone", "focus", "notes"]) {
@@ -1414,6 +1669,15 @@ async function patchMember(env, id, payload, who) {
     sets.push("role = ?");
     values.push(payload.role);
   }
+  if (payload.permissions !== undefined) {
+    sets.push("permissions = ?");
+    values.push(permList(payload.permissions, "member").join(","));
+  }
+  if (payload.password) {
+    if (String(payload.password).length < 8) return json({ ok: false, code: "password-short" }, 400);
+    sets.push("password_hash = ?");
+    values.push(await hashPassword(String(payload.password)));
+  }
   if (payload.capacity_hours !== undefined) {
     sets.push("capacity_hours = ?");
     values.push(Math.min(Math.max(int(payload.capacity_hours, 32), 1), 80));
@@ -1425,12 +1689,13 @@ async function patchMember(env, id, payload, who) {
   if (!sets.length) return json({ ok: false, code: "nothing" }, 400);
 
   await env.DB.prepare(`UPDATE members SET ${sets.join(", ")} WHERE id = ?`).bind(...values, id).run();
+  if (payload.password) await env.DB.prepare("DELETE FROM member_sessions WHERE member_id = ?").bind(id).run();
   await emit(env, "member.updated", "member", id, who.name, payload);
-  return json({ ok: true, row: await env.DB.prepare("SELECT * FROM members WHERE id = ?").bind(id).first() });
+  return json({ ok: true, row: publicMember(await env.DB.prepare("SELECT * FROM members WHERE id = ?").bind(id).first()) });
 }
 
 async function removeMember(env, id, who) {
-  if (!can(who, "admin")) return json({ ok: false, code: "forbidden" }, 403);
+  if (!allow(who, "team.manage")) return json({ ok: false, code: "forbidden" }, 403);
   const row = await env.DB.prepare("SELECT name FROM members WHERE id = ?").bind(id).first();
   if (!row) return json({ ok: false, code: "missing" }, 404);
   await env.DB.prepare("UPDATE members SET active = 0 WHERE id = ?").bind(id).run();
@@ -1466,7 +1731,7 @@ async function createActivity(env, payload, who) {
 
 // ── dashboard metrics ────────────────────────────────────────────────
 
-async function metrics(env) {
+async function metrics(env, who) {
   const [pipeline, clients, tasks, focus, leads7, won, total, team] = await Promise.all([
     env.DB.prepare("SELECT status, COUNT(*) AS n, COALESCE(SUM(value),0) AS value FROM inquiries GROUP BY status").all(),
     env.DB.prepare("SELECT status, COUNT(*) AS n, COALESCE(SUM(value),0) AS value FROM clients GROUP BY status").all(),
@@ -1493,17 +1758,190 @@ async function metrics(env) {
     env.DB.prepare("SELECT COUNT(*) AS n FROM members WHERE active = 1").first(),
   ]);
 
+  const finance = allow(who, "finance.view");
   return json({
     ok: true,
-    pipeline: pipeline.results,
-    clients: clients.results,
+    finance,
+    pipeline: (pipeline.results || []).map((row) => (finance ? row : { ...row, value: null })),
+    clients: (clients.results || []).map((row) => (finance ? row : { ...row, value: null })),
     tasks: tasks ?? {},
     focus: focus ?? {},
     leads_7d: leads7?.n ?? 0,
-    won: won ?? { n: 0, value: 0 },
+    won: finance ? won ?? { n: 0, value: 0 } : { n: won?.n ?? 0, value: null },
     conversion: total?.n ? Math.round(((won?.n ?? 0) / total.n) * 100) : 0,
     team: team?.n ?? 0,
   });
+}
+
+// ── accounts: login, session, personal space ────────────────────────
+
+async function loginRequest(request, env) {
+  if (!env.DB) return json({ ok: false, code: "no-store" }, 503);
+  const payload = await body(request);
+  const email = clean(payload.email, 160).toLowerCase();
+  const password = String(payload.password || "");
+  if (!email || password.length < 8) return json({ ok: false, code: "invalid" }, 400);
+
+  const throttleKey = `login:${email}`;
+  const attempt = authFails.get(throttleKey);
+  if (attempt && attempt.count >= 8 && Date.now() - attempt.at < 15 * 60 * 1000) {
+    return json({ ok: false, code: "throttled" }, 429);
+  }
+
+  const row = await env.DB
+    .prepare("SELECT * FROM members WHERE lower(email) = ? AND active = 1")
+    .bind(email)
+    .first();
+  const valid = row ? await checkPassword(password, row.password_hash) : false;
+  if (!valid) {
+    authFails.set(throttleKey, { count: (attempt?.count || 0) + 1, at: Date.now() });
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    return json({ ok: false, code: "invalid" }, 401);
+  }
+  authFails.delete(throttleKey);
+
+  const id = randomToken("egs_");
+  const maxAge = SESSION_DAYS * 86400;
+  const expires = new Date(Date.now() + maxAge * 1000).toISOString().slice(0, 19).replace("T", " ");
+  await env.DB
+    .prepare("INSERT INTO member_sessions (id, member_id, expires_at, ua) VALUES (?, ?, ?, ?)")
+    .bind(id, row.id, expires, clean(request.headers.get("user-agent"), 180) || null)
+    .run();
+  await env.DB.prepare("UPDATE members SET last_login_at = datetime('now') WHERE id = ?").bind(row.id).run();
+  await joinTeamChannels(env, row.id);
+
+  const who = memberWho(row);
+  return json(
+    { ok: true, member: { id: who.id, name: who.name, role: who.member_role, permissions: who.permissions } },
+    200,
+    { "set-cookie": sessionCookie(id, maxAge) }
+  );
+}
+
+async function logoutRequest(request, env) {
+  const id = readCookie(request, SESSION_COOKIE);
+  if (id && env.DB) await env.DB.prepare("DELETE FROM member_sessions WHERE id = ?").bind(id).run();
+  return json({ ok: true }, 200, { "set-cookie": `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0` });
+}
+
+/* First run: the owner token sets the e-mail and password the owner will log in with. */
+async function setupOwner(request, env, url) {
+  const who = await identify(request, env, url);
+  if (!who) return json({ ok: false, code: "unauthorized" }, 401);
+  const owner = await env.DB.prepare("SELECT id FROM members WHERE role = 'owner' LIMIT 1").first();
+  if (owner && !allow(who, "settings.manage")) return json({ ok: false, code: "forbidden" }, 403);
+
+  const payload = await body(request);
+  const email = clean(payload.email, 160).toLowerCase();
+  const password = String(payload.password || "");
+  const name = clean(payload.name, 80) || "Yousef Khamis";
+  if (!email || password.length < 8) return json({ ok: false, code: "invalid" }, 400);
+
+  const hash = await hashPassword(password);
+  if (owner) {
+    await env.DB
+      .prepare("UPDATE members SET email = ?, password_hash = ?, name = ?, role = 'owner', active = 1, permissions = ? WHERE id = ?")
+      .bind(email, hash, name, PERMISSIONS.join(","), owner.id)
+      .run();
+    await joinTeamChannels(env, owner.id);
+    return json({ ok: true, member_id: owner.id });
+  }
+  const row = await env.DB
+    .prepare(
+      `INSERT INTO members (name, role, email, password_hash, permissions, active, capacity_hours)
+       VALUES (?, 'owner', ?, ?, ?, 1, 40) RETURNING id`
+    )
+    .bind(name, email, hash, PERMISSIONS.join(","))
+    .first();
+  await joinTeamChannels(env, row.id);
+  return json({ ok: true, member_id: row.id });
+}
+
+async function changePassword(env, who, payload) {
+  if (!who?.member_role) return json({ ok: false, code: "not-a-member" }, 400);
+  const row = await env.DB.prepare("SELECT * FROM members WHERE id = ?").bind(who.id).first();
+  if (!row) return json({ ok: false, code: "missing" }, 404);
+  if (!(await checkPassword(String(payload.current || ""), row.password_hash))) {
+    return json({ ok: false, code: "current" }, 403);
+  }
+  const next = String(payload.next || "");
+  if (next.length < 8) return json({ ok: false, code: "password-short" }, 400);
+  await env.DB.prepare("UPDATE members SET password_hash = ? WHERE id = ?").bind(await hashPassword(next), who.id).run();
+  await env.DB.prepare("DELETE FROM member_sessions WHERE member_id = ?").bind(who.id).run();
+  return json({ ok: true }, 200, { "set-cookie": `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0` });
+}
+
+/* One call that fills the person's own screen: their tasks, their channels, unread counts. */
+async function mySpace(env, who) {
+  const memberId = who.member_role ? who.id : null;
+  const openTasks = memberId
+    ? await env.DB
+        .prepare(
+          `SELECT * FROM tasks
+            WHERE status != 'done' AND (assignee_member_id = ? OR (assignee_member_id IS NULL AND assignee = ?))
+            ORDER BY CASE WHEN due_at IS NULL THEN 1 ELSE 0 END, due_at ASC, priority ASC`
+        )
+        .bind(memberId, who.name)
+        .all()
+    : await env.DB.prepare("SELECT * FROM tasks WHERE status != 'done' ORDER BY priority ASC, id DESC LIMIT 50").all();
+
+  const doneWeek = memberId
+    ? await env.DB
+        .prepare(
+          `SELECT COUNT(*) AS n FROM tasks WHERE status = 'done'
+             AND (assignee_member_id = ? OR (assignee_member_id IS NULL AND assignee = ?))
+             AND done_at >= datetime('now','-7 days')`
+        )
+        .bind(memberId, who.name)
+        .first()
+    : await env.DB.prepare("SELECT COUNT(*) AS n FROM tasks WHERE status = 'done' AND done_at >= datetime('now','-7 days')").first();
+
+  const channels = await listChannels(env, who).then((res) => res.json());
+  const rows = channels.rows || [];
+  return json({
+    ok: true,
+    member: memberId
+      ? { id: who.id, name: who.name, role: who.member_role, permissions: who.permissions }
+      : { id: null, name: who.name, role: "owner", permissions: PERMISSIONS },
+    tasks: openTasks.results || [],
+    channels: rows,
+    unread: rows.reduce((sum, row) => sum + Number(row.unread || 0), 0),
+    done_7d: doneWeek?.n ?? 0,
+  });
+}
+
+async function openDm(env, memberId, who) {
+  if (!who?.member_role) return json({ ok: false, code: "forbidden" }, 403);
+  const other = await env.DB.prepare("SELECT id, name FROM members WHERE id = ? AND active = 1").bind(memberId).first();
+  if (!other) return json({ ok: false, code: "missing" }, 404);
+  const low = Math.min(who.id, other.id);
+  const high = Math.max(who.id, other.id);
+  const slug = `dm-${low}-${high}`;
+  let channel = await env.DB.prepare("SELECT * FROM channels WHERE slug = ?").bind(slug).first();
+  if (!channel) {
+    channel = await env.DB
+      .prepare("INSERT INTO channels (slug, topic, kind) VALUES (?, ?, 'dm') RETURNING *")
+      .bind(slug, `محادثة خاصة: ${who.name} / ${other.name}`)
+      .first();
+  }
+  await env.DB
+    .prepare("INSERT OR IGNORE INTO channel_members (channel_id, member_id) VALUES (?, ?), (?, ?)")
+    .bind(channel.id, low, channel.id, high)
+    .run();
+  return json({ ok: true, channel });
+}
+
+async function markRead(env, channel, who) {
+  if (!who?.member_role) return json({ ok: true });
+  const last = await env.DB.prepare("SELECT MAX(id) AS id FROM messages WHERE channel_id = ?").bind(channel.id).first();
+  await env.DB
+    .prepare(
+      `INSERT INTO channel_members (channel_id, member_id, last_read_id) VALUES (?, ?, ?)
+       ON CONFLICT(channel_id, member_id) DO UPDATE SET last_read_id = excluded.last_read_id`
+    )
+    .bind(channel.id, who.id, last?.id ?? 0)
+    .run();
+  return json({ ok: true, last_read_id: last?.id ?? 0 });
 }
 
 // ── router ───────────────────────────────────────────────────────────
@@ -1515,8 +1953,24 @@ async function api(request, env, url, who) {
   const action = parts[3];
   const method = request.method;
 
+  if (resource === "auth" && id === "login" && method === "POST") return loginRequest(request, env);
+  if (resource === "auth" && id === "logout" && method === "POST") return logoutRequest(request, env);
+  if (resource === "auth" && id === "setup" && method === "POST") return setupOwner(request, env, url);
+
   if (!who) return json({ ok: false, code: "unauthorized" }, 401, challengeHeader(request));
   if (!can(who, method === "GET" ? "read" : "write")) return json({ ok: false, code: "forbidden" }, 403);
+
+  if (resource === "auth" && id === "me" && method === "GET") {
+    return json({
+      ok: true,
+      member: who.member_role
+        ? { id: who.id, name: who.name, role: who.member_role, permissions: who.permissions }
+        : { id: null, name: who.name, role: who.role === "agent" ? "agent" : "owner", permissions: PERMISSIONS },
+    });
+  }
+  if (resource === "auth" && id === "password" && method === "POST") return changePassword(env, who, await body(request));
+  if (resource === "me" && !id && method === "GET") return mySpace(env, who);
+  if (resource === "dm" && id && method === "POST") return openDm(env, int(id), who);
 
   if (resource === "sessions" && method === "GET") {
     const { results } = await env.DB
@@ -1588,16 +2042,17 @@ async function api(request, env, url, who) {
   }
 
   if (resource === "channels") {
-    if (!id && method === "GET") return listChannels(env);
+    if (!id && method === "GET") return listChannels(env, who);
     if (!id && method === "POST") return createChannel(env, await body(request), who);
     const channel = await channelByAny(env, decodeURIComponent(id || ""));
     if (!channel) return json({ ok: false, code: "missing" }, 404);
-    if (action === "messages" && method === "GET") return listMessages(env, channel, url);
+    if (action === "read" && method === "POST") return markRead(env, channel, who);
+    if (action === "messages" && method === "GET") return listMessages(env, channel, url, who);
     if (action === "messages" && method === "POST") return postMessage(env, channel, await body(request), who);
   }
 
   if (resource === "tasks") {
-    if (!id && method === "GET") return listTasks(env, url);
+    if (!id && method === "GET") return listTasks(env, url, who);
     if (!id && method === "POST") return createTask(env, await body(request), who);
     if (id && !action && method === "PATCH") return patchTask(env, int(id), await body(request), who);
     if (id && action === "pomodoro" && method === "POST") return logPomodoro(env, await body(request), who);
@@ -1609,10 +2064,11 @@ async function api(request, env, url, who) {
   }
 
   if (resource === "members") {
-    if (!id && method === "GET") return listMembers(env);
+    if (!id && method === "GET") return listMembers(env, who);
     if (!id && method === "POST") return createMember(env, await body(request), who);
     if (id && method === "PATCH") return patchMember(env, int(id), await body(request), who);
     if (id && method === "DELETE") return removeMember(env, int(id), who);
+    if (id && action === "password" && method === "POST") return memberPassword(env, int(id), await body(request), who);
   }
 
   if (resource === "activities") {
@@ -1620,7 +2076,7 @@ async function api(request, env, url, who) {
     if (!id && method === "POST") return createActivity(env, await body(request), who);
   }
 
-  if (resource === "metrics" && method === "GET") return metrics(env);
+  if (resource === "metrics" && method === "GET") return metrics(env, who);
 
   if (resource === "agents") {
     if (!id && method === "GET") return listAgents(env);

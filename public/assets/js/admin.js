@@ -10,6 +10,8 @@
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
+  const can = (permission) => Boolean(state.me?.permissions?.includes(permission));
+
   const esc = (value) =>
     String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 
@@ -29,9 +31,33 @@
   const PRIORITY_LABEL = { 1: "عالية", 2: "متوسطة", 3: "منخفضة" };
   const SOURCE_LABEL = { manual: "إدخال يدوي", console: "لوحة التحكم", website: "الموقع", contact: "نموذج التواصل", agent: "وكيل" };
 
+  const PERMISSION_LABELS = {
+    "tasks.all": "كل المهام (عرض وتعديل مهام الجميع)",
+    "tasks.manage": "إدارة مهامه هو",
+    "inquiries.view": "عرض الطلبات",
+    "inquiries.manage": "إدارة الطلبات والمراحل",
+    "clients.view": "عرض العملاء",
+    "clients.manage": "إدارة العملاء",
+    "projects.view": "عرض المشاريع",
+    "projects.manage": "إدارة المشاريع",
+    "finance.view": "رؤية الأرقام المالية",
+    "team.manage": "إدارة الفريق والصلاحيات وكلمات المرور",
+    "channels.manage": "قنواته ومحادثاته",
+    "channels.post": "الكتابة في كل القنوات",
+    "agents.manage": "إدارة مفاتيح الوكلاء",
+    "settings.manage": "إعدادات الحساب",
+  };
+  const ROLE_DEFAULTS = {
+    owner: Object.keys(PERMISSION_LABELS),
+    manager: Object.keys(PERMISSION_LABELS).filter((p) => !["settings.manage", "agents.manage"].includes(p)),
+    member: ["tasks.manage", "inquiries.view", "clients.view", "projects.view", "channels.manage"],
+    contractor: ["tasks.manage", "projects.view", "channels.manage"],
+  };
+
   const state = {
     token: sessionStorage.getItem(KEY) || "",
     me: null,
+    space: null,
     view: "overview",
     loading: false,
     data: { metrics: null, leads: [], clients: [], tasks: [], members: [], channels: [], agents: [], activities: [], projects: [] },
@@ -47,8 +73,9 @@
   async function api(path, { method = "GET", body } = {}) {
     const res = await fetch(API + path, {
       method,
+      credentials: "same-origin",
       headers: {
-        authorization: `Bearer ${state.token}`,
+        ...(state.token ? { authorization: `Bearer ${state.token}` } : {}),
         ...(body ? { "content-type": "application/json" } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
@@ -104,6 +131,15 @@
 
   const initials = (name) => String(name || "?").trim().charAt(0).toUpperCase();
   const memberNames = () => state.data.members.filter((m) => m.active).map((m) => m.name);
+  const memberOptionsById = (selected) =>
+    ['<option value="">غير مُسنَد</option>']
+      .concat(
+        state.data.members
+          .filter((m) => m.active)
+          .map((m) => `<option value="${m.id}"${Number(m.id) === Number(selected) ? " selected" : ""}>${esc(m.name)}</option>`)
+      )
+      .join("");
+
   const memberOptions = (selected) =>
     ['<option value="">غير مُسنَد</option>']
       .concat(memberNames().map((n) => `<option value="${esc(n)}"${n === selected ? " selected" : ""}>${esc(n)}</option>`))
@@ -112,6 +148,7 @@
   // ── chrome ─────────────────────────────────────────────────────────
 
   const TITLES = {
+    me: "مساحتي",
     overview: "نظرة عامة",
     pipeline: "خط المبيعات",
     clients: "العملاء",
@@ -132,22 +169,38 @@
   }
 
   function setSync(text) {
-    $("[data-sync]").textContent = text;
+    const node = $("[data-sync]");
+    if (node) node.textContent = text;
   }
 
   function lock(message = "") {
     state.token = "";
+    state.me = null;
+    state.space = null;
     sessionStorage.removeItem(KEY);
     $("[data-shell]").hidden = true;
     $("[data-gate]").hidden = false;
     const status = $("[data-gate-status]");
     status.textContent = message;
     status.dataset.state = message ? "error" : "";
-    $("[data-gate-form] input[name=token]").focus();
+    $("[data-gate-form] input[name=email]").focus();
+  }
+
+  const allowedViews = () =>
+    $$("[data-nav] .ops__nav-btn")
+      .filter((btn) => !btn.dataset.perm || can(btn.dataset.perm))
+      .map((btn) => btn.dataset.view);
+
+  function applyPermissions() {
+    $$("[data-nav] .ops__nav-btn").forEach((btn) => {
+      btn.hidden = Boolean(btn.dataset.perm) && !can(btn.dataset.perm);
+    });
+    // rotating the static owner token only makes sense for the owner's break-glass session
+    $$("[data-rotate]").forEach((btn) => (btn.hidden = Boolean(state.me?.id)));
   }
 
   function setView(view, push = true) {
-    if (!TITLES[view]) view = "overview";
+    if (!TITLES[view] || !allowedViews().includes(view)) view = allowedViews()[0] || "me";
     state.view = view;
     $$("[data-panel]").forEach((panel) => (panel.hidden = panel.dataset.panel !== view));
     $$("[data-nav] .ops__nav-btn").forEach((btn) => {
@@ -169,21 +222,26 @@
 
   // ── data ───────────────────────────────────────────────────────────
 
+  const empty = { rows: [] };
+  const pick = (permission) => (permission && !can(permission) ? Promise.resolve(empty) : null);
+
   async function loadAll() {
     state.loading = true;
     setSync("جارٍ التحديث…");
     try {
-      const [metrics, leads, clients, tasks, members, channels, agents, activities, projects] = await Promise.all([
+      const [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects] = await Promise.all([
+        api("/me"),
         api("/metrics"),
-        api("/inquiries?limit=300"),
-        api("/clients"),
+        pick("inquiries.view") ?? api("/inquiries?limit=300"),
+        pick("clients.view") ?? api("/clients"),
         api("/tasks"),
         api("/members"),
         api("/channels"),
-        api("/agents"),
-        api("/activities?limit=40"),
-        api("/projects"),
+        pick("agents.manage") ?? api("/agents"),
+        pick("inquiries.view") ?? api("/activities?limit=40"),
+        pick("projects.view") ?? api("/projects"),
       ]);
+      state.space = space;
       Object.assign(state.data, {
         metrics,
         leads: leads.rows,
@@ -251,7 +309,7 @@
     return `
       <div class="ops-kpis">
         ${kpi("طلبات قيد المتابعة", num(leads.length), `${num(m.leads_7d ?? 0)} طلب خلال آخر 7 أيام`, "gold")}
-        ${kpi("قيمة خط المبيعات", egp(pipelineValue()), `${num(leads.length)} طلب في مرحلة النقاش`)}
+        ${kpi("قيمة خط المبيعات", m.finance === false ? "—" : egp(pipelineValue()), m.finance === false ? "غير متاحة لصلاحياتك" : `${num(leads.length)} طلب في مرحلة النقاش`)}
         ${kpi("مهام مفتوحة", num(tasks.length), `${num(late)} متأخرة · ${num(today)} مستحقة اليوم`, late ? "danger" : "")}
         ${kpi("تركيز اليوم", `${num(focusToday)}<small>د</small>`, `${num(Math.round(focusWeek / 60))} ساعة خلال آخر 7 أيام`, "mint")}
       </div>
@@ -270,7 +328,7 @@
                 <button class="ops-funnel__row" type="button" data-view="pipeline" data-stage="${row.key}">
                   <span class="ops-funnel__name">${esc(row.label)}</span>
                   <span class="ops-funnel__bar"><i style="width:${Math.round((row.count / max) * 100)}%"></i></span>
-                  <span class="ops-funnel__sum">${num(row.count)} طلب${row.value ? " · " + num(row.value) + " ج.م" : ""}</span>
+                  <span class="ops-funnel__sum">${num(row.count)} طلب${row.value && m.finance !== false ? " · " + num(row.value) + " ج.م" : ""}</span>
                 </button>`
                 )
                 .join("")}
@@ -488,6 +546,107 @@
       </section>`;
   }
 
+  // ── my space ───────────────────────────────────────────────────────
+
+  function renderMe() {
+    const space = state.space;
+    if (!space) return `<p class="ops-empty">جارٍ التحميل…</p>`;
+    const me = space.member || state.me || {};
+    const tasks = space.tasks || [];
+    const channels = space.channels || [];
+    const today = tasks.filter(isToday);
+    const late = tasks.filter(isLate);
+    const colleagues = state.data.members.filter((m) => m.active && m.id !== me.id);
+
+    return `
+      <div class="ops-kpis">
+        ${kpi("مهامي المفتوحة", num(tasks.length), `${num(late.length)} متأخرة`, late.length ? "danger" : "")}
+        ${kpi("مستحقة اليوم", num(today.length), "تحتاج انتباه اليوم", "gold")}
+        ${kpi("رسائل غير مقروءة", num(space.unread || 0), "في محادثاتك", space.unread ? "gold" : "mint")}
+        ${kpi("أنجزت خلال 7 أيام", num(space.done_7d || 0), "من مهامك", "mint")}
+      </div>
+
+      <section class="ops-panel">
+        <div class="ops-panel__head">
+          <h2>مهامي</h2>
+          <span class="ops-chip">${esc(ROLES[me.role] || me.role || "")}</span>
+          <button class="ops-btn ops-btn--sm" type="button" data-action="new-task">مهمة لنفسي</button>
+        </div>
+        <div class="ops-panel__body ops-panel__body--flush">
+          ${
+            tasks.length
+              ? `<ul>${tasks
+                  .map(
+                    (t) => `
+                <li class="ops-task" data-done="${t.status === "done"}">
+                  <button class="ops-task__check" type="button" role="checkbox" aria-checked="${t.status === "done"}"
+                          aria-label="إكمال ${esc(t.title)}" data-action="toggle-task" data-id="${t.id}">${t.status === "done" ? "✓" : ""}</button>
+                  <div class="ops-task__body">
+                    <button type="button" class="ops-list__title" style="background:none;border:0;padding:0;color:inherit;text-align:start;cursor:pointer;width:100%"
+                            data-action="open-task" data-id="${t.id}">${esc(t.title)}</button>
+                    <div class="ops-task__meta">
+                      <span class="ops-chip">${esc(TASK_LABEL[t.status] || t.status)}</span>
+                      ${t.due_at ? `<span class="ops-chip${isLate(t) ? " ops-chip--danger" : ""}">${isLate(t) ? "متأخرة · " : ""}${esc(dateLabel(t.due_at))}</span>` : ""}
+                      ${Number(t.priority) === 1 ? '<span class="ops-chip ops-chip--gold">أولوية عالية</span>' : ""}
+                    </div>
+                  </div>
+                </li>`
+                  )
+                  .join("")}</ul>`
+              : `<p class="ops-empty">لا توجد مهام مسندة إليك الآن. افتح «المهام» وخذ واحدة من غير المُسنَد.</p>`
+          }
+        </div>
+      </section>
+
+      <div class="ops-split">
+        <section class="ops-panel">
+          <div class="ops-panel__head"><h2>محادثاتي</h2><span class="ops-chip">${num(channels.length)}</span></div>
+          <div class="ops-panel__body ops-panel__body--flush">
+            ${
+              channels.length
+                ? `<ul class="ops-list">${channels
+                    .map(
+                      (c) => `
+                  <li class="ops-list__row" data-action="open-channel" data-id="${c.id}">
+                    <span class="ops-avatar">${c.kind === "dm" ? "✉" : "#"}</span>
+                    <span class="ops-list__main">
+                      <span class="ops-list__title">${esc(c.slug)}</span>
+                      <span class="ops-list__meta">${esc(c.last_author ? `${c.last_author}: ${c.last_body || ""}`.slice(0, 70) : c.topic || "بدون وصف")}</span>
+                    </span>
+                    ${Number(c.unread) ? `<span class="ops-chip ops-chip--gold">${num(c.unread)} جديد</span>` : ""}
+                  </li>`
+                    )
+                    .join("")}</ul>`
+                : `<p class="ops-empty">لا توجد محادثات بعد.</p>`
+            }
+          </div>
+        </section>
+
+        <section class="ops-panel">
+          <div class="ops-panel__head"><h2>الفريق</h2></div>
+          <div class="ops-panel__body ops-panel__body--flush">
+            ${
+              colleagues.length
+                ? `<ul class="ops-list">${colleagues
+                    .map(
+                      (m) => `
+                  <li class="ops-list__row">
+                    <span class="ops-avatar">${esc(initials(m.name))}</span>
+                    <span class="ops-list__main">
+                      <span class="ops-list__title">${esc(m.name)}</span>
+                      <span class="ops-list__meta">${esc(ROLES[m.role] || m.role)}${m.focus ? ` · ${esc(m.focus)}` : ""}</span>
+                    </span>
+                    <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="dm-member" data-id="${m.id}">محادثة</button>
+                  </li>`
+                    )
+                    .join("")}</ul>`
+                : `<p class="ops-empty">لا يوجد زملاء مفعّلون بعد.</p>`
+            }
+          </div>
+        </section>
+      </div>`;
+  }
+
   // ── team ───────────────────────────────────────────────────────────
 
   function renderTeam() {
@@ -507,7 +666,7 @@
       <section class="ops-panel">
         <div class="ops-panel__head">
           <h2>الفريق والتحميل</h2>
-          <button class="ops-btn ops-btn--sm" type="button" data-action="new-member">عضو جديد</button>
+          ${can("team.manage") ? `<button class="ops-btn ops-btn--sm" type="button" data-action="new-member">عضو جديد</button>` : ""}
         </div>
         <div class="ops-panel__body">
           <div class="ops-team">
@@ -525,6 +684,7 @@
                         <div>
                           <p class="ops-member__name">${esc(m.name)}</p>
                           <p class="ops-member__focus">${esc(ROLES[m.role] || m.role)}${m.focus ? ` · ${esc(m.focus)}` : ""}</p>
+                          <p class="ops-member__focus">${m.has_password ? `<span class="ops-chip ops-chip--mint">حساب مفعّل</span>` : `<span class="ops-chip">بدون دخول</span>`}</p>
                         </div>
                         <span class="ops-chip" style="margin-inline-start:auto">${num(m.open_leads || 0)} طلب</span>
                       </div>
@@ -536,7 +696,9 @@
                         </div>
                       </div>
                       <div class="ops-member__actions">
-                        <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="edit-member" data-id="${m.id}">تعديل</button>
+                        ${can("team.manage") ? `<button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="member-access" data-id="${m.id}">الصلاحيات</button>` : ""}
+                        <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="dm-member" data-id="${m.id}">محادثة</button>
+                        ${can("team.manage") ? `<button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="edit-member" data-id="${m.id}">تعديل</button>` : ""}
                         <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="open-member" data-id="${m.id}">تفاصيل</button>
                       </div>
                     </article>`;
@@ -571,7 +733,7 @@
                       <span class="ops-list__title">${esc(c.slug)}</span>
                       <span class="ops-list__meta">${esc(c.topic || "بدون وصف")}</span>
                     </span>
-                    <span class="ops-chip">${num(c.messages)} رسالة</span>
+                    ${Number(c.unread) ? `<span class="ops-chip ops-chip--gold">${num(c.unread)} جديد</span>` : `<span class="ops-chip">${num(c.messages)} رسالة</span>`}
                   </li>`
                     )
                     .join("")}</ul>`
@@ -895,7 +1057,7 @@
             <label class="ops-field"><span>الأولوية</span><select class="ops-select" name="priority">${options(PRIORITY_LABEL, task.priority)}</select></label>
           </div>
           <div class="ops-row">
-            <label class="ops-field"><span>المسؤول</span><select class="ops-select" name="assignee">${memberOptions(task.assignee)}</select></label>
+            <label class="ops-field"><span>المسؤول</span><select class="ops-select" name="assignee_member_id">${memberOptionsById(task.assignee_member_id)}</select></label>
             <label class="ops-field"><span>الموعد</span><input class="ops-input" name="due_at" type="date" dir="ltr" value="${esc(String(task.due_at || "").slice(0, 10))}"></label>
           </div>
           <label class="ops-field"><span>التقدير بالدقائق</span>
@@ -1099,6 +1261,21 @@
           <label class="ops-field"><span>مجال العمل</span><input class="ops-input" name="focus" placeholder="تصميم / برمجة / متابعة" value="${esc(member?.focus || "")}"></label>
           <label class="ops-field"><span>ساعات الأسبوع</span><input class="ops-input" name="capacity_hours" type="number" min="1" max="80" dir="ltr" value="${esc(member?.capacity_hours ?? 32)}"></label>
         </div>
+        <div class="ops-row">
+          <label class="ops-field"><span>كلمة المرور ${member ? "(اتركها فارغة للإبقاء على الحالية)" : "(تُولَّد تلقائيًا لو تركتها فارغة)"}</span>
+            <input class="ops-input" name="password" type="password" minlength="8" dir="ltr" autocomplete="new-password"></label>
+        </div>
+        <fieldset style="border:1px solid var(--rule-strong);padding:10px">
+          <legend style="font-size:12px;color:var(--fg-dim);padding:0 6px">الصلاحيات</legend>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 14px">
+            ${Object.entries(PERMISSION_LABELS)
+              .map(([key, label]) => {
+                const active = member ? String(member.permissions || "").split(",").includes(key) : ROLE_DEFAULTS.member.includes(key);
+                return `<label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" name="permissions" value="${key}" ${active ? "checked" : ""}> ${esc(label)}</label>`;
+              })
+              .join("")}
+          </div>
+        </fieldset>
         <label class="ops-field"><span>ملاحظات</span><textarea class="ops-textarea" name="notes" rows="2">${esc(member?.notes || "")}</textarea></label>
         ${member ? `<label class="ops-field" style="grid-auto-flow:column;justify-content:start;align-items:center;gap:8px"><input type="checkbox" name="active" ${member.active ? "checked" : ""}> <span>نشط ضمن الفريق</span></label>` : ""}`,
       onSubmit: async (fd) => {
@@ -1111,14 +1288,84 @@
           capacity_hours: Number(fd.get("capacity_hours") || 32),
           notes: fd.get("notes"),
         };
+        payload.permissions = fd.getAll("permissions").join(",");
+        if (fd.get("password")) payload.password = fd.get("password");
         if (member) {
           payload.active = fd.get("active") ? 1 : 0;
           await api(`/members/${member.id}`, { method: "PATCH", body: payload });
           toast("تم التحديث.", "ok");
         } else {
-          await api("/members", { method: "POST", body: payload });
+          const data = await api("/members", { method: "POST", body: payload });
+          if (data.temp_password) {
+            openDialog({
+              title: "بيانات دخول العضو",
+              submit: "تم",
+              body: `<p style="font-size:13px;color:var(--fg-dim)">أرسل هذه البيانات للعضو؛ لن تُعرض مرة أخرى.</p>
+                     <div class="ops-msg" dir="ltr">${esc(payload.email)}<br>${esc(data.temp_password)}</div>`,
+              onSubmit: async () => {},
+            });
+            return { keepOpen: true };
+          }
           toast("تمت إضافة العضو.", "ok");
         }
+      },
+    });
+
+  const permissionBoxes = (member) => `
+    <fieldset style="border:1px solid var(--rule-strong);padding:10px">
+      <legend style="font-size:12px;color:var(--fg-dim);padding:0 6px">الصلاحيات</legend>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 14px">
+        ${Object.entries(PERMISSION_LABELS)
+          .map(([key, label]) => {
+            const active = String(member?.permissions || "").split(",").includes(key);
+            return `<label style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" name="permissions" value="${key}" ${active ? "checked" : ""}> ${esc(label)}</label>`;
+          })
+          .join("")}
+      </div>
+    </fieldset>`;
+
+  const dialogAccess = (member) => {
+    if (!member) return;
+    openDialog({
+      title: `صلاحيات ${member.name}`,
+      submit: "حفظ الصلاحيات",
+      body: `
+        <div class="ops-row">
+          <label class="ops-field"><span>الدور</span><select class="ops-select" name="role">${options(ROLES, member.role)}</select></label>
+          <label class="ops-field"><span>كلمة مرور جديدة (اختياري)</span><input class="ops-input" name="password" type="password" minlength="8" dir="ltr" autocomplete="new-password"></label>
+        </div>
+        ${permissionBoxes(member)}
+        <p style="font-size:12px;color:var(--fg-dim)">تغيير كلمة المرور يُنهي كل جلسات هذا العضو. الصلاحيات تُطبَّق فورًا على الخادم.</p>`,
+      onSubmit: async (fd) => {
+        await api(`/members/${member.id}`, {
+          method: "PATCH",
+          body: {
+            role: fd.get("role"),
+            permissions: fd.getAll("permissions").join(","),
+            ...(fd.get("password") ? { password: fd.get("password") } : {}),
+          },
+        });
+        toast("تم حفظ الصلاحيات.", "ok");
+      },
+    });
+  };
+
+  const dialogPassword = () =>
+    openDialog({
+      title: "تغيير كلمة المرور",
+      submit: "تغيير",
+      body: `
+        <label class="ops-field"><span>كلمة المرور الحالية</span><input class="ops-input" name="current" type="password" required dir="ltr" autocomplete="current-password"></label>
+        <label class="ops-field"><span>كلمة المرور الجديدة</span><input class="ops-input" name="next" type="password" required minlength="8" dir="ltr" autocomplete="new-password"></label>
+        <label class="ops-field"><span>تأكيد الجديدة</span><input class="ops-input" name="confirm" type="password" required minlength="8" dir="ltr" autocomplete="new-password"></label>`,
+      onSubmit: async (fd) => {
+        if (fd.get("next") !== fd.get("confirm")) throw new Error("غير متطابقين");
+        await api("/auth/password", {
+          method: "POST",
+          body: { current: fd.get("current"), next: fd.get("next") },
+        });
+        toast("تم تغيير كلمة المرور. سجّل الدخول من جديد.", "ok");
+        lock("تم تغيير كلمة المرور. سجّل الدخول من جديد.", false);
       },
     });
 
@@ -1188,6 +1435,7 @@
 
   function render() {
     const fns = {
+      me: renderMe,
       overview: renderOverview,
       pipeline: renderPipeline,
       clients: renderClients,
@@ -1197,10 +1445,12 @@
       agents: renderAgents,
     };
     const panel = $(`[data-panel="${state.view}"]`);
-    if (panel) panel.innerHTML = fns[state.view]();
+    if (panel && fns[state.view]) panel.innerHTML = fns[state.view]();
     $$("[data-count]").forEach((node) => {
       if (node.dataset.count === "pipeline") node.textContent = String(openLeads().length);
       if (node.dataset.count === "tasks") node.textContent = String(openTasks().length);
+      if (node.dataset.count === "me") node.textContent = String(state.space?.tasks?.length ?? 0);
+      if (node.dataset.count === "chat") node.textContent = String(state.space?.unread ?? 0);
     });
     if (state.view === "channels" && state.activeChannel) loadMessages(state.activeChannel);
   }
@@ -1221,6 +1471,45 @@
     await api(`/inquiries/${id}`, { method: "PATCH", body: { status } });
     toast(`تم نقل الطلب إلى «${STAGE_LABEL[status]}».`, "ok");
     await refreshKeepingDrawer();
+  }
+
+  async function claimTask(id) {
+    await api(`/tasks/${id}`, { method: "PATCH", body: { claim: true } });
+    toast("تم أخذ المهمة إلى قائمتك.", "ok");
+    await refreshKeepingDrawer();
+  }
+
+  async function setupOwnerFromGate() {
+    const form = $("[data-gate-form]");
+    const token = form.querySelector("input[name=token]").value.trim();
+    const email = form.querySelector("input[name=email]").value.trim();
+    const password = form.querySelector("input[name=password]").value;
+    const status = $("[data-gate-status]");
+    if (!token || !email || password.length < 8) {
+      status.textContent = "اكتب البريد وكلمة مرور من 8 أحرف على الأقل، وكود المالك.";
+      status.dataset.state = "error";
+      return;
+    }
+    state.token = token;
+    try {
+      await api("/auth/setup", { method: "POST", body: { email, password } });
+      state.token = "";
+      status.textContent = "تم إنشاء حساب المالك. ادخل الآن بالبريد وكلمة المرور.";
+      status.dataset.state = "ok";
+      toast("حساب المالك جاهز.", "ok");
+    } catch (err) {
+      state.token = "";
+      status.textContent = "تعذّر إنشاء الحساب. تأكد من كود المالك.";
+      status.dataset.state = "error";
+    }
+  }
+
+  async function openDmMember(memberId) {
+    const data = await api(`/dm/${memberId}`, { method: "POST" });
+    state.activeChannel = data.channel?.id ?? null;
+    if (state.view !== "channels") setView("channels");
+    await loadAll();
+    toast("محادثة خاصة جاهزة.", "ok");
   }
 
   async function toggleTask(id) {
@@ -1279,7 +1568,9 @@
   async function sendMessage(form) {
     const body = new FormData(form).get("body");
     if (!String(body || "").trim()) return;
-    await api(`/channels/${form.dataset.channel}/messages`, { method: "POST", body: { body } });
+    const channelId = form.dataset.channel;
+    await api(`/channels/${channelId}/messages`, { method: "POST", body: { body } });
+    await api(`/channels/${channelId}/read`, { method: "POST" }).catch(() => {});
     form.reset();
     await loadAll();
   }
@@ -1293,10 +1584,23 @@
     "open-client": (el) => openClient(Number(el.dataset.id)),
     "open-task": (el) => openTask(Number(el.dataset.id)),
     "open-member": (el) => openMember(Number(el.dataset.id)),
-    "open-channel": (el) => {
-      state.activeChannel = Number(el.dataset.id);
-      render();
+    "open-channel": async (el) => {
+      const id = Number(el.dataset.id);
+      if (state.view !== "channels") {
+        state.activeChannel = id;
+        setView("channels");
+      } else {
+        state.activeChannel = id;
+        render();
+      }
+      await api(`/channels/${id}/read`, { method: "POST" }).catch(() => {});
+      await loadAll();
     },
+    "dm-member": (el) => openDmMember(Number(el.dataset.id)),
+    "member-access": (el) => dialogAccess(state.data.members.find((m) => m.id === Number(el.dataset.id))),
+    "claim-task": (el) => claimTask(Number(el.dataset.id)),
+    "setup-owner": (el) => setupOwnerFromGate(el),
+    password: () => dialogPassword(),
     "filter-tasks": (el) => {
       state.filters.tasks = el.dataset.value;
       render();
@@ -1392,7 +1696,7 @@
           body: {
             status: fd.get("status"),
             priority: Number(fd.get("priority")),
-            assignee: fd.get("assignee") || "",
+            assignee_member_id: fd.get("assignee_member_id") ? Number(fd.get("assignee_member_id")) : null,
             due_at: fd.get("due_at") || "",
             estimate_minutes: fd.get("estimate_minutes") ? Number(fd.get("estimate_minutes")) : null,
           },
@@ -1458,47 +1762,77 @@
     setSync("جارٍ الدخول…");
     state.me = null;
     try {
-      const overview = await api("/overview");
-      state.me = overview.who;
+      const data = await api("/auth/me");
+      state.me = data.member;
+      applyPermissions();
       sessionStorage.setItem(KEY, state.token);
       $("[data-gate]").hidden = true;
       $("[data-shell]").hidden = false;
-      $("[data-who]").innerHTML = `<i>●</i> ${esc(state.me.name)} · ${esc(state.me.role)}`;
+      $("[data-who]").innerHTML = `<i>●</i> ${esc(state.me.name)} · ${esc(ROLES[state.me.role] || state.me.role)}`;
       await loadAll();
-      setView(location.hash.replace("#", "") || "overview", false);
+      setView(location.hash.replace("#", "") || "me", false);
     } catch (err) {
-      if (String(err.message) === "unauthorized") lock("كود الدخول غير صحيح. حاول مرة أخرى.");
+      if (String(err.message) === "unauthorized") lock("");
       else lock("تعذّر الاتصال بالخادم.");
     }
   }
 
   $("[data-gate-form]").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const input = event.target.querySelector("input[name=token]");
-    const value = input.value.trim();
-    if (!value) return;
-    state.token = value;
-    $("[data-gate-status]").textContent = "";
-    await unlock();
-    if (!state.me) input.select();
+    const form = event.target;
+    const email = form.querySelector("input[name=email]").value.trim();
+    const password = form.querySelector("input[name=password]").value;
+    const token = form.querySelector("input[name=token]").value.trim();
+    const status = $("[data-gate-status]");
+    status.textContent = "";
+    status.dataset.state = "";
+    if (!password && !token) {
+      status.textContent = "اكتب البريد وكلمة المرور، أو استخدم كود المالك.";
+      status.dataset.state = "error";
+      return;
+    }
+    try {
+      if (password && email) {
+        await api("/auth/login", { method: "POST", body: { email, password } });
+        state.token = "";
+      } else {
+        state.token = token;
+      }
+      await unlock();
+      if (!state.me) {
+        status.textContent = "بيانات الدخول غير صحيحة.";
+        status.dataset.state = "error";
+      }
+    } catch (err) {
+      if (String(err.message) !== "unauthorized") {
+        status.textContent = "بيانات الدخول غير صحيحة.";
+        status.dataset.state = "error";
+      }
+    }
   });
 
   $("[data-reveal]").addEventListener("click", (event) => {
-    const input = $("[data-gate-form] input[name=token]");
-    const show = input.type === "password";
-    input.type = show ? "text" : "password";
+    const inputs = $$("[data-gate-form] input[type=password], [data-gate-form] input[type=text]").filter(
+      (input) => input.name === "password" || input.name === "token"
+    );
+    const show = inputs[0]?.type === "password";
+    inputs.forEach((input) => (input.type = show ? "text" : "password"));
     event.currentTarget.textContent = show ? "إخفاء" : "إظهار";
   });
 
-  $$("[data-lock]").forEach((btn) => btn.addEventListener("click", () => lock("تم تسجيل الخروج. أدخل كود الدخول مرة أخرى.")));
+  $$("[data-lock]").forEach((btn) =>
+    btn.addEventListener("click", async () => {
+      await fetch(API + "/auth/logout", { method: "POST", credentials: "same-origin" }).catch(() => {});
+      lock("تم تسجيل الخروج.");
+    })
+  );
   $$("[data-rotate]").forEach((btn) => btn.addEventListener("click", () => dialogRotate()));
   $("[data-refresh]").addEventListener("click", () => loadAll());
-  window.addEventListener("hashchange", () => setView(location.hash.replace("#", "") || "overview", false));
+  window.addEventListener("hashchange", () => setView(location.hash.replace("#", "") || "me", false));
 
   setInterval(() => {
-    if (!document.hidden && state.token) loadAll();
+    if (!document.hidden && state.me) loadAll();
   }, 90000);
 
-  if (state.token) unlock();
-  else lock("");
+  unlock();
 })();

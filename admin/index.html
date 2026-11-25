@@ -34,6 +34,9 @@
     <circle cx="12" cy="7" r="3.6" /><path d="M4 21a8 8 0 0 1 16 0" />
     <path d="M2 11h2M20 11h2" opacity=".5" />
   </symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+    <circle cx="12" cy="8" r="3.6" /><path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+  </symbol>
   <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
     <path d="M4 5h16v11H9l-5 4V5Z" /><path d="M8 9h8M8 12.5h5" opacity=".6" />
   </symbol>
@@ -53,19 +56,32 @@
     <div class="ops__gate-card">
       <span class="px-tag">EGYTRONIC · OPS</span>
       <h1 id="gate-title">الدخول إلى غرفة العمليات</h1>
-      <p>يمنحك هذا الكود صلاحية إدارة الطلبات والعملاء والمهام والفريق. يُحفظ في هذا التبويب فقط.</p>
+      <p>كل عضو في الفريق يدخل بحسابه: يرى مهامه وقنواته بقدر صلاحياته، ولا يرى ما لا يخصّه.</p>
       <form class="ops__gate-form" data-gate-form novalidate>
         <label class="ops-field">
-          <span>كود الدخول</span>
-          <input class="ops-input" type="password" name="token" autocomplete="current-password" placeholder="EGYTRONIC…" dir="ltr" required aria-label="كود الدخول">
+          <span>البريد الإلكتروني</span>
+          <input class="ops-input" type="email" name="email" autocomplete="username" dir="ltr" placeholder="name@egytronic.com" aria-label="البريد الإلكتروني">
+        </label>
+        <label class="ops-field">
+          <span>كلمة المرور</span>
+          <input class="ops-input" type="password" name="password" autocomplete="current-password" dir="ltr" aria-label="كلمة المرور">
         </label>
         <div class="ops__gate-actions">
           <button class="ops-btn" type="submit">دخول</button>
           <button class="ops-btn ops-btn--ghost" type="button" data-reveal>إظهار</button>
         </div>
+        <details style="margin-top:6px">
+          <summary style="cursor:pointer;font-size:12px;color:var(--fg-dim)">الدخول بكود المالك (وصول احتياطي)</summary>
+          <label class="ops-field" style="margin-top:8px">
+            <span>كود المالك</span>
+            <input class="ops-input" type="password" name="token" autocomplete="off" dir="ltr" placeholder="EGYTRONIC…">
+          </label>
+          <p class="ops__hint" style="margin:8px 0 0">أول استخدام فقط: اكتب بريدك وكلمة مرور جديدة بالأعلى، ثم أنشئ حساب المالك من الكود.</p>
+          <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="setup-owner" style="margin-top:6px">إنشاء حساب المالك</button>
+        </details>
       </form>
       <p class="ops__status" data-gate-status role="status" aria-live="polite"></p>
-      <p class="ops__hint">لا يُخزَّن الكود على الخادم بصيغة مقروءة، بل بصمته فقط. وإذا اطّلع عليه شخص آخر، غيّره من اللوحة نفسها.</p>
+      <p class="ops__hint">كلمات المرور تُخزَّن كبصمة PBKDF2 فقط. أول دخول: اكتب بريدك وكلمة مرور جديدة في «كود المالك» ثم «إعداد حساب المالك».</p>
     </div>
   </section>
 
@@ -80,13 +96,14 @@
       </div>
 
       <nav class="ops__nav" data-nav aria-label="أقسام اللوحة">
+        <button type="button" class="ops__nav-btn" data-view="me"><svg aria-hidden="true"><use href="#i-user"/></svg> مساحتي <b data-count="me">0</b></button>
         <button type="button" class="ops__nav-btn" data-view="overview"><svg aria-hidden="true"><use href="#i-grid"/></svg> نظرة عامة</button>
-        <button type="button" class="ops__nav-btn" data-view="pipeline"><svg aria-hidden="true"><use href="#i-funnel"/></svg> خط المبيعات <b data-count="pipeline">0</b></button>
-        <button type="button" class="ops__nav-btn" data-view="clients"><svg aria-hidden="true"><use href="#i-users"/></svg> العملاء</button>
-        <button type="button" class="ops__nav-btn" data-view="tasks"><svg aria-hidden="true"><use href="#i-check"/></svg> المهام <b data-count="tasks">0</b></button>
+        <button type="button" class="ops__nav-btn" data-view="pipeline" data-perm="inquiries.view"><svg aria-hidden="true"><use href="#i-funnel"/></svg> خط المبيعات <b data-count="pipeline">0</b></button>
+        <button type="button" class="ops__nav-btn" data-view="clients" data-perm="clients.view"><svg aria-hidden="true"><use href="#i-users"/></svg> العملاء</button>
+        <button type="button" class="ops__nav-btn" data-view="tasks" data-perm="tasks.manage"><svg aria-hidden="true"><use href="#i-check"/></svg> المهام <b data-count="tasks">0</b></button>
         <button type="button" class="ops__nav-btn" data-view="team"><svg aria-hidden="true"><use href="#i-team"/></svg> الفريق</button>
-        <button type="button" class="ops__nav-btn" data-view="channels"><svg aria-hidden="true"><use href="#i-chat"/></svg> القنوات</button>
-        <button type="button" class="ops__nav-btn" data-view="agents"><svg aria-hidden="true"><use href="#i-cpu"/></svg> الوكلاء</button>
+        <button type="button" class="ops__nav-btn" data-view="channels"><svg aria-hidden="true"><use href="#i-chat"/></svg> المحادثات <b data-count="chat">0</b></button>
+        <button type="button" class="ops__nav-btn" data-view="agents" data-perm="agents.manage"><svg aria-hidden="true"><use href="#i-cpu"/></svg> الوكلاء</button>
       </nav>
 
       <div class="ops__rail-foot">
@@ -103,13 +120,16 @@
           <span class="ops__sub" data-sub></span>
         </div>
         <div class="ops__top-actions">
+          <span class="ops__pulse" data-who></span>
           <span class="ops__pulse" data-sync aria-live="polite">متصل</span>
           <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-refresh>تحديث</button>
+          <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="password">كلمة المرور</button>
           <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-lock>تسجيل الخروج</button>
         </div>
       </header>
 
       <div class="ops__body">
+        <section class="ops__view" data-panel="me" aria-label="مساحتي" hidden></section>
         <section class="ops__view" data-panel="overview" aria-label="نظرة عامة" hidden></section>
         <section class="ops__view" data-panel="pipeline" aria-label="خط المبيعات" hidden></section>
         <section class="ops__view" data-panel="clients" aria-label="العملاء" hidden></section>

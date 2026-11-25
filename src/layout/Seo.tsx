@@ -3,6 +3,8 @@ import catalog from "../data/catalog.json";
 import { buildGraph } from "./Schema";
 
 const BASE = catalog.site;
+/* Set at build time by the Search Console step: VITE_GOOGLE_SITE_VERIFICATION=<token>. */
+const GSC_TOKEN = import.meta.env.VITE_GOOGLE_SITE_VERIFICATION as string | undefined;
 const OG_IMAGE = `${BASE}/assets/img/og-image.png`;
 
 export default function Seo({
@@ -43,6 +45,7 @@ export default function Seo({
       <meta name="description" content={description} />
       <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
       <meta name="theme-color" content="#161616" />
+      {GSC_TOKEN ? <meta name="google-site-verification" content={GSC_TOKEN} /> : null}
       <meta property="og:type" content={pageType ?? "website"} />
       <meta property="og:title" content={ogTitle ?? title} />
       <meta property="og:description" content={description} />
