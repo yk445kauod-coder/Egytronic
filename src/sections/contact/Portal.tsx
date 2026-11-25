@@ -10,15 +10,22 @@ export default function Portal() {
       </div>
 
       <div className="portal__grid">
-        <form className="portal__form reveal" id="contact-form" data-contact-form noValidate data-msg-invalid="راجع الحقول الناقصة: الاسم، وبريد إلكتروني صحيح، ورسالة لا تقل عن 10 أحرف." data-msg-sending="جاري الإرسال…" data-msg-ok="وصلتنا رسالتك، وسنرد على وسيلة التواصل التي أدخلتها." data-msg-rate="وردتنا طلبات كثيرة من هذا الجهاز. يُرجى المحاولة بعد قليل." data-msg-down="الإرسال غير متاح حاليًا." data-msg-offline="لا يوجد اتصال بالشبكة." data-msg-button="إرسال الطلب">
+        <form
+          className="portal__form reveal"
+          id="contact-form"
+          data-contact-form
+          noValidate
+          toolname="request_quote"
+          tooldescription="أرسل تفاصيل مشروعك إلى Egytronic: الاسم، وسيلة تواصل، ونطاق العمل المطلوب."
+          toolautosubmit="false" data-msg-invalid="راجع الحقول الناقصة: الاسم، وبريد إلكتروني صحيح، ورسالة لا تقل عن 10 أحرف." data-msg-sending="جاري الإرسال…" data-msg-ok="وصلتنا رسالتك، وسنرد على وسيلة التواصل التي أدخلتها." data-msg-rate="وردتنا طلبات كثيرة من هذا الجهاز. يُرجى المحاولة بعد قليل." data-msg-down="الإرسال غير متاح حاليًا." data-msg-offline="لا يوجد اتصال بالشبكة." data-msg-button="إرسال الطلب">
           <div className="field">
             <label htmlFor="cf-name">الاسم</label>
-            <input id="cf-name" name="name" type="text" autoComplete="name" required minLength="2" maxLength="80" placeholder="اسمك أو اسم المشروع" />
+            <input id="cf-name" name="name" type="text" toolparamdescription="اسمك أو اسم الشركة" autoComplete="name" required minLength="2" maxLength="80" placeholder="اسمك أو اسم المشروع" />
           </div>
 
           <div className="field">
             <label htmlFor="cf-email">البريد الإلكتروني</label>
-            <input id="cf-email" name="email" type="email" autoComplete="email" inputmode="email" required maxLength="120" placeholder="name@example.com" dir="ltr" />
+            <input id="cf-email" name="email" type="email" toolparamdescription="بريد إلكتروني صحيح للرد" autoComplete="email" inputmode="email" required maxLength="120" placeholder="name@example.com" dir="ltr" />
           </div>
 
           <div className="field">
