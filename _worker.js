@@ -129,6 +129,8 @@ const PERMISSIONS = [
   "team.manage",
   "channels.manage",
   "channels.post",
+  "code.view",
+  "code.manage",
   "agents.manage",
   "settings.manage",
 ];
@@ -137,14 +139,16 @@ const PERMISSIONS = [
 const ROLE_PERMISSIONS = {
   owner: PERMISSIONS,
   manager: PERMISSIONS.filter((p) => !["settings.manage", "agents.manage"].includes(p)),
-  member: ["tasks.manage", "inquiries.view", "clients.view", "projects.view", "channels.manage"],
-  contractor: ["tasks.manage", "projects.view", "channels.manage"],
+  member: ["tasks.manage", "inquiries.view", "clients.view", "projects.view", "channels.manage", "code.view"],
+  contractor: ["tasks.manage", "projects.view", "channels.manage", "code.view"],
 };
 
 // Only these stay out of reach for agent keys that hold the write scope.
 const OWNER_ONLY = ["team.manage", "settings.manage", "agents.manage"];
 
 const permList = (value, role) => {
+  // an owner always holds the full set, even if the row predates a permission
+  if (role === "owner") return PERMISSIONS;
   if (value === undefined || value === null || value === "") return ROLE_PERMISSIONS[role] ?? ROLE_PERMISSIONS.member;
   const asked = String(value).split(",").map((p) => p.trim()).filter((p) => PERMISSIONS.includes(p));
   return [...new Set(asked)];
@@ -1944,6 +1948,320 @@ async function markRead(env, channel, who) {
   return json({ ok: true, last_read_id: last?.id ?? 0 });
 }
 
+// ── code: GitHub as the source of truth ──────────────────────────────
+// Repositories stay on GitHub; the console stores no code, only an
+// optional token row in settings when the GITHUB_TOKEN secret is absent.
+
+const GH = "https://api.github.com";
+
+const b64 = {
+  encode(text) {
+    const bytes = new TextEncoder().encode(text);
+    let bin = "";
+    for (const byte of bytes) bin += String.fromCharCode(byte);
+    return btoa(bin);
+  },
+  decode(value) {
+    const bin = atob(String(value || "").replace(/\s+/g, ""));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  },
+};
+
+async function githubCreds(env) {
+  const secret = env.GITHUB_TOKEN ? String(env.GITHUB_TOKEN).trim() : "";
+  let stored = {};
+  if (!secret) {
+    const rows = await env.DB.prepare(
+      "SELECT key, value FROM settings WHERE key IN ('github_token', 'github_owner')"
+    ).all();
+    stored = Object.fromEntries((rows.results ?? []).map((row) => [row.key, row.value]));
+  }
+  const token = secret || stored.github_token || "";
+  const owner = (env.GITHUB_OWNER ? String(env.GITHUB_OWNER).trim() : "") || stored.github_owner || "";
+  return { token, owner, source: secret ? "env" : token ? "settings" : "none" };
+}
+
+async function gh(env, creds, path, { method = "GET", payload } = {}) {
+  const res = await fetch(`${GH}${path}`, {
+    method,
+    headers: {
+      accept: "application/vnd.github+json",
+      authorization: `Bearer ${creds.token}`,
+      "user-agent": "egytronic-console",
+      "x-github-api-version": "2022-11-28",
+      ...(payload ? { "content-type": "application/json" } : {}),
+    },
+    body: payload ? JSON.stringify(payload) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  return { status: res.status, data };
+}
+
+const ghFail = (res) => {
+  const message = res.data?.message || "";
+  if (res.status === 401 || (res.status === 403 && /bad credentials/i.test(message))) return ["bad-token", 503];
+  if (res.status === 403 && /rate limit/i.test(message)) return ["rate-limit", 429];
+  if (res.status === 404) return ["not-found", 404];
+  if (res.status === 409) return ["conflict", 409];
+  if (res.status === 422) return ["invalid", 400];
+  return [message || `github-${res.status}`, res.status >= 500 ? 502 : 400];
+};
+
+const repoPath = (id) => {
+  const [owner, name] = String(id || "").split("/");
+  if (!owner || !name) return null;
+  if (!/^[\w.-]{1,80}$/.test(owner) || !/^[\w.-]{1,100}$/.test(name)) return null;
+  return `${owner}/${name}`;
+};
+
+const slimRepo = (row) => ({
+  full_name: row.full_name,
+  name: row.name,
+  owner: row.owner?.login,
+  private: Boolean(row.private),
+  description: row.description,
+  language: row.language,
+  pushed_at: row.pushed_at,
+  stars: row.stargazers_count,
+  default_branch: row.default_branch,
+  html_url: row.html_url,
+});
+
+const slimCommit = (row) => ({
+  sha: row.sha,
+  short: String(row.sha || "").slice(0, 7),
+  message: String(row.commit?.message || "").split("\n")[0],
+  author: row.commit?.author?.name || row.author?.login || "",
+  date: row.commit?.author?.date || null,
+  html_url: row.html_url,
+});
+
+async function codeStatus(env, who) {
+  const creds = await githubCreds(env);
+  let login = null;
+  let error = null;
+  if (creds.token) {
+    const res = await gh(env, creds, "/user");
+    if (res.status === 200) login = res.data.login;
+    else error = ghFail(res)[0];
+  }
+  return json({
+    ok: true,
+    configured: Boolean(creds.token),
+    source: creds.source,
+    login,
+    owner: creds.owner || login || "",
+    error,
+    can_manage: allow(who, "code.manage"),
+    can_store: allow(who, "settings.manage"),
+  });
+}
+
+async function codeSaveToken(env, who, payload) {
+  if (!allow(who, "settings.manage")) return json({ ok: false, code: "forbidden" }, 403);
+  const token = String(payload.token || "").trim();
+  const owner = clean(payload.owner, 80);
+  if (token && !/^(gh[pousr]_|github_pat_)/.test(token)) return json({ ok: false, code: "token-shape" }, 400);
+  if (token) {
+    const probe = await gh(env, { token }, "/user");
+    if (probe.status !== 200) return json({ ok: false, code: ghFail(probe)[0] }, 400);
+    await env.DB.prepare(
+      "INSERT INTO settings (key, value) VALUES ('github_token', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+    ).bind(token).run();
+  }
+  await env.DB.prepare(
+    "INSERT INTO settings (key, value) VALUES ('github_owner', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+  ).bind(owner).run();
+  return json({ ok: true });
+}
+
+async function codeClearToken(env, who) {
+  if (!allow(who, "settings.manage")) return json({ ok: false, code: "forbidden" }, 403);
+  await env.DB.prepare("DELETE FROM settings WHERE key = 'github_token'").run();
+  return json({ ok: true });
+}
+
+async function codeRepos(env, creds, url) {
+  const query = (url.searchParams.get("q") || "").toLowerCase();
+  const res = await gh(env, creds, "/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member");
+  if (res.status !== 200) {
+    const [code, status] = ghFail(res);
+    return json({ ok: false, code }, status);
+  }
+  const owner = creds.owner.toLowerCase();
+  const rows = (res.data || [])
+    .filter((row) => !owner || String(row.owner?.login || "").toLowerCase() === owner)
+    .filter((row) => !query || String(row.full_name).toLowerCase().includes(query))
+    .map(slimRepo);
+  return json({ ok: true, rows, owner: creds.owner });
+}
+
+async function codeRepo(env, creds, url) {
+  const full = repoPath(url.searchParams.get("id"));
+  if (!full) return json({ ok: false, code: "bad-repo" }, 400);
+  const [repo, branches, commits] = await Promise.all([
+    gh(env, creds, `/repos/${full}`),
+    gh(env, creds, `/repos/${full}/branches?per_page=100`),
+    gh(env, creds, `/repos/${full}/commits?per_page=20`),
+  ]);
+  if (repo.status !== 200) {
+    const [code, status] = ghFail(repo);
+    return json({ ok: false, code }, status);
+  }
+  return json({
+    ok: true,
+    repo: slimRepo(repo.data),
+    branches: (branches.data || []).map((branch) => branch.name),
+    commits: (commits.data || []).map(slimCommit),
+  });
+}
+
+async function codeTree(env, creds, url) {
+  const full = repoPath(url.searchParams.get("id"));
+  if (!full) return json({ ok: false, code: "bad-repo" }, 400);
+  const ref = clean(url.searchParams.get("ref"), 120);
+  const path = (url.searchParams.get("path") || "").replace(/^\/+|\/+$/g, "");
+  const suffix = ref ? `?ref=${encodeURIComponent(ref)}` : "";
+  const res = await gh(env, creds, `/repos/${full}/contents/${encodeURI(path)}${suffix}`);
+  if (res.status !== 200) {
+    const [code, status] = ghFail(res);
+    return json({ ok: false, code }, status);
+  }
+  const rows = (Array.isArray(res.data) ? res.data : [res.data])
+    .map((entry) => ({
+      name: entry.name,
+      path: entry.path,
+      type: entry.type === "dir" ? "dir" : "file",
+      size: entry.size ?? 0,
+      sha: entry.sha,
+    }))
+    .sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name) : a.type === "dir" ? -1 : 1));
+  return json({ ok: true, path, rows });
+}
+
+async function codeFile(env, creds, url) {
+  const full = repoPath(url.searchParams.get("id"));
+  if (!full) return json({ ok: false, code: "bad-repo" }, 400);
+  const path = clean(url.searchParams.get("path"), 400);
+  if (!path) return json({ ok: false, code: "bad-path" }, 400);
+  const ref = clean(url.searchParams.get("ref"), 120);
+  const suffix = ref ? `?ref=${encodeURIComponent(ref)}` : "";
+  const res = await gh(env, creds, `/repos/${full}/contents/${encodeURI(path)}${suffix}`);
+  if (res.status !== 200) {
+    const [code, status] = ghFail(res);
+    return json({ ok: false, code }, status);
+  }
+  if (Array.isArray(res.data)) return json({ ok: false, code: "is-dir" }, 400);
+  if ((res.data.size ?? 0) > 512000) return json({ ok: false, code: "too-big" }, 413);
+  const content = b64.decode(res.data.content);
+  if (content.includes("\u0000")) return json({ ok: false, code: "binary" }, 415);
+  return json({
+    ok: true,
+    path: res.data.path,
+    sha: res.data.sha,
+    size: res.data.size,
+    html_url: res.data.html_url,
+    content,
+  });
+}
+
+async function codeSaveFile(env, creds, who, payload) {
+  if (!allow(who, "code.manage")) return json({ ok: false, code: "forbidden" }, 403);
+  const full = repoPath(payload.id);
+  const path = clean(payload.path, 400);
+  if (!full || !path) return json({ ok: false, code: "bad-path" }, 400);
+  const message = clean(payload.message, 200) || `تحديث ${path}`;
+  const branch = clean(payload.branch, 120);
+
+  const current = await gh(env, creds, `/repos/${full}/contents/${encodeURI(path)}${branch ? `?ref=${encodeURIComponent(branch)}` : ""}`);
+  const sha = current.status === 200 && !Array.isArray(current.data) ? current.data.sha : undefined;
+
+  const res = await gh(env, creds, `/repos/${full}/contents/${encodeURI(path)}`, {
+    method: "PUT",
+    payload: { message, content: b64.encode(String(payload.content ?? "")), branch: branch || undefined, sha },
+  });
+  if (res.status !== 200 && res.status !== 201) {
+    const [code, status] = ghFail(res);
+    return json({ ok: false, code }, status);
+  }
+  return json({
+    ok: true,
+    created: !sha,
+    path,
+    commit: {
+      sha: res.data.commit.sha,
+      short: String(res.data.commit.sha).slice(0, 7),
+      html_url: res.data.commit.html_url,
+      message,
+    },
+  });
+}
+
+async function codeDeleteFile(env, creds, who, url) {
+  if (!allow(who, "code.manage")) return json({ ok: false, code: "forbidden" }, 403);
+  const full = repoPath(url.searchParams.get("id"));
+  const path = clean(url.searchParams.get("path"), 400);
+  if (!full || !path) return json({ ok: false, code: "bad-path" }, 400);
+  const branch = clean(url.searchParams.get("ref"), 120);
+  const message = clean(url.searchParams.get("message"), 200) || `حذف ${path}`;
+
+  const current = await gh(env, creds, `/repos/${full}/contents/${encodeURI(path)}${branch ? `?ref=${encodeURIComponent(branch)}` : ""}`);
+  if (current.status !== 200 || Array.isArray(current.data)) return json({ ok: false, code: "not-found" }, 404);
+
+  const res = await gh(env, creds, `/repos/${full}/contents/${encodeURI(path)}`, {
+    method: "DELETE",
+    payload: { message, sha: current.data.sha, branch: branch || undefined },
+  });
+  if (res.status !== 200) {
+    const [code, status] = ghFail(res);
+    return json({ ok: false, code }, status);
+  }
+  return json({ ok: true, path, commit: { sha: res.data.commit.sha, html_url: res.data.commit.html_url } });
+}
+
+async function codeCommits(env, creds, url) {
+  const full = repoPath(url.searchParams.get("id"));
+  if (!full) return json({ ok: false, code: "bad-repo" }, 400);
+  const ref = clean(url.searchParams.get("ref"), 120);
+  const page = Math.max(1, int(url.searchParams.get("page"), 1));
+  const res = await gh(env, creds, `/repos/${full}/commits?per_page=25&page=${page}${ref ? `&sha=${encodeURIComponent(ref)}` : ""}`);
+  if (res.status !== 200) {
+    const [code, status] = ghFail(res);
+    return json({ ok: false, code }, status);
+  }
+  return json({ ok: true, page, rows: (res.data || []).map(slimCommit) });
+}
+
+async function codeCommit(env, creds, url) {
+  const full = repoPath(url.searchParams.get("id"));
+  const sha = clean(url.searchParams.get("sha"), 64);
+  if (!full || !sha) return json({ ok: false, code: "bad-repo" }, 400);
+  const res = await gh(env, creds, `/repos/${full}/commits/${sha}`);
+  if (res.status !== 200) {
+    const [code, status] = ghFail(res);
+    return json({ ok: false, code }, status);
+  }
+  return json({
+    ok: true,
+    sha: res.data.sha,
+    short: String(res.data.sha).slice(0, 7),
+    message: res.data.commit?.message || "",
+    author: res.data.commit?.author?.name || "",
+    date: res.data.commit?.author?.date || null,
+    html_url: res.data.html_url,
+    stats: res.data.stats || {},
+    files: (res.data.files || []).map((file) => ({
+      path: file.filename,
+      status: file.status,
+      additions: file.additions,
+      deletions: file.deletions,
+      patch: String(file.patch || "").slice(0, 4000),
+    })),
+  });
+}
+
 // ── router ───────────────────────────────────────────────────────────
 
 async function api(request, env, url, who) {
@@ -2077,6 +2395,26 @@ async function api(request, env, url, who) {
   }
 
   if (resource === "metrics" && method === "GET") return metrics(env, who);
+
+  if (resource === "code") {
+    if (!allow(who, "code.view")) return json({ ok: false, code: "forbidden" }, 403);
+    if (id === "status" && method === "GET") return codeStatus(env, who);
+    if (id === "token" && method === "POST") return codeSaveToken(env, who, await body(request));
+    if (id === "token" && method === "DELETE") return codeClearToken(env, who);
+
+    const creds = await githubCreds(env);
+    if (!creds.token) return json({ ok: false, code: "no-token" }, 503);
+
+    if (id === "repos" && method === "GET") return codeRepos(env, creds, url);
+    if (id === "repo" && method === "GET") return codeRepo(env, creds, url);
+    if (id === "tree" && method === "GET") return codeTree(env, creds, url);
+    if (id === "file" && method === "GET") return codeFile(env, creds, url);
+    if (id === "file" && method === "PUT") return codeSaveFile(env, creds, who, await body(request));
+    if (id === "file" && method === "DELETE") return codeDeleteFile(env, creds, who, url);
+    if (id === "commits" && method === "GET") return codeCommits(env, creds, url);
+    if (id === "commit" && method === "GET") return codeCommit(env, creds, url);
+    return json({ ok: false, code: "not-found" }, 404);
+  }
 
   if (resource === "agents") {
     if (!id && method === "GET") return listAgents(env);

@@ -43,6 +43,9 @@
   <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
     <rect x="6" y="6" width="12" height="12" /><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" />
   </symbol>
+  <symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+    <path d="M9 18l-6-6 6-6M15 6l6 6-6 6" />
+  </symbol>
   <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
     <path d="m5 5 14 14M19 5 5 19" />
   </symbol>
@@ -103,6 +106,7 @@
         <button type="button" class="ops__nav-btn" data-view="tasks" data-perm="tasks.manage"><svg aria-hidden="true"><use href="#i-check"/></svg> المهام <b data-count="tasks">0</b></button>
         <button type="button" class="ops__nav-btn" data-view="team"><svg aria-hidden="true"><use href="#i-team"/></svg> الفريق</button>
         <button type="button" class="ops__nav-btn" data-view="channels"><svg aria-hidden="true"><use href="#i-chat"/></svg> المحادثات <b data-count="chat">0</b></button>
+        <button type="button" class="ops__nav-btn" data-view="code" data-perm="code.view"><svg aria-hidden="true"><use href="#i-code"/></svg> الكود</button>
         <button type="button" class="ops__nav-btn" data-view="agents" data-perm="agents.manage"><svg aria-hidden="true"><use href="#i-cpu"/></svg> الوكلاء</button>
       </nav>
 
@@ -136,6 +140,7 @@
         <section class="ops__view" data-panel="tasks" aria-label="المهام" hidden></section>
         <section class="ops__view" data-panel="team" aria-label="الفريق" hidden></section>
         <section class="ops__view" data-panel="channels" aria-label="القنوات" hidden></section>
+        <section class="ops__view" data-panel="code" aria-label="الكود" hidden></section>
         <section class="ops__view" data-panel="agents" aria-label="الوكلاء" hidden></section>
       </div>
     </div>

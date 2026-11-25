@@ -44,14 +44,16 @@
     "team.manage": "إدارة الفريق والصلاحيات وكلمات المرور",
     "channels.manage": "قنواته ومحادثاته",
     "channels.post": "الكتابة في كل القنوات",
+    "code.view": "عرض المستودعات والملفات من GitHub",
+    "code.manage": "تعديل الملفات وعمل كوميتات",
     "agents.manage": "إدارة مفاتيح الوكلاء",
     "settings.manage": "إعدادات الحساب",
   };
   const ROLE_DEFAULTS = {
     owner: Object.keys(PERMISSION_LABELS),
     manager: Object.keys(PERMISSION_LABELS).filter((p) => !["settings.manage", "agents.manage"].includes(p)),
-    member: ["tasks.manage", "inquiries.view", "clients.view", "projects.view", "channels.manage"],
-    contractor: ["tasks.manage", "projects.view", "channels.manage"],
+    member: ["tasks.manage", "inquiries.view", "clients.view", "projects.view", "channels.manage", "code.view"],
+    contractor: ["tasks.manage", "projects.view", "channels.manage", "code.view"],
   };
 
   const state = {
@@ -155,6 +157,7 @@
     tasks: "المهام",
     team: "الفريق",
     channels: "القنوات",
+    code: "الكود",
     agents: "الوكلاء",
   };
 
@@ -822,6 +825,523 @@
       </section>`;
   }
 
+  // ── code: GitHub repositories ───────────────────────────────────────
+
+  const CODE_ERRORS = {
+    "no-token": "لسه مفيش توكن GitHub. اضغط «ربط GitHub» وحط التوكن.",
+    "bad-token": "التوكن مرفوض من GitHub. اعمل واحد جديد بصلاحية repo.",
+    "rate-limit": "GitHub حدّد عدد الطلبات دلوقتي. جرّب بعد شوية.",
+    "not-found": "الحاجة دي مش موجودة على GitHub (أو التوكن مالوش صلاحية عليها).",
+    conflict: "الملف اتغيّر من حد تاني. حدّث الصفحة وجرب تاني.",
+    forbidden: "الصلاحية دي مش متاحة لك.",
+    binary: "الملف ده مش نص، فمش هيتفتح هنا.",
+    "too-big": "الملف أكبر من إنه يتفتح في اللوحة.",
+    "bad-path": "اكتب مسار ملف صحيح.",
+    "token-shape": "ده مش شكل توكن GitHub صحيح.",
+  };
+  const codeMessage = (err) => CODE_ERRORS[String(err?.message || err)] || "تعذّر تنفيذ الطلب على GitHub.";
+  const fileSize = (bytes) => (bytes >= 1024 ? `${(bytes / 1024).toFixed(bytes >= 10240 ? 0 : 1)}KB` : `${bytes || 0}B`);
+
+  const codeState = () =>
+    (state.code ||= {
+      status: null,
+      repos: [],
+      owner: "",
+      query: "",
+      loading: false,
+      repo: null,
+      branches: [],
+      ref: "",
+      path: "",
+      tree: [],
+      commits: [],
+      tab: "files",
+      file: null,
+      saving: false,
+    });
+
+  async function codeLoadStatus() {
+    const c = codeState();
+    c.status = await api("/code/status").catch((err) => ({ ok: false, configured: false, error: err.message }));
+    return c.status;
+  }
+
+  async function codeLoadRepos() {
+    const c = codeState();
+    c.loading = true;
+    try {
+      const data = await api("/code/repos");
+      c.repos = data.rows || [];
+      c.owner = data.owner || "";
+    } finally {
+      c.loading = false;
+    }
+  }
+
+  async function codeRefreshRepo() {
+    const c = codeState();
+    if (!c.repo) return;
+    const data = await api(`/code/repo?id=${encodeURIComponent(c.repo.full_name)}`);
+    applyRepo(data);
+  }
+
+  function applyRepo(data) {
+    const c = codeState();
+    const previousRef = c.ref;
+    c.repo = data.repo;
+    c.branches = data.branches?.length ? data.branches : [data.repo.default_branch];
+    c.ref = c.branches.includes(previousRef) ? previousRef : data.repo.default_branch;
+    c.commits = data.commits || [];
+  }
+
+  async function codeOpenRepo(full) {
+    const c = codeState();
+    c.loading = true;
+    c.repo = { full_name: full };
+    c.file = null;
+    c.path = "";
+    c.tree = [];
+    c.ref = "";
+    render();
+    try {
+      const data = await api(`/code/repo?id=${encodeURIComponent(full)}`);
+      applyRepo(data);
+      await codeLoadTree("");
+    } catch (err) {
+      toast(codeMessage(err), "bad");
+      c.repo = null;
+    } finally {
+      c.loading = false;
+      render();
+    }
+  }
+
+  async function codeLoadTree(path) {
+    const c = codeState();
+    if (!c.repo) return;
+    const data = await api(
+      `/code/tree?id=${encodeURIComponent(c.repo.full_name)}&ref=${encodeURIComponent(c.ref)}&path=${encodeURIComponent(path || "")}`
+    );
+    c.path = data.path || "";
+    c.tree = data.rows || [];
+  }
+
+  async function codeOpenFile(path) {
+    const c = codeState();
+    if (!c.repo) return;
+    try {
+      const data = await api(
+        `/code/file?id=${encodeURIComponent(c.repo.full_name)}&ref=${encodeURIComponent(c.ref)}&path=${encodeURIComponent(path)}`
+      );
+      c.file = { ...data, dirty: false, isNew: false };
+      render();
+      $("[data-code-editor]")?.focus();
+    } catch (err) {
+      toast(codeMessage(err), "bad");
+    }
+  }
+
+  async function codeSwitchBranch(ref) {
+    const c = codeState();
+    c.ref = ref;
+    c.file = null;
+    try {
+      await codeLoadTree("");
+      await codeRefreshRepo();
+    } catch (err) {
+      toast(codeMessage(err), "bad");
+    }
+    render();
+  }
+
+  async function codeSave() {
+    const c = codeState();
+    if (!c.file || !c.repo) return;
+    const message = String($("[data-code-message]")?.value || "").trim();
+    const content = $("[data-code-editor]")?.value ?? "";
+    if (!message) return toast("اكتب رسالة الكوميت الأول.", "warn");
+    c.saving = true;
+    render();
+    try {
+      const data = await api("/code/file", {
+        method: "PUT",
+        body: { id: c.repo.full_name, path: c.file.path, content, message, branch: c.ref },
+      });
+      toast(`تم الكوميت ${data.commit.short} على ${c.ref}.`, "ok");
+      c.file = { ...c.file, content, isNew: false };
+      await codeRefreshRepo();
+      await codeLoadTree(c.path);
+    } catch (err) {
+      toast(codeMessage(err), "bad");
+    } finally {
+      c.saving = false;
+      render();
+    }
+  }
+
+  async function codeDeleteFile(path) {
+    const c = codeState();
+    if (!c.repo) return;
+    const target = path || c.file?.path;
+    if (!target) return;
+    if (!window.confirm(`حذف ${target} من ${c.repo.full_name}؟ الحذف كوميت حقيقي على GitHub.`)) return;
+    const message = String($("[data-code-message]")?.value || "").trim() || `حذف ${target}`;
+    try {
+      await api(
+        `/code/file?id=${encodeURIComponent(c.repo.full_name)}&ref=${encodeURIComponent(c.ref)}&path=${encodeURIComponent(target)}&message=${encodeURIComponent(message)}`,
+        { method: "DELETE" }
+      );
+      toast("اتحذف الملف واتسجل كوميت.", "ok");
+      if (c.file?.path === target) c.file = null;
+      await codeRefreshRepo();
+      await codeLoadTree(c.path);
+    } catch (err) {
+      toast(codeMessage(err), "bad");
+    }
+    render();
+  }
+
+  async function codeOpenCommit(sha) {
+    const c = codeState();
+    if (!c.repo) return;
+    try {
+      const data = await api(`/code/commit?id=${encodeURIComponent(c.repo.full_name)}&sha=${encodeURIComponent(sha)}`);
+      const files = (data.files || [])
+        .map(
+          (file) => `
+          <article class="ops-code__diff">
+            <header>
+              <span class="ops-code__path">${esc(file.path)}</span>
+              <span class="ops-chip">${esc(file.status)}</span>
+              <span class="ops-code__stat ops-code__stat--add">+${num(file.additions)}</span>
+              <span class="ops-code__stat ops-code__stat--del">−${num(file.deletions)}</span>
+            </header>
+            ${file.patch ? `<pre class="ops-diff">${diffHtml(file.patch)}</pre>` : `<p class="ops-empty">تغيير كبير أو ملف ثنائي، من غير diff نصي.</p>`}
+          </article>`
+        )
+        .join("");
+      openDialog({
+        title: `${data.short} · ${String(data.message).split("\n")[0].slice(0, 70)}`,
+        body: `
+          <p class="ops-code__meta">
+            ${esc(data.author)} · ${esc(ago(data.date))} · +${num(data.stats.additions)} −${num(data.stats.deletions)}
+            · <a href="${esc(data.html_url)}" target="_blank" rel="noopener">على GitHub</a>
+          </p>
+          ${files || `<p class="ops-empty">الكوميت ده من غير ملفات معدّلة.</p>`}`,
+        submit: "تمام",
+        onSubmit: async () => ({}),
+      });
+    } catch (err) {
+      toast(codeMessage(err), "bad");
+    }
+  }
+
+  function diffHtml(patch) {
+    return String(patch)
+      .split("\n")
+      .map((line) => {
+        const safe = esc(line);
+        if (line.startsWith("+++") || line.startsWith("---")) return `<span class="ops-diff__meta">${safe}</span>`;
+        if (line.startsWith("@@")) return `<span class="ops-diff__hunk">${safe}</span>`;
+        if (line.startsWith("+")) return `<span class="ops-diff__add">${safe}</span>`;
+        if (line.startsWith("-")) return `<span class="ops-diff__del">${safe}</span>`;
+        return `<span>${safe}</span>`;
+      })
+      .join("\n");
+  }
+
+  function dialogCodeFile() {
+    const c = codeState();
+    if (!c.repo) return;
+    openDialog({
+      title: `ملف جديد في ${c.repo.full_name}`,
+      body: `
+        <label class="ops-field"><span>المسار</span>
+          <input name="path" dir="ltr" placeholder="src/components/hero.tsx" autocomplete="off" required>
+        </label>
+        <p class="ops-field__hint">المجلدات تتعمل لوحدها. الملف بيتعمل على الفرع ${esc(c.ref)}.</p>`,
+      submit: "إنشاء",
+      onSubmit: async (fd) => {
+        const path = String(fd.get("path") || "").trim().replace(/^\/+/, "");
+        if (!path) {
+          toast("اكتب مسار الملف.", "warn");
+          return { keepOpen: true };
+        }
+        c.file = { path, content: "", dirty: true, isNew: true };
+        c.tab = "files";
+        render();
+        return {};
+      },
+    });
+  }
+
+  function dialogCodeToken() {
+    const c = codeState();
+    const status = c.status || {};
+    const fromEnv = status.source === "env";
+    openDialog({
+      title: "ربط GitHub",
+      body: `
+        <p class="ops-field__hint">
+          الكود مش بيتخزن عندنا خالص؛ اللوحة بتحادث GitHub بالتوكن ده بس.
+          الأفضل تحطه في Cloudflare كـ secret اسمه <code>GITHUB_TOKEN</code>،
+          والسطر اللي تحت للتجربة السريعة أو لو مش قادر تلمس إعدادات المشروع.
+        </p>
+        ${
+          fromEnv
+            ? `<p class="ops-chip ops-chip--mint">التوكن مقروء من إعدادات المشروع ومش محتاج يتكتب هنا.</p>`
+            : `
+        <label class="ops-field"><span>التوكن (fine-grained، قراءة وكتابة Contents + قراءة Metadata)</span>
+          <input name="token" type="password" dir="ltr" placeholder="github_pat_…" autocomplete="off">
+        </label>`
+        }
+        <label class="ops-field"><span>الحساب أو المؤسسة (اختياري — يحدد المستودعات المعروضة)</span>
+          <input name="owner" dir="ltr" value="${esc(status.owner || "")}" placeholder="yk445kauod-coder" autocomplete="off">
+        </label>
+        ${status.login ? `<p class="ops-field__hint">متصل حاليًا كـ <b dir="ltr">${esc(status.login)}</b>.</p>` : ""}`,
+      submit: "حفظ",
+      onSubmit: async (fd) => {
+        try {
+          await api("/code/token", {
+            method: "POST",
+            body: { token: String(fd.get("token") || "").trim(), owner: String(fd.get("owner") || "").trim() },
+          });
+          await codeLoadStatus();
+          await codeLoadRepos();
+          toast("اتربط بـ GitHub.", "ok");
+          render();
+          return {};
+        } catch (err) {
+          toast(codeMessage(err), "bad");
+          return { keepOpen: true };
+        }
+      },
+    });
+  }
+
+  function codeCrumbs() {
+    const c = codeState();
+    if (!c.repo) return "";
+    const parts = c.path ? c.path.split("/") : [];
+    const trail = parts
+      .map((part, index) => {
+        const path = parts.slice(0, index + 1).join("/");
+        return `<span aria-hidden="true">/</span><button class="ops-code__crumb" type="button" data-action="code-dir" data-path="${esc(path)}">${esc(part)}</button>`;
+      })
+      .join("");
+    return `
+      <nav class="ops-code__crumbs" aria-label="مسار المجلد">
+        <button class="ops-code__crumb" type="button" data-action="code-dir" data-path="">${esc(c.repo.name)}</button>
+        ${trail}
+      </nav>`;
+  }
+
+  function renderCodeRepoList() {
+    const c = codeState();
+    const rows = c.repos.filter((repo) => !c.query || repo.full_name.toLowerCase().includes(c.query.toLowerCase()));
+    return `
+      <section class="ops-panel ops-code__repos">
+        <div class="ops-panel__head">
+          <h2>المستودعات</h2>
+          ${can("settings.manage") ? `<button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="code-token">ربط</button>` : ""}
+          <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="code-refresh">تحديث</button>
+        </div>
+        <div class="ops-panel__body ops-panel__body--flush">
+          <div class="ops-code__search">
+            <input class="ops-input" data-code-search value="${esc(c.query)}" placeholder="ابحث في ${num(c.repos.length)} مستودع…" aria-label="بحث في المستودعات">
+          </div>
+          ${
+            c.loading && !c.repos.length
+              ? `<p class="ops-empty">جارٍ تحميل المستودعات…</p>`
+              : rows.length
+                ? `<ul class="ops-list">${rows
+                    .map(
+                      (repo) => `
+                    <li>
+                      <button class="ops-list__row" type="button" data-action="code-open-repo" data-id="${esc(repo.full_name)}"${c.repo?.full_name === repo.full_name ? ' aria-current="true"' : ""}>
+                        <span class="ops-list__main">
+                          <span class="ops-list__title" dir="ltr">${esc(repo.name)}</span>
+                          <span class="ops-list__meta" dir="ltr">${esc(repo.owner)} · ${esc(repo.language || "—")} · ${esc(repo.pushed_at ? ago(repo.pushed_at) : "")}</span>
+                        </span>
+                        <span class="ops-chip ${repo.private ? "" : "ops-chip--mint"}">${repo.private ? "خاص" : "عام"}</span>
+                      </button>
+                    </li>`
+                    )
+                    .join("")}</ul>`
+                : `<p class="ops-empty">${c.repos.length ? "مفيش مستودع بالاسم ده." : "مفيش مستودعات ظاهرة للحساب ده."}</p>`
+          }
+        </div>
+      </section>`;
+  }
+
+  function renderCodeExplorer() {
+    const c = codeState();
+    if (!c.repo) {
+      return `
+        <section class="ops-panel ops-code__empty">
+          <div class="ops-empty">
+            <p>اختار مستودع من الشمال، وهتلاقي ملفاته وكوميتاته هنا.</p>
+            <p class="ops-field__hint">مفيش أي كود متخزّن عندنا — كل حاجة بتتقرا من GitHub وقت الطلب.</p>
+          </div>
+        </section>`;
+    }
+    const repo = c.repo;
+    const tabs = `
+      <div class="ops-code__tabs" role="group" aria-label="عرض المستودع">
+        <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="code-tab" data-tab="files" aria-pressed="${c.tab === "files"}">الملفات</button>
+        <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="code-tab" data-tab="commits" aria-pressed="${c.tab === "commits"}">الكوميتات</button>
+      </div>`;
+
+    const head = `
+      <div class="ops-panel__head ops-code__head">
+        <div class="ops-code__title">
+          <h2 dir="ltr">${esc(repo.full_name)}</h2>
+          <p>${esc(repo.description || "من غير وصف")}${repo.stars ? ` · ★ ${num(repo.stars)}` : ""}</p>
+        </div>
+        <label class="ops-code__branch">
+          <span class="sr-only">الفرع</span>
+          <select class="ops-input" data-code-branch aria-label="الفرع">
+            ${c.branches.map((branch) => `<option value="${esc(branch)}"${branch === c.ref ? " selected" : ""}>${esc(branch)}</option>`).join("")}
+          </select>
+        </label>
+        <a class="ops-btn ops-btn--ghost ops-btn--sm" href="${esc(repo.html_url)}" target="_blank" rel="noopener">فتح على GitHub</a>
+      </div>`;
+
+    const filesView = `
+      ${codeCrumbs()}
+      <div class="ops-panel__body ops-panel__body--flush">
+        ${
+          c.tree.length
+            ? `<ul class="ops-list">${c.tree
+                .map(
+                  (row) => `
+              <li>
+                <button class="ops-list__row" type="button" data-action="${row.type === "dir" ? "code-dir" : "code-file"}" data-path="${esc(row.path)}">
+                  <span class="ops-code__icon">${row.type === "dir" ? "▸" : "·"}</span>
+                  <span class="ops-list__main">
+                    <span class="ops-list__title ops-code__path">${esc(row.name)}${row.type === "dir" ? "/" : ""}</span>
+                  </span>
+                  ${row.type === "file" ? `<span class="ops-code__size">${fileSize(row.size)}</span>` : ""}
+                </button>
+              </li>`
+                )
+                .join("")}</ul>`
+            : `<p class="ops-empty">المجلد فاضي.</p>`
+        }
+      </div>
+      <footer class="ops-code__foot">
+        ${
+          can("code.manage")
+            ? `<button class="ops-btn ops-btn--sm" type="button" data-action="code-new-file">ملف جديد</button>`
+            : `<span class="ops-field__hint">عرض فقط — التعديل محتاج صلاحية تعديل الكود.</span>`
+        }
+      </footer>`;
+
+    const commitsView = `
+      <div class="ops-panel__body ops-panel__body--flush">
+        ${
+          c.commits.length
+            ? `<ul class="ops-list">${c.commits
+                .map(
+                  (commit) => `
+              <li>
+                <button class="ops-list__row" type="button" data-action="code-commit" data-sha="${esc(commit.sha)}">
+                  <span class="ops-list__main">
+                    <span class="ops-list__title">${esc(commit.message)}</span>
+                    <span class="ops-list__meta">${esc(commit.author)} · ${esc(ago(commit.date))}</span>
+                  </span>
+                  <span class="ops-code__sha" dir="ltr">${esc(commit.short)}</span>
+                </button>
+              </li>`
+                )
+                .join("")}</ul>`
+            : `<p class="ops-empty">مفيش كوميتات على الفرع ده.</p>`
+        }
+      </div>`;
+
+    return `
+      <section class="ops-panel ops-code__explorer">
+        ${head}
+        ${tabs}
+        ${c.tab === "files" ? filesView : commitsView}
+      </section>`;
+  }
+
+  function renderCodeEditor() {
+    const c = codeState();
+    if (!c.file || !c.repo) return "";
+    const editable = can("code.manage");
+    const lines = String(c.file.content || "").split("\n").length;
+    return `
+      <section class="ops-panel ops-code__editor-panel">
+        <div class="ops-panel__head">
+          <div class="ops-code__title">
+            <h2 class="ops-code__path" dir="ltr">${esc(c.file.path)}</h2>
+            <p>${num(lines)} سطر · ${esc(c.ref)}${c.file.isNew ? " · ملف جديد" : ""}</p>
+          </div>
+          <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="code-close-file">إغلاق</button>
+        </div>
+        <div class="ops-panel__body">
+          <textarea class="ops-code__editor" data-code-editor dir="ltr" spellcheck="false" aria-label="${esc(c.file.path)}"${editable ? "" : " readonly"}>${esc(c.file.content || "")}</textarea>
+          ${
+            editable
+              ? `<div class="ops-code__commit-bar">
+            <input class="ops-input" data-code-message placeholder="رسالة الكوميت: إيه اللي اتغير؟" maxlength="180" aria-label="رسالة الكوميت">
+            <button class="ops-btn" type="button" data-action="code-save"${c.saving ? " disabled" : ""}>${c.saving ? "بيتحفظ…" : "كوميت"}</button>
+            <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="code-delete" data-path="${esc(c.file.path)}"${c.file.isNew ? " hidden" : ""}>حذف</button>
+          </div>`
+              : ""
+          }
+        </div>
+      </section>`;
+  }
+
+  let codeBooted = false;
+  async function codeBootstrap() {
+    if (codeBooted) return;
+    codeBooted = true;
+    try {
+      const status = await codeLoadStatus();
+      if (status.configured) await codeLoadRepos();
+    } catch (err) {
+      toast(codeMessage(err), "bad");
+    }
+    if (state.view === "code") render();
+  }
+
+  function renderCode() {
+    const c = codeState();
+    if (!c.status) {
+      codeBootstrap();
+      return `<p class="ops-empty">جارٍ الاتصال بـ GitHub…</p>`;
+    }
+    if (!c.status.configured) {
+      return `
+        <section class="ops-panel">
+          <div class="ops-panel__head"><h2>GitHub</h2></div>
+          <div class="ops-panel__body">
+            <p class="ops-empty">لسه مفيش توكن مربوط، فمفيش مستودعات تتعرض.</p>
+            <p class="ops-field__hint">
+              اعمل fine-grained token على GitHub بصلاحية قراءة وكتابة Contents وقراءة Metadata،
+              وبعدها اربطه هنا. الكود نفسه مش بيتخزن عندنا — كل قراءة وكتابة بتروح لـ GitHub مباشرة.
+            </p>
+            ${
+              can("settings.manage")
+                ? `<button class="ops-btn" type="button" data-action="code-token">ربط GitHub</button>`
+                : `<p class="ops-field__hint">محتاج المالك يربط التوكن الأول.</p>`
+            }
+          </div>
+        </section>`;
+    }
+    return `
+      <div class="ops-code">
+        ${renderCodeRepoList()}
+        ${renderCodeExplorer()}
+      </div>
+      ${renderCodeEditor()}`;
+  }
+
+
 
   // ── drawer scaffolding ─────────────────────────────────────────────
 
@@ -1442,6 +1962,7 @@
       tasks: renderTasks,
       team: renderTeam,
       channels: renderChannels,
+      code: renderCode,
       agents: renderAgents,
     };
     const panel = $(`[data-panel="${state.view}"]`);
@@ -1616,6 +2137,34 @@
     "new-project": (el) => dialogProject(el.dataset.client),
     "new-agent": () => dialogAgent(),
     "edit-member": (el) => dialogMember(state.data.members.find((m) => m.id === Number(el.dataset.id))),
+    "code-refresh": async () => {
+      await codeLoadStatus();
+      if (codeState().status?.configured) await codeLoadRepos();
+      render();
+    },
+    "code-open-repo": (el) => codeOpenRepo(el.dataset.id),
+    "code-dir": async (el) => {
+      try {
+        await codeLoadTree(el.dataset.path);
+      } catch (err) {
+        toast(codeMessage(err), "bad");
+      }
+      render();
+    },
+    "code-file": (el) => codeOpenFile(el.dataset.path),
+    "code-close-file": () => {
+      codeState().file = null;
+      render();
+    },
+    "code-save": () => codeSave(),
+    "code-delete": (el) => codeDeleteFile(el.dataset.path),
+    "code-commit": (el) => codeOpenCommit(el.dataset.sha),
+    "code-tab": (el) => {
+      codeState().tab = el.dataset.tab;
+      render();
+    },
+    "code-new-file": () => dialogCodeFile(),
+    "code-token": () => dialogCodeToken(),
   };
 
   document.addEventListener("click", (event) => {
@@ -1634,6 +2183,12 @@
     });
   });
 
+  document.addEventListener("change", (event) => {
+    if (event.target.matches("[data-code-branch]")) {
+      codeSwitchBranch(event.target.value).catch((err) => toast(codeMessage(err), "bad"));
+    }
+  });
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && state.drawer) closeDrawer();
     if ((event.key === "Enter" || event.key === " ") && event.target.classList?.contains("ops-lead")) {
@@ -1643,7 +2198,21 @@
   });
 
   let filterTimer = null;
+  let codeSearchTimer = null;
   document.addEventListener("input", (event) => {
+    if (event.target.matches("[data-code-search]")) {
+      codeState().query = event.target.value;
+      clearTimeout(codeSearchTimer);
+      codeSearchTimer = setTimeout(() => {
+        render();
+        const box = $("[data-code-search]");
+        if (box) {
+          box.focus();
+          box.setSelectionRange(box.value.length, box.value.length);
+        }
+      }, 140);
+      return;
+    }
     if (event.target.dataset.action !== "filter-pipeline") return;
     state.filters.pipeline = event.target.value;
     clearTimeout(filterTimer);
