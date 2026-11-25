@@ -35,7 +35,7 @@ export default function Portal() {
               <option value="static">موقع ستاتيك — 8,000 جنيه</option>
               <option value="identity">هوية كاملة — 10,000 جنيه</option>
               <option value="dynamic">موقع ديناميك — من 18,000 جنيه</option>
-              <option value="transform">تحول كامل — من 28,000 جنيه</option>
+              <option value="transform">تحول كامل — السعر بالاتفاق</option>
             </select>
           </div>
 

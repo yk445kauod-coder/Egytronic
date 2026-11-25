@@ -154,7 +154,13 @@ if (pricing) {
   if (pricing.currency !== "EGP") fail("pricing.json: currency is not EGP");
   if (pricing.packages.length !== 6) fail(`pricing.json: ${pricing.packages.length} packages (expected 6)`);
   for (const pkg of pricing.packages) {
-    if (!Number.isFinite(pkg.price) || pkg.price <= 0) fail(`pricing.json: ${pkg.id} has no price`);
+    // A package either publishes a number or is explicitly quoted after the scope is agreed.
+    if (pkg.quote) {
+      if (pkg.price) fail(`pricing.json: ${pkg.id} is marked quote-only but still carries a price`);
+      if (!pkg.quote_note) fail(`pricing.json: ${pkg.id} is quote-only with no explanation`);
+    } else if (!Number.isFinite(pkg.price) || pkg.price <= 0) {
+      fail(`pricing.json: ${pkg.id} has no price`);
+    }
     if (!pkg.name_en) fail(`pricing.json: ${pkg.id} has no English name`);
   }
   if (!pricing.contact?.inquiry_endpoint) fail("pricing.json: no inquiry endpoint documented");

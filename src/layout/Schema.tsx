@@ -28,7 +28,8 @@ export function organizationNode() {
     areaServed: { "@type": "Country", name: "Egypt" },
     currenciesAccepted: catalog.currency,
     paymentAccepted: "Bank transfer, cash",
-    priceRange: "EGP 5,000 - EGP 28,000",
+    // Priced range only: the transformation package is quoted after the scope is agreed.
+    priceRange: "EGP 5,000 - EGP 18,000",
   };
 }
 
@@ -86,20 +87,15 @@ export function offerCatalogNode(locale: Locale) {
     name: { ar: "باقات Egytronic", en: "Egytronic packages" },
     itemListElement: [
       ...catalog.packages.map((pkg) => serviceOffer(pkg, locale)),
+      // No price on this one: it is quoted after the scope is agreed, and an Offer without a
+      // price is invalid structured data.
       {
-        "@type": "Offer",
+        "@type": "Service",
         name: bundle[locale].name,
+        serviceType: bundle[locale].name,
         description: bundle[locale].summary,
-        priceCurrency: catalog.currency,
-        priceSpecification: { "@type": "PriceSpecification", minPrice: bundle.price, priceCurrency: catalog.currency },
-        availability: "https://schema.org/InStock",
-        itemOffered: {
-          "@type": "Service",
-          name: bundle[locale].name,
-          serviceType: bundle[locale].name,
-          description: bundle[locale].summary,
-          provider: { "@id": `${BASE}/#organization` },
-        },
+        provider: { "@id": `${BASE}/#organization` },
+        areaServed: { "@type": "Country", name: { ar: "مصر", en: "Egypt" } },
       },
     ],
   };

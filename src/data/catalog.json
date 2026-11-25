@@ -11,8 +11,8 @@
     "github": "https://github.com/yk445kauod-coder"
   },
   "facts": {
-    "ar": "Egytronic شركة برمجيات مصرية تبني المواقع والهويات والأنظمة الإدارية وأنظمة الذكاء الاصطناعي، وتسلّمها جاهزة للتشغيل. أسعارها معلنة بالجنيه المصري قبل بدء العمل: خمس باقات من 5,000 إلى 28,000 جنيه، ودفع على مرحلتين 50% عند البدء و50% قبل التسليم.",
-    "en": "Egytronic is an Egyptian software company that builds websites, brand identities, business systems and AI systems, delivered ready to run. Prices are published in Egyptian pounds before work starts: five packages from EGP 5,000 to EGP 28,000, paid in two instalments, 50% at kick-off and 50% before delivery."
+    "ar": "Egytronic شركة برمجيات مصرية تبني المواقع والهويات والأنظمة الإدارية وأنظمة الذكاء الاصطناعي، وتسلّمها جاهزة للتشغيل. أسعارها معلنة بالجنيه المصري قبل بدء العمل: أربع باقات من 5,000 إلى 18,000 جنيه، والتحول الرقمي الكامل سعره يتحدد بعد الاتفاق على التفاصيل. الدفع على مرحلتين 50% عند البدء و50% قبل التسليم.",
+    "en": "Egytronic is an Egyptian software company that builds websites, brand identities, business systems and AI systems, delivered ready to run. Prices are published in Egyptian pounds before work starts: four packages from EGP 5,000 to EGP 18,000, while end-to-end transformation is priced after the scope is agreed. Paid in two instalments, 50% at kick-off and 50% before delivery."
   },
   "packages": [
     {
@@ -68,10 +68,8 @@
   ],
   "bundle": {
     "id": "transformation",
-    "price": 28000,
-    "priceFrom": true,
-    "ar": { "name": "التحول الرقمي الكامل", "summary": "من 28,000 جنيه. للمشاريع الأكبر، ونحدد النطاق معك بعد التواصل.", "includes": ["جلسة تشخيص وتقرير بالأولويات", "هوية كاملة (لوجو وألوان وخطوط)", "موقع ديناميك بباكند وقاعدة بيانات", "Google Business وحسابات التواصل جاهزة", "تدريب على الاستخدام", "شهر متابعة بعد التسليم"] },
-    "en": { "name": "End-to-end digital transformation", "summary": "From EGP 28,000. For larger projects, the scope is agreed after we talk.", "includes": ["Diagnostic session and a prioritised report", "Full brand identity (logo, colours, type)", "Dynamic site with backend and database", "Google Business profile and social accounts set up", "Training on how to use it", "One month of follow-up after delivery"] }
+    "ar": { "name": "التحول الرقمي الكامل", "summary": "سعره يتحدد بعد الاتفاق على التفاصيل: بنحدد النطاق معك الأول، وبعدها بنكتب السعر في العرض. للمشاريع الكبيرة اللي محتاجة تقييم وترتيب أولويات قبل أي تسعير.", "includes": ["جلسة تشخيص وتقرير بالأولويات", "هوية كاملة (لوجو وألوان وخطوط)", "موقع ديناميك بباكند وقاعدة بيانات", "Google Business وحسابات التواصل جاهزة", "تدريب على الاستخدام", "شهر متابعة بعد التسليم"] },
+    "en": { "name": "End-to-end digital transformation", "summary": "Its price is set after the scope is agreed: we settle it with you first, then write the price into the offer. For larger projects that need an assessment and priorities before anything is priced.", "includes": ["Diagnostic session and a prioritised report", "Full brand identity (logo, colours, type)", "Dynamic site with backend and database", "Google Business profile and social accounts set up", "Training on how to use it", "One month of follow-up after delivery"] }
   },
   "terms": {
     "ar": ["استضافة وباكند مجانًا في السنة الأولى", "الدومين منفصل أو بفاتورة", "50% مقدمًا و50% قبل التسليم"],

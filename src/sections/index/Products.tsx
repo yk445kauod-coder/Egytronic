@@ -100,7 +100,7 @@ export default function Products() {
 
       <div className="prods__foot reveal">
         <a className="px-btn" href="/pricing/">التفاصيل وحجز الباقة</a>
-        <p className="prods__note">التحول الرقمي الكامل من 28,000 جنيه · استضافة وباكند مجانًا في السنة الأولى · الدومين منفصل أو بفاتورة</p>
+        <p className="prods__note">التحول الرقمي الكامل سعره يتحدد بعد الاتفاق على التفاصيل · استضافة وباكند مجانًا في السنة الأولى · الدومين منفصل أو بفاتورة</p>
       </div>
     </div>
   </section>

@@ -173,6 +173,12 @@
   font-size: clamp(32px, 4vw, 44px);
   font-weight: 400;
   line-height: 1;
+}
+
+/* A quoted package has words where a price would be, so it uses the body face, not mono. */
+.bundle__price--quote strong {
+  font-family: var(--font-body, inherit);
+  font-size: clamp(20px, 2.2vw, 26px);
   color: var(--gold);
 }
 

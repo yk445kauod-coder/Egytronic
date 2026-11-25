@@ -145,8 +145,8 @@ export const POSTS: Post[] = [
       en: "What does digital transformation cost a small company in Egypt?",
     },
     excerpt: {
-      ar: "الأرقام المعلنة: من 5,000 جنيه للوجو إلى 28,000 جنيه للتحول الكامل. والسؤال الأهم: ما الذي يحدد أين تقع شركتك على هذا المدى؟",
-      en: "Published numbers: from EGP 5,000 for a logo to EGP 28,000 for full transformation. The real question is what decides where your company sits on that range.",
+      ar: "من 5,000 جنيه للوجو إلى 18,000 للديناميك، والتحول الكامل سعره بالاتفاق. ما الذي يحدد أين تقع شركتك على هذا المدى؟",
+      en: "From EGP 5,000 for a logo to EGP 18,000 for a dynamic site, with full transformation priced by agreement. What decides where your company sits?",
     },
     body: {
       ar: [
@@ -157,7 +157,7 @@ export const POSTS: Post[] = [
         "- موقع ستاتيك حتى 5 صفحات: 8,000 جنيه، تسليم 7–10 أيام.",
         "- هوية كاملة: 10,000 جنيه.",
         "- موقع ديناميك بباكند: من 18,000 جنيه، تسليم 3–4 أسابيع.",
-        "- التحول الرقمي الكامل: من 28,000 جنيه، ويشمل التقييم والهوية والموقع والنظام والتدريب والمتابعة.",
+        "- التحول الرقمي الكامل: سعره يتحدد بعد الاتفاق على التفاصيل، ويشمل التقييم والهوية والموقع والنظام والتدريب والمتابعة.",
         "الدفع على مرحلتين: 50% عند البدء و50% قبل التسليم. الاستضافة والباكند مجانًا في السنة الأولى.",
         "## ما الذي يرفع السعر فعليًا",
         "ثلاثة عوامل فقط: عدد المستخدمين والأدوار، وعدد الحالات التي يجب أن يتعامل معها النظام، وجودة البيانات التي ستُنقل إليه. أي عرض سعر لا يذكر هذه الثلاثة لا يمكن مقارنته بعرض آخر.",
@@ -176,7 +176,7 @@ export const POSTS: Post[] = [
         "- Static site of up to 5 pages: EGP 8,000, delivered in 7–10 days.",
         "- Full brand identity: EGP 10,000.",
         "- Dynamic site with a backend: from EGP 18,000, delivered in 3–4 weeks.",
-        "- End-to-end digital transformation: from EGP 28,000, including assessment, identity, site, system, training and follow-up.",
+        "- End-to-end digital transformation: priced after the scope is agreed, including assessment, identity, site, system, training and follow-up.",
         "Payment is in two instalments: 50% at kick-off and 50% before delivery. Hosting and backend are free in year one.",
         "## What actually raises the price",
         "Three factors only: the number of users and roles, the number of cases the system must handle, and the quality of the data being migrated. Any quote that omits these three cannot be compared with another.",

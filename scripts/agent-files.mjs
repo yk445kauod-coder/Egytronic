@@ -46,8 +46,10 @@ const packages = [
     order: 6,
     name: catalog.bundle.ar.name,
     name_en: catalog.bundle.en.name,
-    price: catalog.bundle.price,
-    price_from: true,
+    price: catalog.bundle.price ?? null,
+    price_from: Boolean(catalog.bundle.price),
+    quote: catalog.bundle.price == null,
+    quote_note: "السعر يتحدد بعد الاتفاق على التفاصيل؛ يُكتب في العرض قبل بدء العمل (price set after the scope is agreed, written into the offer before work starts)",
     currency: catalog.currency,
     summary: catalog.bundle.ar.summary,
     summary_en: catalog.bundle.en.summary,
@@ -117,7 +119,7 @@ ${catalog.systems.map((s) => `- ${s.ar} (${s.en})`).join("\n")}
 
 ## الأسعار المعلنة (${catalog.currency})
 ${packages
-  .map((p) => `- ${p.name} (${p.name_en}): ${p.price_from ? "من " : ""}${p.price.toLocaleString("en-US")} جنيه · ${p.delivery ?? "يُحدَّد بعد التواصل"} · ${p.url}`)
+  .map((p) => `- ${p.name} (${p.name_en}): ${p.quote ? "السعر يتحدد بعد الاتفاق على التفاصيل" : `${p.price_from ? "من " : ""}${p.price.toLocaleString("en-US")} جنيه`} · ${p.delivery ?? "يُحدَّد بعد التواصل"} · ${p.url}`)
   .join("\n")}
 
 الشروط: ${catalog.terms.ar.join(" · ")}.
@@ -155,12 +157,12 @@ ${catalog.facts.en}
 ${packages
   .map(
     (p) =>
-      `### ${p.name} — ${p.price_from ? "من " : ""}${p.price.toLocaleString("en-US")} ${catalog.currency}\n` +
+      `### ${p.name} — ${p.quote ? "السعر يتحدد بعد الاتفاق على التفاصيل" : `${p.price_from ? "من " : ""}${p.price.toLocaleString("en-US")} ${catalog.currency}`}\n` +
       `${p.summary}\n` +
       `مناسب لـ: ${p.for ?? "—"}\n` +
       `يشمل: ${(p.includes ?? []).join("، ")}\n` +
       `التسليم: ${p.delivery ?? "يُحدَّد بعد التواصل"}\n` +
-      `English: ${p.name_en}, ${p.price_from ? "from " : ""}${p.price} ${catalog.currency}, ${p.summary_en}`
+      `English: ${p.name_en}, ${p.quote ? "price quoted after the scope is agreed" : `${p.price_from ? "from " : ""}${p.price} ${catalog.currency}`}, ${p.summary_en}`
   )
   .join("\n\n")}
 

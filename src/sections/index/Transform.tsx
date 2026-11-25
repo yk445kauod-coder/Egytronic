@@ -34,8 +34,8 @@ export default function Transform() {
         </ol>
 
         <div className="transform__band reveal">
-          <p className="transform__price"><span>التحول الكامل</span> من <b>28,000</b> جنيه</p>
-          <p className="transform__note">بعد أول مكالمة نحدد النطاق: ترحيل البيانات والتكييف والتدريب. الدفع 50% عند البدء و50% قبل التسليم.</p>
+          <p className="transform__price"><span>التحول الكامل</span> سعره يتحدد بعد الاتفاق</p>
+          <p className="transform__note">بعد أول مكالمة نحدد النطاق والتفاصيل، وبعدها بنكتب السعر في العرض. الدفع 50% عند البدء و50% قبل التسليم.</p>
           <a className="px-btn" href="/contact/">اطلب تقييم لمشروعك</a>
         </div>
       </div>

@@ -8,7 +8,7 @@ export default function AllInOne() {
           <span className="bundle__badge">ALL-IN-ONE</span>
           <h3 id="bundle-title">End-to-end digital transformation</h3>
         </div>
-        <p className="bundle__lead">From EGP 28,000. For larger projects; we set the scope with you after we talk.</p>
+        <p className="bundle__lead">Its price is set after the scope is agreed: we settle the scope with you first, then write the price into the offer before any work starts.</p>
 
         <ul className="bundle__list">
           <li>Diagnostic session and a prioritised report</li>
@@ -21,9 +21,8 @@ export default function AllInOne() {
 
         <div className="bundle__foot">
           <p className="bundle__price">
-            <span className="pricerow__from">Starting at</span>
-            <strong>28,000</strong>
-            <span>EGP</span>
+            <span className="pricerow__from">Price</span>
+            <strong>set after the scope is agreed</strong>
           </p>
           <a className="px-btn" href="mailto:egytronic.official@googlemail.com">
             Book a package

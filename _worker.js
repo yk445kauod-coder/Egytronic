@@ -1532,7 +1532,8 @@ async function mcp(request, env, url) {
           serverInfo: { name: "egytronic-ops", version: "1.0.0" },
           instructions:
             "Egytronic operations server — run by Yousef Khamis, an Egyptian software studio. " +
-            "What we sell: logo 5,000 · landing 6,000 · static site 8,000 · identity 10,000 · dynamic site from 18,000 EGP, " +
+            "What we sell: logo 5,000 · landing 6,000 · static site 8,000 · identity 10,000 · dynamic site from 18,000 EGP; " +
+            "full digital transformation is quoted only after the scope is agreed, so it has no published price. " +
             "50% upfront and 50% before delivery. Management systems (ERP, CRM, POS, hotel, clinic, LMS) are installed, " +
             "customised and trained on — never claim Egytronic wrote them. " +
             "Never invent testimonials, client counts, ratings or certifications, and never publish a price that is not on this list. " +

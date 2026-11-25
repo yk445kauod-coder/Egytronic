@@ -100,7 +100,7 @@ export default function Products() {
 
       <div className="prods__foot reveal">
         <a className="px-btn" href="/pricing/">Details and booking</a>
-        <p className="prods__note">Full digital transformation from EGP 28,000 · hosting and backend free in the first year · domain separate or by invoice</p>
+        <p className="prods__note">Full digital transformation is priced after the scope is agreed · hosting and backend free in the first year · domain separate or by invoice</p>
       </div>
     </div>
   </section>

@@ -205,8 +205,8 @@ INDEX.update({
         '<span class="prod__cur">from</span> <span class="prod__amt">18,000</span> <span class="prod__cur">EGP</span>',
     '<a class="px-btn" href="/pricing/">التفاصيل وحجز الباقة</a>':
         '<a class="px-btn" href="pricing/">Details and booking</a>',
-    '<p class="prods__note">التحول الرقمي الكامل من 28,000 جنيه · استضافة وباكند مجانًا في السنة الأولى · الدومين منفصل أو بفاتورة</p>':
-        '<p class="prods__note">Full digital transformation from EGP 28,000 · hosting and backend free in the first year · domain separate or by invoice</p>',
+    '<p class="prods__note">التحول الرقمي الكامل سعره يتحدد بعد الاتفاق على التفاصيل · استضافة وباكند مجانًا في السنة الأولى · الدومين منفصل أو بفاتورة</p>':
+        '<p class="prods__note">Full digital transformation is priced after the scope is agreed · hosting and backend free in the first year · domain separate or by invoice</p>',
     '<a href="/software/">': '<a href="software/">',
     '          البرمجيات\n': '          Software\n',
 })
@@ -292,7 +292,7 @@ CONTACT = {
     '<option value="static">موقع ستاتيك — 8,000 جنيه</option>': '<option value="static">Static site — EGP 8,000</option>',
     '<option value="identity">هوية كاملة — 10,000 جنيه</option>': '<option value="identity">Full identity — EGP 10,000</option>',
     '<option value="dynamic">موقع ديناميك — من 18,000 جنيه</option>': '<option value="dynamic">Dynamic site — from EGP 18,000</option>',
-    '<option value="transform">تحول كامل — من 28,000 جنيه</option>': '<option value="transform">Full transformation — from EGP 28,000</option>',
+    '<option value="transform">تحول كامل — السعر بالاتفاق</option>': '<option value="transform">Full transformation — priced by agreement</option>',
     '<label for="cf-message">الرسالة</label>': '<label for="cf-message">Message</label>',
     'placeholder="ما المشروع؟ وما أهم ما تحتاجه؟"': 'placeholder="What is the project, and what matters most to you?"',
     '<label for="cf-website">موقعك</label>': '<label for="cf-website">Your website</label>',
@@ -555,8 +555,12 @@ PRICING.update({
         '<p class="pricerow__desc">A full identity: logo, colours, type and a usage guide.</p>',
     '<p class="pricerow__desc">موقع بباكند يناسب المحتوى والوظائف المتغيرة.</p>':
         '<p class="pricerow__desc">A site with a backend for changing content and features.</p>',
-    '<p class="bundle__lead">من 28,000 جنيه. للمشاريع الأكبر، ونحدد النطاق معك بعد التواصل.</p>':
-        '<p class="bundle__lead">From EGP 28,000. For larger projects; we set the scope with you after we talk.</p>',
+    '<p class="bundle__lead">سعره يتحدد بعد الاتفاق على التفاصيل: بنحدد النطاق معك الأول، وبعدها بنكتب السعر في العرض قبل بدء أي شغل.</p>':
+        '<p class="bundle__lead">Its price is set after the scope is agreed: we settle the scope with you first, then write the price into the offer before any work starts.</p>',
+    '<p class="bundle__price">\n            <span class="pricerow__from">السعر</span>\n            <strong>يتحدد بعد الاتفاق</strong>\n          </p>':
+        '<p class="bundle__price">\n            <span class="pricerow__from">Price</span>\n            <strong>set after the scope is agreed</strong>\n          </p>',
+    'السعر': 'Price',
+    'يتحدد بعد الاتفاق': 'set after the scope is agreed',
     '<h3 id="terms-title">في كل باقة</h3>': '<h3 id="terms-title">In every package</h3>',
     '<li>استضافة وباكند مجانًا في السنة الأولى</li>':
         '<li>Hosting and backend free in the first year</li>',
@@ -676,10 +680,10 @@ INDEX.update({
     "<h3>ربط وأتمتة</h3>": "<h3>Integrations and automation</h3>",
     "<p>الدفع والمخزون والواتساب مترابطة في تدفق واحد.</p>":
         "<p>Payments, stock and WhatsApp talk to each other.</p>",
-    '<p class="transform__price"><span>التحول الكامل</span> من <b>28,000</b> جنيه</p>':
-        '<p class="transform__price"><span>Full transformation</span> from <b>28,000</b> EGP</p>',
-    '<p class="transform__note">بعد أول مكالمة نحدد النطاق: ترحيل البيانات والتكييف والتدريب. الدفع 50% عند البدء و50% قبل التسليم.</p>':
-        '<p class="transform__note">After a first call we scope it: data migration, adaptation, and training. Pay 50% to start and 50% before delivery.</p>',
+    '<p class="transform__price"><span>التحول الكامل</span> سعره يتحدد بعد الاتفاق</p>':
+        '<p class="transform__price"><span>Full transformation</span> priced after the scope is agreed</p>',
+    '<p class="transform__note">بعد أول مكالمة نحدد النطاق والتفاصيل، وبعدها بنكتب السعر في العرض. الدفع 50% عند البدء و50% قبل التسليم.</p>':
+        '<p class="transform__note">After a first call we settle the scope and the details, then put the price in the offer. Pay 50% to start and 50% before delivery.</p>',
     '<a class="px-btn" href="/contact/">اطلب تقييم لمشروعك</a>':
         '<a class="px-btn" href="contact/">Request a project assessment</a>',
 })

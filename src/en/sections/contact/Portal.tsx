@@ -35,7 +35,7 @@ export default function Portal() {
               <option value="static">Static site — EGP 8,000</option>
               <option value="identity">Full identity — EGP 10,000</option>
               <option value="dynamic">Dynamic site — from EGP 18,000</option>
-              <option value="transform">Full transformation — from EGP 28,000</option>
+              <option value="transform">Full transformation — priced by agreement</option>
             </select>
           </div>
 
