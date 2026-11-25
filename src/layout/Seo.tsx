@@ -63,6 +63,10 @@ export default function Seo({
       <link rel="alternate" hrefLang="ar" href={BASE + (locale === "en" ? counterpart : path)} />
       <link rel="alternate" hrefLang="en" href={BASE + (locale === "en" ? path : counterpart)} />
       <link rel="alternate" hrefLang="x-default" href={BASE + (locale === "en" ? counterpart : path)} />
+      <meta name="agent:endpoint" content={`${BASE}/.well-known/search?q={query}`} />
+      <meta name="agent:method" content="GET" />
+      <meta name="agent:instructions" content="Ask in Arabic or English; results come back as markdown." />
+      <meta name="agent:documentation" content={`${BASE}/llms.txt`} />
       <link rel="alternate" type="application/rss+xml" title="Egytronic blog feed" href={`${BASE}/feed.xml`} />
       <link rel="alternate" type="application/json" href={`${BASE}/pricing.json`} title="Egytronic package catalogue (JSON)" />
       <link rel="alternate" type="text/plain" href={`${BASE}/llms.txt`} title="Egytronic site guide for AI systems" />

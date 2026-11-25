@@ -1,0 +1,12 @@
+{
+  "protocol_version": "0.1",
+  "organization": {
+    "name": "Egytronic",
+    "domain": "egytronic.pages.dev",
+    "description": "Egyptian software studio. Published prices, fixed scope."
+  },
+  "web": {
+    "url": "https://egytronic.pages.dev/",
+    "llms": "https://egytronic.pages.dev/llms.txt"
+  }
+}

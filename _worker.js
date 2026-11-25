@@ -12,6 +12,7 @@ const AGENT_DOCS = {
   "/.well-known/ai-catalog.json": "application/json",
   "/.well-known/mcp/server-card.json": "application/json",
   "/.well-known/agent-skills/index.json": "application/json",
+  "/.well-known/poppy.json": "application/json",
 };
 
 
@@ -60,6 +61,36 @@ const htmlToMarkdown = (html) => {
     .trim()
     .concat("\n");
 };
+
+// Search for agents: grep the public pages, answer as markdown so a model can read it directly.
+const SEARCH_INDEX = [
+  ["/", "Egytronic — برمجيات تُسلَّم جاهزة بأسعار معلنة", "شركة برمجيات مصرية: مواقع، هوية، أنظمة إدارية، ذكاء اصطناعي. خمس باقات بأسعار معلنة."],
+  ["/pricing/", "الأسعار والباقات", "logo 5,000 · landing 6,000 · static 8,000 · identity 10,000 · dynamic from 18,000 EGP، 50% مقدمًا."],
+  ["/software/", "البرمجيات والأنظمة", "ERP وCRM وPOS وHMS وLMS وإدارة عيادات، وتكييف على طريقة عمل الفريق."],
+  ["/contact/", "تواصل وابدأ مشروعك", "نموذج تواصل وواتساب. اذكر النطاق والميزانية والموعد."],
+  ["/blog/", "المدونة", "مقالات عن التحول الرقمي والأنظمة والذكاء الاصطناعي للشركات المصرية."],
+  ["/en/", "Egytronic in English", "Egyptian software studio with published prices."],
+];
+
+async function agentSearch(url) {
+  const q = (url.searchParams.get("q") || "").trim().toLowerCase();
+  const hits = SEARCH_INDEX.filter(([, title, body]) =>
+    !q || `${path} ${title} ${body}`.toLowerCase().includes(q));
+  const md = [
+    `# Search results for: ${q || "(everything)"}`,
+    "",
+    ...hits.map(([path, title, body]) => `## [${title}](https://egytronic.pages.dev${path})\n${body}\n`),
+    hits.length ? "" : "No page matched. Try /pricing/, /software/, /contact/.",
+  ].join("\n");
+  return new Response(md, {
+    headers: {
+      "content-type": "text/markdown; charset=utf-8",
+      "accept-query": 'q="query"',
+      "access-control-allow-origin": "*",
+      "cache-control": "public, max-age=300",
+    },
+  });
+}
 
 const PACKAGES = new Set(["logo", "landing", "static", "identity", "dynamic", "transform", "unsure"]);
 const INQUIRY_STATUS = new Set(["new", "contacted", "qualified", "proposal", "won", "lost"]);
@@ -3300,6 +3331,8 @@ export default {
       }
       return asset;
     }
+
+    if (url.pathname === "/.well-known/search" && request.method === "GET") return agentSearch(url);
 
     const agentType = AGENT_DOCS[url.pathname];
     if (agentType) {
