@@ -9,6 +9,7 @@ import { listFonts } from "./lib/fonts.js";
 import { BLOCKS } from "./runtime/blocks.js";
 import { ARTIFACT_DIR, listArtifacts, resolveArtifact } from "./lib/artifacts.js";
 import { statSync } from "node:fs";
+import { buildDocToFile, PAGE_PRESETS, PAGE_SIZES } from "./lib/doc.js";
 
 const server = new McpServer({ name: "egytronic-studio", version: "0.1.0" });
 
@@ -18,8 +19,10 @@ const fail = (error) => ({ isError: true, content: [{ type: "text", text: String
 function catalogue() {
   return {
     blocks: Object.values(BLOCKS).map((block) => ({ id: block.id, label: block.label, props: block.props })),
+    docBlocks: ["h1", "h2", "h3", "p", "lead", "columns", "quote", "callout", "list", "figure", "table", "toc", "break", "spacer", "rule"],
     fonts: listFonts(),
     presets: PRESETS,
+    docPresets: PAGE_PRESETS,
     artifactDir: ARTIFACT_DIR,
     renderContract: {
       artifact: "one .html file, fonts + audio inlined, opens offline",
@@ -162,6 +165,27 @@ server.registerTool(
     try {
       const { writeCaptions } = await import("./lib/captions.js");
       return json(await writeCaptions(words, out || "captions"));
+    } catch (error) {
+      return fail(error);
+    }
+  },
+);
+
+server.registerTool(
+  "studio_doc",
+  {
+    title: "Print document (InDesign-like)",
+    description:
+      "Build a paginated print document: page size and margins, master page with running head and folio, paragraph styles, columns, figures, tables, callouts, automatic TOC with page numbers. Opens as HTML, prints to PDF from the browser.",
+    inputSchema: {
+      doc: z.object({}).describe("Document model: {name,preset|page,margin,bleed,lang,fontFamily,styles,master,content[]}"),
+      out: z.string().optional(),
+    },
+  },
+  async ({ doc, out }) => {
+    try {
+      const { file } = buildDocToFile(doc, out || `${doc.name || "document"}.html`);
+      return json({ ok: true, artifact: file.path, bytes: file.bytes, page: doc.page || PAGE_PRESETS[doc.preset]?.size || "A4", sizes: Object.keys(PAGE_SIZES), print: "open then press the print button (or Ctrl+P) → save as PDF" });
     } catch (error) {
       return fail(error);
     }

@@ -33,6 +33,7 @@ MCP (stdio): `node studio/mcp.js`. Register it in Claude Desktop / Cursor / Open
 | `studio_tts` | Gemini voice-over → WAV (needs `GEMINI_API_KEY`) |
 | `studio_stt` | transcript + timed segments |
 | `studio_captions` | SRT / VTT / ASS from timed words |
+| `studio_doc` | paginated print document (Paged.js) → PDF from the browser |
 | `studio_open` | path + `file://` URL + size |
 
 ## Blocks
@@ -54,6 +55,26 @@ Latin: Inter, Space Grotesk, DM Serif Display, Bebas Neue, Playfair Display, Jet
 - Export: MP4 (H.264/AAC via WebCodecs) → WebM (MediaRecorder) → PNG frames ZIP.
 - `?frame=<ms>` seeks, `?bare=1` hides the player, `?record=1` records on load.
 
+## Documents
+
+`studio_doc` takes a document model — `preset` (`a4-portrait`, `a5-portrait`, `a4-two-column`,
+`letter`) or an explicit `page` + `margin`, `master.header`, `styles`, and `content[]`:
+
+| Block | Notes |
+|---|---|
+| `h1` `h2` `h3` | anchors get ids automatically; `h1` feeds the running head |
+| `p` `lead` | `style` picks a named paragraph style |
+| `columns` | `count`, `gap` — real CSS columns with a rule |
+| `quote` `callout` `list` | break-inside avoided |
+| `figure` | `src`, `caption`, `fit` (`cover`/`contain`), `ratio` |
+| `table` | `head`, `rows`, `caption` |
+| `toc` | page numbers computed by Paged.js `target-counter` |
+| `break` `spacer` `rule` | structure |
+
+Print → PDF from the toolbar button (or Ctrl+P). Bleed and crop marks only when
+`marks: true` is asked for. Page furniture (folio `1 / 4`) is on every page except the first.
+
 ## Not built yet
 
-Print documents (Paged.js pipeline), charts, 3D type, video-in-video. Ask before assuming.
+Charts, 3D type, video-in-video, and flowing a text frame into the next page's frame
+(Paged.js can, the model does not expose it yet). Ask before assuming.

@@ -4,6 +4,7 @@ import { renderToFile, PRESETS } from "./lib/reel.js";
 import { listFonts } from "./lib/fonts.js";
 import { BLOCKS } from "./runtime/blocks.js";
 import { listArtifacts } from "./lib/artifacts.js";
+import { buildDocToFile } from "./lib/doc.js";
 
 const [command, ...rest] = process.argv.slice(2);
 
@@ -18,6 +19,7 @@ function print(usageError) {
   console.error(`egx-studio <command>
 
   reel <spec.json> [--out name.html]   compose a motion piece into artifacts/
+  doc <doc.json> [--out name.html]      print document (Paged.js) → artifacts/
   catalog                              list blocks, fonts and presets
   artifacts                            list generated renders
   tts --text "..." [--voice Kore]      voice-over to artifacts/voice.wav
@@ -39,6 +41,11 @@ try {
       presets: PRESETS,
       artifacts: listArtifacts(),
     }, null, 2));
+  } else if (command === "doc") {
+    const file = rest.find((value) => !value.startsWith("-"));
+    const doc = JSON.parse(readFileSync(file, "utf8"));
+    const { file: out } = buildDocToFile(doc, arg("out", `${doc.name || "document"}.html`));
+    console.log(JSON.stringify({ ok: true, artifact: out.path, bytes: out.bytes, pages: "paged.js", preset: doc.preset || "a4-portrait" }, null, 2));
   } else if (command === "artifacts") {
     console.log(JSON.stringify(listArtifacts(), null, 2));
   } else if (command === "tts" || command === "stt" || command === "captions") {
