@@ -12,3 +12,6 @@ node_modules/
 __pycache__/
 
 .wrangler/
+
+# rendered frame sequences are scratch: regenerate with `npm run reels`
+studio/artifacts/frames/

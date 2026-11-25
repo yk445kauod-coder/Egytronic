@@ -11,7 +11,10 @@
     "mcp": "node mcp.js",
     "example": "node cli.js reel examples/reel-egytronic.json",
     "verify": "node scripts/verify.mjs",
-    "doc": "node cli.js doc examples/doc-proposal.json --out proposal.html"
+    "doc": "node cli.js doc examples/doc-proposal.json --out proposal.html",
+    "reels": "node scripts/export-clean.mjs examples/reels/01-hook.json examples/reels/02-numbers.json examples/reels/03-logo.json examples/reels/04-captions.json",
+    "reels:check": "node scripts/check-video.mjs artifacts/reels/reel-hook.mp4 && node scripts/check-video.mjs artifacts/reels/reel-numbers.mp4 && node scripts/check-video.mjs artifacts/reels/reel-logo.mp4 && node scripts/check-video.mjs artifacts/reels/reel-captions.mp4",
+    "reels:gallery": "node scripts/reel-gallery.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -22,6 +25,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "esbuild": "^0.28.2",
     "pdfjs-dist": "^4.7.76",
     "playwright": "^1.49.1"

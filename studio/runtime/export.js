@@ -52,11 +52,15 @@ export async function record({ canvas, engine, ctx2d, fps, durationMs, audioBuff
 async function encodeWithCodecs({ canvas, engine, ctx2d, fps, durationMs, audioBuffer, kind, onProgress, signal }) {
   const muxer = await Muxer.create({ kind, canvas, fps, durationMs, audioBuffer, signal });
   const total = Math.max(1, Math.round((durationMs / 1000) * fps));
+  // render into an offscreen buffer: the on-screen canvas is composited while we record,
+  // and a frame sampled mid-composite blends with whatever the browser painted last
+  const buffer = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(canvas.width, canvas.height) : null;
+  const target = buffer ? buffer.getContext("2d", { alpha: false }) : ctx2d;
   for (let frame = 0; frame < total; frame++) {
     if (signal?.aborted) throw new Error("aborted");
     const timeMs = (frame / fps) * 1000;
-    engine.renderFrame(ctx2d, timeMs);
-    await muxer.addVideoFrame(timeMs / 1000, 1 / fps);
+    engine.renderFrame(target, timeMs);
+    await muxer.addVideoFrame(timeMs / 1000, 1 / fps, buffer || canvas);
     if (frame % 6 === 0) onProgress?.(frame / total);
   }
   const blob = await muxer.finish();
@@ -71,7 +75,11 @@ function recordRealtime({ canvas, engine, ctx2d, fps, durationMs, audioBuffer, o
       : MediaRecorder.isTypeSupported('video/webm;codecs="vp9,opus"')
         ? 'video/webm;codecs="vp9,opus"'
         : "video/webm";
-    const stream = canvas.captureStream(fps);
+    // captureStream(0) + requestFrame: one pushed frame per rendered frame. A timed
+    // captureStream samples the canvas whenever the compositor feels like it, which
+    // blends two draws into one encoded frame (ghosting text from the previous scene).
+    const stream = canvas.captureStream(0);
+    const [captureTrack] = stream.getVideoTracks();
     let audioCtx = null;
     let node = null;
     if (audioBuffer) {
@@ -92,23 +100,29 @@ function recordRealtime({ canvas, engine, ctx2d, fps, durationMs, audioBuffer, o
     };
     recorder.start(1000);
     node?.start();
+    const total = Math.max(1, Math.round((durationMs / 1000) * fps));
+    const frameMs = 1000 / fps;
     const started = performance.now();
-    const tick = () => {
-      const elapsed = performance.now() - started;
-      engine.renderFrame(ctx2d, Math.min(durationMs, elapsed));
-      onProgress?.(Math.min(1, elapsed / durationMs));
+    let frame = 0;
+    const tick = async () => {
       if (signal?.aborted) {
         recorder.stop();
         reject(new Error("aborted"));
         return;
       }
-      if (elapsed >= durationMs) {
-        recorder.stop();
+      const wait = started + frame * frameMs - performance.now();
+      if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+      engine.renderFrame(ctx2d, Math.min(durationMs, frame * frameMs));
+      captureTrack.requestFrame();
+      onProgress?.(frame / total);
+      frame += 1;
+      if (frame >= total) {
+        setTimeout(() => recorder.stop(), frameMs * 2);
         return;
       }
-      requestAnimationFrame(tick);
+      tick();
     };
-    requestAnimationFrame(tick);
+    tick();
   });
 }
 

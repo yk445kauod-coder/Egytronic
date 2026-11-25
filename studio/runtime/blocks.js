@@ -15,6 +15,63 @@ export const bgGradient = {
   },
 };
 
+const pixelSeed = (seed) => {
+  let state = seed >>> 0;
+  return () => ((state = (state * 1664525 + 1013904223) >>> 0) / 4294967296);
+};
+
+export const bgPixels = {
+  id: "bg.pixels",
+  label: "خلفية بيكسل (16-بت)",
+  props: { cell: 24, grid: 0.035, clusters: 5, drift: 0.5, accent: 0.8, vignette: 0.5 },
+  draw(ctx, env) {
+    const th = themeOf(env.theme);
+    const { w, h, props } = env;
+    const cell = Math.max(8, props.cell || 24);
+    const t = env.timeMs / 1000;
+    ctx.fillStyle = th.bg;
+    ctx.fillRect(0, 0, w, h);
+
+    const rnd = pixelSeed(7);
+    const clusters = props.clusters ?? 5;
+    for (let i = 0; i < clusters; i++) {
+      let baseX = rnd() * w;
+      let baseY = rnd() * h;
+      // keep the focal band clear so confetti never lands under the headline or the mark
+      if (Math.abs(baseX / w - 0.5) < 0.3 && baseY / h > 0.24 && baseY / h < 0.8) {
+        baseX = baseX < w / 2 ? baseX * 0.45 : w - (w - baseX) * 0.45;
+      }
+      const span = 2 + Math.floor(rnd() * 4);
+      const speed = (props.drift ?? 0.5) * (0.4 + rnd());
+      const x = Math.round((baseX + Math.sin(t * speed + i) * w * 0.05) / cell) * cell;
+      const y = Math.round((baseY + Math.cos(t * speed * 0.8 + i) * h * 0.04) / cell) * cell;
+      ctx.fillStyle = hexAlpha(i % 3 === 0 ? th.accent : th.accent2, (props.accent ?? 0.8) * (0.55 + 0.45 * ((i * 7) % 3) / 2));
+      for (let k = 0; k < span * span; k++) {
+        if ((k * 37 + i * 11) % 5 === 0) continue;
+        const dx = (k % span) * cell;
+        const dy = Math.floor(k / span) * cell;
+        ctx.fillRect(x + dx, y + dy, cell, cell);
+      }
+    }
+
+    const grid = props.grid ?? 0.05;
+    if (grid > 0) {
+      ctx.fillStyle = hexAlpha(th.fg, grid);
+      for (let gx = 0; gx < w; gx += cell * 8) ctx.fillRect(gx, 0, 1.5, h);
+      for (let gy = 0; gy < h; gy += cell * 8) ctx.fillRect(0, gy, w, 1.5);
+    }
+
+    const vignette = props.vignette ?? 0.55;
+    if (vignette > 0) {
+      const g = ctx.createRadialGradient(w / 2, h * 0.42, Math.min(w, h) * 0.22, w / 2, h * 0.5, Math.max(w, h) * 0.78);
+      g.addColorStop(0, hexAlpha("#000000", 0));
+      g.addColorStop(1, hexAlpha("#000000", vignette));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    }
+  },
+};
+
 export const typeHeadline = {
   id: "type.headline",
   label: "عنوان حركي (Kinetic)",
@@ -91,15 +148,26 @@ export const typeStack = {
     const family = env.comp.fontFamily || "Alexandria";
     const alpha = (1 - env.out) * env.in;
     if (!vis(alpha)) return;
-    const sizePx = props.size * Math.min(w, h);
-    const smallPx = props.smallSize * Math.min(w, h);
+    let sizePx = props.size * Math.min(w, h);
+    let smallPx = props.smallSize * Math.min(w, h);
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.textBaseline = "middle";
     ctx.direction = isRtl(props.big) ? "rtl" : "ltr";
+    ctx.textAlign = props.align === "start" || props.align === "end" ? props.align : "center";
     ctx.fillStyle = props.color || th.fg;
     ctx.font = fontSpec(props.weight, sizePx, family, 0);
+    // one line only: shrink to stay inside the frame instead of running off the edge
+    const measured = ctx.measureText(props.big).width;
+    const maxWidth = w * 0.88;
+    if (measured > maxWidth) {
+      const scale = maxWidth / measured;
+      sizePx *= scale;
+      smallPx *= scale;
+      ctx.font = fontSpec(props.weight, sizePx, family, 0);
+    }
     ctx.fillText(props.big, w / 2, h * props.y - (smallPx + h * props.gap) / 2);
+    ctx.textAlign = "center";
     ctx.fillStyle = props.smallColor || th.muted;
     ctx.font = fontSpec(500, smallPx, family, 0);
     ctx.fillText(props.small, w / 2, h * props.y + (sizePx + h * props.gap) / 2 - smallPx * 0.3);
@@ -301,37 +369,46 @@ export const lowerThird = {
     const th = themeOf(env.theme);
     const { props, w, h } = env;
     const family = env.comp.fontFamily || "Alexandria";
-    const slide = env.in;
     const alpha = (1 - env.out) * Math.min(1, env.in * 1.4);
     if (!vis(alpha)) return;
     const namePx = 0.038 * Math.min(w, h);
     const rolePx = 0.021 * Math.min(w, h);
     const padX = namePx * 0.9;
-    const boxW = Math.max(namePx * 6, ctx.measureText(props.name).width + padX * 4);
-    const boxH = namePx * 2.5;
-    const x = (w - boxW) / 2 + (1 - slide) * -w * 0.06;
-    const y = h * props.y;
+    const rtl = isRtl(props.name);
     ctx.save();
+    ctx.font = fontSpec(700, namePx, family, 0);
+    const nameW = ctx.measureText(props.name).width;
+    ctx.font = fontSpec(500, rolePx, family, 0);
+    const roleW = ctx.measureText(props.role).width;
+    const boxW = Math.max(nameW, roleW) + padX * 3.2;
+    const boxH = namePx * 1.95 + rolePx * 1.4;
+    const slide = (1 - env.in) * w * 0.06 * (rtl ? -1 : 1);
+    const x = (w - boxW) / 2 + slide;
+    const y = h * props.y;
+    const barW = Math.max(4, boxW * 0.012);
     ctx.globalAlpha = alpha;
     ctx.fillStyle = hexAlpha("#000000", 0.66);
     roundRect(ctx, x, y, boxW, boxH, boxH * 0.22);
     ctx.fill();
     if (props.accentBar) {
       ctx.fillStyle = th.accent;
-      roundRect(ctx, x, y, Math.max(4, boxW * 0.012), boxH, boxH * 0.2);
+      roundRect(ctx, rtl ? x + boxW - barW : x, y, barW, boxH, barW * 0.4);
       ctx.fill();
     }
     ctx.textBaseline = "middle";
-    ctx.direction = isRtl(props.name) ? "rtl" : "ltr";
+    ctx.direction = rtl ? "rtl" : "ltr";
+    ctx.textAlign = rtl ? "right" : "left";
+    const textX = rtl ? x + boxW - padX * 1.5 : x + padX * 1.5;
     ctx.fillStyle = th.fg;
     ctx.font = fontSpec(700, namePx, family, 0);
-    ctx.fillText(props.name, x + padX * 1.6, y + boxH * 0.38);
+    ctx.fillText(props.name, textX, y + boxH * 0.36);
     ctx.fillStyle = th.muted;
     ctx.font = fontSpec(500, rolePx, family, 0);
-    ctx.fillText(props.role, x + padX * 1.6, y + boxH * 0.74);
+    ctx.fillText(props.role, textX, y + boxH * 0.72);
     ctx.restore();
   },
 };
+
 
 export const statBlock = {
   id: "stat",
@@ -379,6 +456,7 @@ export const progressBar = {
 
 export const BLOCKS = {
   "bg.gradient": bgGradient,
+  "bg.pixels": bgPixels,
   "type.headline": typeHeadline,
   "type.stack": typeStack,
   "captions.karaoke": captionsKaraoke,

@@ -1467,9 +1467,41 @@ async function mcpCall(env, who, name, args = {}) {
   }
 }
 
+const mcpBrowserPage = (origin) => `<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>نقطة MCP · Egytronic</title>
+<style>
+:root{color-scheme:dark}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#08080A;color:#F5F1E8;
+font-family:"Alexandria","Cairo",system-ui,sans-serif;padding:24px}
+main{max-width:56ch;border:1px solid #22222A;border-radius:16px;padding:28px 26px;background:#111116}
+h1{font-size:22px;margin:0 0 10px}
+p{color:#A3A3A3;line-height:1.85;margin:0 0 14px;font-size:14.5px}
+code{background:#15151b;padding:2px 6px;border-radius:6px;font-size:13px;color:#F5F1E8}
+a{color:#FF6A00}
+</style></head><body><main>
+<h1>نقطة MCP محمية</h1>
+<p>العنوان اللي فتحته هو نقطة JSON-RPC لأدوات التشغيل الداخلية، مش صفحة. الطلب من غير مفتاح وكيل بيرجع
+<code>401 unauthorized</code> زي ما شفت — ده الشكل الطبيعي للرفض، ومفيش أي حاجة اتكسرت.</p>
+<p>لو إنت بتبني وكيل: اعمل تسجيل عبر <a href="${origin}/.well-known/oauth-protected-resource">بيانات OAuth</a>،
+وبعدها ابعت الطلبات بـ <code>Authorization: Bearer &lt;agent key&gt;</code> على نفس العنوان.</p>
+<p>للعملاء: <code>POST ${origin}/mcp</code> بـ <code>Accept: application/json</code>.</p>
+</main></body></html>`;
+
 async function mcp(request, env, url) {
   const who = await identify(request, env, url);
   if (!who) {
+    const accept = (request.headers.get("accept") || "").toLowerCase();
+    if (request.method === "GET" && accept.includes("text/html") && !accept.includes("text/event-stream")) {
+      return new Response(mcpBrowserPage(new URL(request.url).origin), {
+        status: 401,
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "no-store",
+          "www-authenticate": challengeHeader(request)["www-authenticate"],
+        },
+      });
+    }
     return json({ jsonrpc: "2.0", id: null, error: { code: -32001, message: "unauthorized" } }, 401, challengeHeader(request));
   }
 

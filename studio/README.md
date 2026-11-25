@@ -38,8 +38,8 @@ MCP (stdio): `node studio/mcp.js`. Register it in Claude Desktop / Cursor / Open
 
 ## Blocks
 
-`bg.gradient` · `type.headline` · `type.stack` · `captions.karaoke` · `logo.reveal` ·
-`quote.card` · `lowerThird` · `stat` · `progress.bar`
+`bg.gradient` · `bg.pixels` · `type.headline` · `type.stack` · `captions.karaoke` · `logo.reveal` ·
+`quote.card` · `lowerThird` · `stat` · `progress.bar` · `confetti`
 
 ## Fonts (built in, OFL, embedded per render)
 
@@ -111,6 +111,20 @@ Document `styles` still win over the template for one-off adjustments:
 ```
 
 Bleed and crop marks only when `marks: true` is asked for.
+
+## Reels → video
+
+```bash
+npm run reels            # examples/reels/*.json → artifacts/reels/*.{mp4,webm,jpg} + manifest.json
+npm run reels:check      # mp4 decodes end to end (ffmpeg) + webm plays in Chromium
+npm run reels:gallery    # builds the preview gallery straight into ../dist/reels/
+```
+
+Frames are rendered one at a time through the studio engine, written as PNG, and assembled by
+ffmpeg (`libx264 -crf 18`, plus a VP9 sibling for browsers without H.264). Don't route the export
+back through `window.__studio.recordNow()`: the in-browser encoder path blurs one frame into the
+next on fast re-render, so text from the previous scene ghosts over the current one in the file
+even though the canvas itself is correct.
 
 ## Not built yet
 
