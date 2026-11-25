@@ -14,6 +14,53 @@ const AGENT_DOCS = {
   "/.well-known/agent-skills/index.json": "application/json",
 };
 
+
+// Markdown for agents: an HTML page answered as markdown when the client asks for it.
+// Deliberately crude — headings, lists, links, emphasis, paragraphs — because the alternative is
+// shipping a full HTML parser into every request.
+const mdText = (html) =>
+  html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const htmlToMarkdown = (html) => {
+  const start = html.indexOf("<body");
+  let out = start === -1 ? html : html.slice(start);
+  out = out
+    .replace(/<(script|style|svg|noscript)[\s\S]*?<\/\1>/gi, "")
+    .replace(/<(nav|footer)[\s\S]*?<\/\1>/gi, "");
+  out = out.replace(/<h([1-6])[^>]*>([\s\S]*?)<\/h\1>/gi, (_, n, t) => `\n${"#".repeat(+n)} ${mdText(t)}\n`);
+  out = out.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_, t) => `- ${mdText(t)}\n`);
+  out = out.replace(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, (_, href, t) => {
+    const label = mdText(t) || href;
+    return href.startsWith("http") ? `[${label}](${href})` : `[${label}](${href})`;
+  });
+  out = out.replace(/<(strong|b)[^>]*>([\s\S]*?)<\/\1>/gi, (_, __, t) => `**${mdText(t)}**`);
+  out = out.replace(/<(em|i)[^>]*>([\s\S]*?)<\/\1>/gi, (_, __, t) => `*${mdText(t)}*`);
+  out = out.replace(/<p[^>]*>([\s\S]*?)<\/p>/gi, (_, t) => `\n${t}\n`);
+  out = out.replace(/<br\s*\/?>/gi, "\n");
+  out = out.replace(/<[^>]+>/g, " ");
+  return out
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim()
+    .concat("\n");
+};
+
 const PACKAGES = new Set(["logo", "landing", "static", "identity", "dynamic", "transform", "unsure"]);
 const INQUIRY_STATUS = new Set(["new", "contacted", "qualified", "proposal", "won", "lost"]);
 const TASK_STATUS = new Set(["todo", "doing", "done"]);
@@ -3228,6 +3275,30 @@ export default {
     if (url.pathname.startsWith("/api/")) {
       const who = await identify(request, env, url);
       return api(request, env, url, who);
+    }
+
+    const accept = request.headers.get("accept") || "";
+    if (
+      request.method === "GET" &&
+      accept.includes("text/markdown") &&
+      !url.pathname.startsWith("/api/") &&
+      !url.pathname.startsWith("/.well-known/") &&
+      !url.pathname.startsWith("/mcp")
+    ) {
+      const asset = await env.ASSETS.fetch(request);
+      if ((asset.headers.get("content-type") || "").includes("text/html")) {
+        const md = htmlToMarkdown(await asset.text());
+        return new Response(md, {
+          status: asset.status,
+          headers: {
+            "content-type": "text/markdown; charset=utf-8",
+            "x-markdown-tokens": String(Math.ceil(md.length / 4)),
+            vary: "accept",
+            "cache-control": "public, max-age=300",
+          },
+        });
+      }
+      return asset;
     }
 
     const agentType = AGENT_DOCS[url.pathname];
