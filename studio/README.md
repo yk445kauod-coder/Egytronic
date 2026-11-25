@@ -47,6 +47,17 @@ Arabic+Lagion: Alexandria, Cairo, Almarai, Tajawal, Noto Kufi Arabic, Readex Pro
 IBM Plex Sans Arabic, Rubik, Amiri, Noto Naskh Arabic.
 Latin: Inter, Space Grotesk, DM Serif Display, Bebas Neue, Playfair Display, JetBrains Mono.
 
+## Verify
+
+```bash
+npm run verify     # builds every artifact, opens it in Chromium, prints the PDF, asserts
+```
+
+31 checks: sheets/pages, embedded font active, TOC counters, print media (toolbar hidden, margin 0,
+A4 sheet height), PDF is A4 `595×842pt` with no blank page, reel frames differ and contain type,
+logo pixels, SRT/VTT/ASS output, 16 font families embedded, voice refusing without a key.
+Needs `npx playwright install chromium`.
+
 ## The render contract
 
 - Deterministic: every frame is `renderFrame(t)`, never the wall clock.

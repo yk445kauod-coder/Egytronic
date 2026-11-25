@@ -108,7 +108,9 @@ export function buildDocHtml(doc = {}) {
   const preset = PAGE_PRESETS[doc.preset || meta.preset] || {};
   const pageName = doc.page || meta.page || preset.size || "A4";
   const dims = PAGE_SIZES[pageName] || PAGE_SIZES.A4;
-  const pageSize = doc.pageSize || `${dims.w}mm ${dims.h}mm`;
+  // Paged.js resolves `size` by NAME (pageSizes table); raw dimensions are ignored and it
+  // falls back to Letter. Always hand it the keyword, custom sizes only reach the printer.
+  const pageSize = doc.pageSize || (PAGE_SIZES[pageName] ? pageName : `${dims.w}mm ${dims.h}mm`);
   const margin = doc.margin || meta.margin || preset.margin || "20mm 18mm 22mm";
   const family = resolveFamily(doc.fontFamily || doc.font || meta.fontFamily);
   const rtl = doc.rtl !== false && doc.lang !== "en";
@@ -151,7 +153,7 @@ export function buildDocHtml(doc = {}) {
     .replaceAll("{{margin}}", margin)
     .replaceAll("{{pageFurniture}}", furniture);
 
-  return `<!doctype html>
+  const output = `<!doctype html>
 <html lang="${doc.lang || "ar"}" dir="${rtl ? "rtl" : "ltr"}">
 <head>
 <meta charset="utf-8">
@@ -167,19 +169,76 @@ ${styleOverrides}
 </head>
 <body>
 <div class="toolbar">
-  <button type="button" onclick="window.print()">طباعة / PDF</button>
+  <button type="button" onclick="window.studioDoc.print()">طباعة / PDF</button>
   <span>${esc(doc.name || "")} · ${esc(template.meta.label || template.id)} · ${esc(pageName)} · ${esc(family.family)}</span>
 </div>
 <main class="document">
 ${html}
 </main>
+<script>
+/* One pagination only: the polyfill auto-runs, so we hook its "after" instead of calling
+   preview() a second time (a second pass re-chunks the flow and the page counter resets to 0). */
+window.PagedConfig = { auto: true, after: function () { if (window.__studioDocSettle) window.__studioDocSettle(); } };
+</script>
 <script>${readFileSync(PAGED, "utf8")}</script>
 <script>
-/* Paged.js has laid the sheets out by now; window.print() is the only export. */
-document.addEventListener("afterprint", () => {});
+/* Print contract: wait for pagination, then append the page rule LAST so Paged.js's own
+   print sheet (which forces .pagedjs_page to height:100%) cannot win. window.print() only. */
+(function () {
+  var PRINT_CSS =
+    "@page{size:{{pageSize}};margin:0}" +
+    "@media print{" +
+      "html,body{background:#fff!important;display:block!important;min-height:0!important}" +
+      ".toolbar{display:none!important}" +
+      ".pagedjs_pages{display:block!important;gap:0!important;padding:0!important;min-height:0!important;max-height:none!important;overflow:visible!important}" +
+      ".pagedjs_page{width:var(--pagedjs-pagebox-width)!important;height:var(--pagedjs-pagebox-height)!important;min-height:0!important;max-height:none!important;margin:0!important;box-shadow:none!important;break-after:page;page-break-after:always}" +
+      ".pagedjs_page:last-child{break-after:auto!important;page-break-after:auto!important}" +
+    "}";
+  var ready = false;
+  var resolveReady;
+  var readyPromise = new Promise(function (resolve) { resolveReady = resolve; });
+  /* TOC folios: target-counter() is uneven across browsers and silently yields 0 here, so the
+     page number of every anchor is written onto the link after pagination. */
+  function folios() {
+    var pageOf = Object.create(null);
+    var pages = document.querySelectorAll(".pagedjs_page");
+    for (var i = 0; i < pages.length; i += 1) {
+      var ids = pages[i].querySelectorAll("[id]");
+      for (var j = 0; j < ids.length; j += 1) if (!pageOf[ids[j].id]) pageOf[ids[j].id] = i + 1;
+    }
+    var links = document.querySelectorAll(".toc a[href^='#']");
+    for (var k = 0; k < links.length; k += 1) {
+      var page = pageOf[links[k].getAttribute("href").slice(1)];
+      if (page) links[k].setAttribute("data-page", String(page));
+    }
+  }
+  window.__studioDocSettle = function () {
+    if (ready) return;
+    ready = true;
+    folios();
+    var sheet = document.createElement("style");
+    sheet.setAttribute("data-studio", "print");
+    sheet.textContent = PRINT_CSS;
+    document.head.appendChild(sheet);
+    document.documentElement.setAttribute("data-ready", "1");
+    resolveReady();
+  };
+  window.studioDoc = {
+    print: function () { return readyPromise.then(function () { window.print(); }); },
+    isReady: function () { return ready; },
+    whenReady: function () { return readyPromise; }
+  };
+  document.addEventListener("beforeprint", function () { if (!ready) window.__studioDocSettle(); });
+  if (document.readyState === "complete") window.__studioDocSettle();
+})();
 </script>
 </body>
 </html>`;
+  return output
+    .replaceAll("{{pageSize}}", pageSize)
+    .replaceAll("{{margin}}", margin)
+    .replaceAll("{{pageWidth}}", `${dims.w + 24}mm`)
+    .replaceAll("{{font}}", family.family);
 }
 
 export function buildDocToFile(doc, outPath) {

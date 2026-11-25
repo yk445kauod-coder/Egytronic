@@ -55,6 +55,7 @@ export function createEngine(comp, blocks, theme) {
         comp,
         timeMs,
         audio: comp.audio || [],
+        durationMs: scene.durationMs,
       };
       ctx.save();
       scene.block.draw(ctx, env);

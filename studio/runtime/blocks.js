@@ -124,7 +124,14 @@ export const captionsKaraoke = {
   draw(ctx, env) {
     const th = themeOf(env.theme);
     const { props, w, h } = env;
-    const words = props.words || [];
+    // `words` is the timing source; a plain `text` is spread evenly across the scene so a
+    // spec without word timings still renders instead of drawing nothing.
+    const words = props.words?.length
+      ? props.words
+      : String(props.text || "").trim().split(/\s+/).filter(Boolean).map((text, index, all) => {
+          const span = (env.durationMs || 2500) / all.length;
+          return { text, start: index * span, end: (index + 1) * span };
+        });
     if (!words.length) return;
     const family = env.comp.fontFamily || "Alexandria";
     const rtl = isRtl(words.map((x) => x.text).join(" "));
@@ -207,7 +214,11 @@ export const logoReveal = {
   draw(ctx, env) {
     const th = themeOf(env.theme);
     const { props, w, h } = env;
-    if (!props.paths?.length) return;
+    // Accept both a bare path string and {d, fill} — agents write the first, drawing needs the second.
+    const entries = (props.paths || [])
+      .map((entry) => (typeof entry === "string" ? { d: entry } : entry))
+      .filter((entry) => entry && entry.d);
+    if (!entries.length) return;
     const boxW = props.width * w;
     const scale = boxW / props.unit;
     const color = props.color || th.accent;
@@ -227,8 +238,7 @@ export const logoReveal = {
       ctx.shadowBlur = 18 / scale;
     }
 
-    const total = Math.max(...props.paths.map((p) => pathLength(p.d)), 1);
-    props.paths.forEach((entry, index) => {
+    entries.forEach((entry, index) => {
       const length = pathLength(entry.d);
       const draw = Math.min(1, Math.max(0, (env.t - index * 90) / props.strokeMs));
       const path = new Path2D(entry.d);
