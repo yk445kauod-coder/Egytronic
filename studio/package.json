@@ -14,7 +14,8 @@
     "art": "node scripts/gen-pixelfx.mjs",
     "quote": "node cli.js doc examples/doc-quote.json --out quote.html",
     "fonts": "node scripts/gen-fonts.mjs",
-    "kitchen": "node cli.js doc examples/doc-kitchen.json --out kitchen.html"
+    "kitchen": "node cli.js doc examples/doc-kitchen.json --out kitchen.html",
+    "pdf": "node scripts/pdf.mjs examples/doc-kitchen.json artifacts/kitchen.pdf"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -23,6 +24,6 @@
   },
   "devDependencies": {
     "pdfjs-dist": "^4.7.76",
-    "playwright": "^1.49.1"
+    "playwright": "^1.49.0"
   }
 }

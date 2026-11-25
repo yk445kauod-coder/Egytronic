@@ -80,6 +80,9 @@ MCP (stdio): `node studio/mcp.js`. Register it in Claude Desktop / Cursor / Open
 - **Long tables**: `cols[{width,align}]`, `foot`, `dense`, `zebra`. A table over `rowsPerPage`
   (22 dense / 16) is cut into sheets that start fresh, repeat the head and end the page with
   «يتبع… (n/m)»; `split: false` keeps it whole. Rows never break mid-row.
+- `npm run pdf` builds the document **and prints it to PDF** with Chromium (Playwright): same
+  pagination as the screen, `printBackground`, the page preset's exact mm size. One command, no
+  manual print dialog. First run needs `npx playwright install chromium`.
 - `npm run kitchen` builds `examples/doc-kitchen.json` — every block in one file.
 
 ## Pixel art (PixelFx)
