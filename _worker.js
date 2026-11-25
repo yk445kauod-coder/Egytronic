@@ -74,7 +74,7 @@ const SEARCH_INDEX = [
 
 async function agentSearch(url) {
   const q = (url.searchParams.get("q") || "").trim().toLowerCase();
-  const hits = SEARCH_INDEX.filter(([, title, body]) =>
+  const hits = SEARCH_INDEX.filter(([path, title, body]) =>
     !q || `${path} ${title} ${body}`.toLowerCase().includes(q));
   const md = [
     `# Search results for: ${q || "(everything)"}`,
