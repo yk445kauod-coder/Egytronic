@@ -21,6 +21,10 @@ rows() {
 sql "CREATE TABLE IF NOT EXISTS _migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')))" > /dev/null
 
 if [ "${1:-}" = "--baseline" ] || [ "${1:-}" = "--adopt" ]; then
+  if [ "$(sql "SELECT COUNT(*) AS n FROM _migrations" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);const r=(Array.isArray(j)?j:[j]).flatMap(x=>x.results||[]);console.log(r[0]?.n ?? 0)})')" != "0" ]; then
+    echo "refusing to adopt: _migrations already has rows — run scripts/migrate.sh instead" >&2
+    exit 1
+  fi
   files=(migrations/*.sql)
   last=$((${#files[@]} - 1))
   for i in "${!files[@]}"; do
