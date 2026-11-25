@@ -12,7 +12,9 @@
     "doc": "node cli.js doc examples/doc-proposal.json --out proposal.html",
     "catalog": "node cli.js catalog",
     "art": "node scripts/gen-pixelfx.mjs",
-    "quote": "node cli.js doc examples/doc-quote.json --out quote.html"
+    "quote": "node cli.js doc examples/doc-quote.json --out quote.html",
+    "fonts": "node scripts/gen-fonts.mjs",
+    "kitchen": "node cli.js doc examples/doc-kitchen.json --out kitchen.html"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

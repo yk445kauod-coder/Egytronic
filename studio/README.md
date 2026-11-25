@@ -67,6 +67,21 @@ MCP (stdio): `node studio/mcp.js`. Register it in Claude Desktop / Cursor / Open
 | `toc` | page numbers written onto each link after pagination |
 | `break` `spacer` `rule` | structure (a `break` right after a `cover` is dropped, the cover already breaks) |
 
+## Fonts, images, charts, long tables
+
+- **46 families, 147 faces, all self-hosted** (`assets/fonts/`, embedded as data URIs so a PDF needs no
+  network). `npm run fonts` fetches arabic + latin woff2 subsets from Google Fonts and appends them to
+  `assets/fonts/fonts.json`; `node scripts/gen-fonts.mjs --list` prints what is installed. Every
+  template takes `fontFamily`, and `styles` overrides sizes per document.
+- **`image`** takes a local path (`src: "assets/pixelfx/aurora.png"`) and inlines it; `fit`, `ratio`,
+  `width`, `align` (full/half/left/right), `caption`.
+- **`chart`** draws bar, line, donut and spark charts as inline SVG in the theme's own colours, with
+  `title`, `unit`, `note`, `height` — no library, no canvas, prints crisply.
+- **Long tables**: `cols[{width,align}]`, `foot`, `dense`, `zebra`. A table over `rowsPerPage`
+  (22 dense / 16) is cut into sheets that start fresh, repeat the head and end the page with
+  «يتبع… (n/m)»; `split: false` keeps it whole. Rows never break mid-row.
+- `npm run kitchen` builds `examples/doc-kitchen.json` — every block in one file.
+
 ## Pixel art (PixelFx)
 
 `assets/pixelfx/` holds four frames rendered from the real code of

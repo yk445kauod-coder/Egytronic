@@ -20,7 +20,7 @@ export default function AllInOne() {
         </ul>
 
         <div className="bundle__foot">
-          <p className="bundle__price">
+          <p className="bundle__price bundle__price--quote">
             <span className="pricerow__from">Price</span>
             <strong>set after the scope is agreed</strong>
           </p>

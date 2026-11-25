@@ -3,6 +3,7 @@
 // Structure lives in templates/doc/base.css, looks in templates/doc/<name>.css.
 import { readFileSync, readdirSync } from "node:fs";
 import { existsSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { fontCss, resolveFamily } from "./fonts.js";
 import { writeArtifact } from "./artifacts.js";
 
@@ -82,7 +83,9 @@ export const DOC_BLOCKS = [
   { type: "list", fields: "items[], ordered?" },
   { type: "figure", fields: "src, alt?, caption?, fit?, ratio?" },
   { type: "art", fields: "name, variant?, caption?", note: "فن بكسل من PixelFx (اسم من assets/pixelfx/manifest.json)." },
-  { type: "table", fields: "head[], rows[][], caption?" },
+  { type: "image", fields: "src, alt?, caption?, fit?, ratio?, width?, align?", note: "صورة من ملف محلي تُدمج داخل المستند." },
+  { type: "chart", fields: "kind(bar|line|donut|spark), title?, data[{label,value}], unit?, height?, note?", note: "رسم SVG داخلي بألوان الثيم." },
+  { type: "table", fields: "head[], rows[][], cols[{width,align}], foot[], dense?, zebra?, rowsPerPage?, split?, caption?", note: "الجدول الطويل يُقسَّم صفحات، وكل صفحة تكرر الرأس وتقول «يتبع…»." },
   { type: "toc", fields: "title?", note: "فهرس بأرقام صفحات حقيقية عبر Paged.js." },
   { type: "break", note: "فاصل صفحات يدوي." },
   { type: "spacer", fields: "height?" },
@@ -97,6 +100,70 @@ const TOKEN_VARS = {
   paper: "--paper", screen: "--screen", callout: "--callout",
   bodySize: "--body-size", h1Size: "--h1-size",
 };
+
+
+const MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", svg: "image/svg+xml" };
+
+/** Images stay in the document: a local path becomes a data URI, so the file prints with no network. */
+export function inlineMedia(src) {
+  const value = String(src || "");
+  if (!value || /^(data:|https?:)/i.test(value)) return value;
+  const file = new URL(value, pathToFileURL(process.cwd() + "/"));
+  if (!existsSync(file)) return "";
+  const ext = value.split(".").pop().toLowerCase();
+  return `data:${MIME[ext] || "application/octet-stream"};base64,${readFileSync(file).toString("base64")}`;
+}
+
+const nf = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+
+function chartSvg(block) {
+  const data = (block.data || []).filter((d) => Number.isFinite(Number(d.value)));
+  if (!data.length) return "";
+  const kind = block.kind || "bar";
+  const w = 640, h = Number(block.height) || (kind === "spark" ? 90 : 240);
+  const values = data.map((d) => Number(d.value));
+  const max = Math.max(...values, 0);
+  const min = Math.min(...values, 0);
+  const span = max - min || 1;
+  const unit = block.unit ? ` ${esc(block.unit)}` : "";
+  const title = block.title ? `<figcaption class="chart__title">${esc(block.title)}</figcaption>` : "";
+  const note = block.note ? `<p class="caption">${esc(block.note)}</p>` : "";
+
+  if (kind === "spark") {
+    const step = data.length > 1 ? w / (data.length - 1) : w;
+    const pts = values.map((v, i) => `${(i * step).toFixed(1)},${(h - ((v - min) / span) * h).toFixed(1)}`).join(" ");
+    return `<figure class="chart chart--spark">${title}<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${escAttr(block.title || "chart")}"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="3"/></svg>${note}</figure>`;
+  }
+  if (kind === "donut") {
+    const r = 70, c = 2 * Math.PI * r, total = values.reduce((a, b) => a + Math.abs(b), 0) || 1;
+    let offset = 0;
+    const arcs = data.map((d, i) => {
+      const len = (Math.abs(Number(d.value)) / total) * c;
+      const el = `<circle r="${r}" cx="90" cy="90" fill="none" stroke="${i % 2 ? "var(--accent)" : "var(--ink)"}" stroke-width="26" stroke-dasharray="${len.toFixed(1)} ${(c - len).toFixed(1)}" stroke-dashoffset="${(-offset).toFixed(1)}"${i % 3 === 2 ? ' opacity="0.45"' : ""}/>`;
+      offset += len;
+      return el;
+    }).join("");
+    const legend = data.map((d, i) => `<li><i style="background:${i % 2 ? "var(--accent)" : "var(--ink)"};${i % 3 === 2 ? "opacity:.45" : ""}"></i>${esc(d.label)}<b>${nf.format(Number(d.value))}${unit}</b></li>`).join("");
+    return `<figure class="chart chart--donut">${title}<div class="chart__row"><svg viewBox="0 0 180 180" role="img" aria-label="${escAttr(block.title || "chart")}"><g transform="rotate(-90 90 90)">${arcs}</g></svg><ul class="chart__legend">${legend}</ul></div>${note}</figure>`;
+  }
+  if (kind === "line") {
+    const pad = 8, step = data.length > 1 ? (w - pad * 2) / (data.length - 1) : w;
+    const y = (v) => h - pad - ((v - min) / span) * (h - pad * 2);
+    const pts = values.map((v, i) => `${(pad + i * step).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+    const dots = values.map((v, i) => `<circle cx="${(pad + i * step).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3.5" fill="var(--accent)"/>`).join("");
+    const labels = data.map((d, i) => `<text x="${(pad + i * step).toFixed(1)}" y="${h - 1}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(d.label)}</text>`).join("");
+    return `<figure class="chart chart--line">${title}<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${escAttr(block.title || "chart")}"><polyline points="${pts}" fill="none" stroke="var(--ink)" stroke-width="2.5"/>${dots}${labels}</svg>${note}</figure>`;
+  }
+  // bar: one value printed on top of each bar, labels underneath
+  const gap = 14, bw = Math.max(10, (w - gap * (data.length + 1)) / data.length);
+  const bars = data.map((d, i) => {
+    const v = Number(d.value);
+    const bh = Math.max(2, ((v - Math.min(0, min)) / span) * (h - 46));
+    const x = gap + i * (bw + gap);
+    return `<rect x="${x.toFixed(1)}" y="${(h - 28 - bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="var(--accent)"${i % 2 ? ' opacity="0.55"' : ""}/><text x="${(x + bw / 2).toFixed(1)}" y="${(h - 32 - bh).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">${nf.format(v)}</text><text x="${(x + bw / 2).toFixed(1)}" y="${h - 10}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(d.label)}</text>`;
+  }).join("");
+  return `<figure class="chart chart--bar">${title}<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${escAttr(block.title || "chart")}">${bars}</svg>${note}</figure>`;
+}
 
 const ART_DIR = new URL("../assets/pixelfx/", import.meta.url);
 const artCache = new Map();
@@ -158,6 +225,9 @@ const escAttr = (value) => esc(value).replace(/"/g, "&quot;");
 const slug = (text, index) =>
   `s-${index}-${String(text || "x").trim().slice(0, 18).replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "x"}`;
 
+const colWidth = (col) => (col && col.width ? ` style="width:${escAttr(col.width)}"` : "");
+const colAlign = (col) => (col && col.align ? ` class="t-${escAttr(col.align)}"` : "");
+
 function cssDecl(style) {
   const map = {
     size: "font-size", leading: "line-height", weight: "font-weight", color: "color", align: "text-align",
@@ -189,14 +259,47 @@ function blockHtml(block, index) {
       const tag = block.ordered ? "ol" : "ul";
       return `<${tag}>${(block.items || []).map((item) => `<li>${esc(item)}</li>`).join("")}</${tag}>`;
     }
+    case "image": {
+      const src = inlineMedia(block.src);
+      if (!src) return `<p class="caption">[صورة غير موجودة: ${esc(block.src)}]</p>`;
+      const style = [block.fit ? `object-fit:${escAttr(block.fit)}` : "", block.ratio ? `aspect-ratio:${escAttr(block.ratio)}` : "",
+        block.width ? `width:${escAttr(block.width)}` : ""].filter(Boolean).join(";");
+      return `<figure class="image${block.align ? ` image--${escAttr(block.align)}` : ""}"><img src="${escAttr(src)}" alt="${escAttr(block.alt || block.caption || "")}"${style ? ` style="${style}"` : ""}>${
+        block.caption ? `<figcaption>${esc(block.caption)}</figcaption>` : ""
+      }</figure>`;
+    }
+    case "chart":
+      return chartSvg(block) || `<p class="caption">[رسم بلا بيانات]</p>`;
     case "figure":
       return `<figure>${block.src ? `<img src="${escAttr(block.src)}" alt="${escAttr(block.alt || block.caption || "")}" style="object-fit:${block.fit || "cover"};aspect-ratio:${block.ratio || "16/9"}">` : ""}${
         block.caption ? `<figcaption>${esc(block.caption)}</figcaption>` : ""
       }</figure>`;
     case "table": {
-      const head = block.head ? `<thead><tr>${block.head.map((cell) => `<th>${esc(cell)}</th>`).join("")}</tr></thead>` : "";
-      const body = (block.rows || []).map((row) => `<tr>${row.map((cell) => `<td>${esc(cell)}</td>`).join("")}</tr>`).join("");
-      return `<table>${head}<tbody>${body}</tbody></table>${block.caption ? `<p class="caption">${esc(block.caption)}</p>` : ""}`;
+      const classes = ["table", block.dense ? "table--dense" : "", block.zebra === false ? "table--plain" : ""].filter(Boolean).join(" ");
+      const cols = block.cols || [];
+      const head = block.head
+        ? `<thead><tr>${block.head.map((cell, i) => `<th${colWidth(cols[i])}>${esc(cell)}</th>`).join("")}</tr></thead>`
+        : "";
+      const row = (cells, tag = "td") =>
+        `<tr>${cells.map((cell, i) => `<${tag}${colAlign(cols[i])}>${esc(cell)}</${tag}>`).join("")}</tr>`;
+      // Paged.js does not split a table row group across sheets, so a long table is cut here into
+      // sheets of rowsPerPage rows (24 dense, 18 normal), each repeating the head and saying "يتبع".
+      const rows = block.rows || [];
+      const perPage = Number(block.rowsPerPage) || (block.dense ? 22 : 16);
+      const chunks = block.split === false || rows.length <= perPage
+        ? [rows]
+        : Array.from({ length: Math.ceil(rows.length / perPage) }, (_, i) => rows.slice(i * perPage, (i + 1) * perPage));
+      return chunks
+        .map((chunk, i) => {
+          const last = i === chunks.length - 1;
+          const foot = last && (block.foot || []).length ? `<tfoot><tr>${block.foot.map((cell, k) => `<td${colAlign(cols[k])}>${esc(cell)}</td>`).join("")}</tr></tfoot>` : "";
+          const more = !last ? ` table--cont` : "";
+          const caption = block.caption && i === 0 ? `<p class="caption">${esc(block.caption)}</p>` : "";
+          const cont = !last ? `<p class="caption table__cont">يتبع… (${i + 1}/${chunks.length})</p>` : "";
+          const brk = i > 0 || (chunks.length > 1 && block.newPage !== false) ? '<div class="page-break"></div>' : "";
+          return `${brk}<table class="${classes}${more}">${head}<tbody>${chunk.map((cells) => row(cells)).join("")}</tbody>${foot}</table>${caption}${cont}`;
+        })
+        .join("");
     }
     case "toc": {
       const entries = (block.entries || []).map((entry) => `<li><a href="#${escAttr(entry.id)}">${esc(entry.text)}</a></li>`).join("");

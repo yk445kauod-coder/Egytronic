@@ -198,7 +198,7 @@ check("cover: the body starts on the next sheet", await page.evaluate(() => {
 
 // 5. Fonts
 const fonts = listFonts();
-check("fonts: 16 families", fonts.length >= 16, `${fonts.length}`);
+check("fonts: every listed family", fonts.length >= 16, `${fonts.length}`);
 const missing = fonts.flatMap((font) => (fontBytes(font.family) || 0) === 0 ? [font.family] : []);
 check("fonts: every family has bytes", missing.length === 0, missing.join(",") || "all embedded");
 const faces = MANIFEST.flatMap((entry) => entry.files);
@@ -206,9 +206,14 @@ check("fonts: manifest subsets cover arabic+latin", faces.some((f) => f.subset =
 
 // 6. Voice guard rails (no keys in this environment)
 const { tts } = await import("../lib/voice.js");
+const hasVoiceKey = Boolean(process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY);
 let voiceError = "";
-try { await tts({ text: "x" }); } catch (error) { voiceError = error.message; }
-check("voice: refuses without a key, with a clear message", /no voice provider/.test(voiceError), voiceError);
+if (!hasVoiceKey) {
+  try { await tts({ text: "x" }); } catch (error) { voiceError = error.message; }
+  check("voice: refuses without a key, with a clear message", /no voice provider/.test(voiceError), voiceError);
+} else {
+  console.log("SKIP  voice: a provider key is in the environment");
+}
 
 // 6b. Pixel art system: real PixelFx frames, embedded, and the quotation template
 const artDir = new URL("../assets/pixelfx/", import.meta.url);
@@ -245,6 +250,23 @@ const quoteDom = await page.evaluate(() => ({
 }));
 check("pixel: theme tokens and cover art reach the page", quoteDom.accent === "#C9281F" && quoteDom.art, `${quoteDom.accent} · art ${quoteDom.art}`);
 check("pixel: the quotation paginates with its table", quoteDom.sheets >= 1 && quoteDom.rows === 2, `${quoteDom.sheets} sheet(s), ${quoteDom.rows} rows`);
+
+
+// 6c. Images, charts and long tables
+const kitchen = buildDocToFile(JSON.parse(readFileSync(new URL("../examples/doc-kitchen.json", import.meta.url), "utf8")), "verify-kitchen.html");
+await page.goto(pathToFileURL(kitchen.file.path).href, { waitUntil: "load" });
+await page.waitForSelector('html[data-ready="1"]', { timeout: 60000 });
+const k = await page.evaluate(() => ({
+  sheets: document.querySelectorAll(".pagedjs_page").length,
+  charts: document.querySelectorAll("figure.chart svg").length,
+  image: (document.querySelector(".image img") || {}).src || "",
+  rows: document.querySelectorAll(".pagedjs_page tbody tr").length,
+  heads: document.querySelectorAll(".pagedjs_page thead").length,
+}));
+check("kitchen: charts draw as inline SVG", k.charts === 3, `${k.charts} charts`);
+check("kitchen: a local image is inlined", k.image.startsWith("data:image/png;base64,"), `${Math.round(k.image.length / 1024)} KB`);
+check("kitchen: a 35-row table breaks across sheets, head repeated", k.sheets >= 4 && k.rows === 35 && k.heads >= 2, `${k.sheets} sheets, ${k.rows} rows, ${k.heads} heads`);
+check("fonts: a deep family set", readFileSync(new URL("../assets/fonts/fonts.json", import.meta.url), "utf8").match(/"family"/g).length >= 40, `${readFileSync(new URL("../assets/fonts/fonts.json", import.meta.url), "utf8").match(/"family"/g).length} families`);
 
 // 7. Library surface
 check("blocks: documented block list covers the builder", DOC_BLOCKS.length >= 14 && DOC_BLOCKS.some((b) => b.type === "cover"), DOC_BLOCKS.map((b) => b.type).join(","));
