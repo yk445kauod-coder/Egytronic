@@ -64,6 +64,7 @@ def sitemap() -> None:
         ("/software/", "0.7", "src/pages/Software.tsx", today),
         ("/blog/", "0.9", "src/data/posts.ts", today),
         ("/contact/", "0.7", "src/pages/Contact.tsx", today),
+        ("/answers/", "0.8", "src/pages/Answers.tsx", today),
     ]
     for slug, day in posts:
         pages.append((f"/blog/{slug}/", "0.6", "src/data/posts.ts", day))
