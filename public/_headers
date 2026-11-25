@@ -1,0 +1,22 @@
+# Cloudflare Pages headers.
+# Only fingerprinted files are immutable: app-<hash>.js/.css, fonts, images, icons.
+# /assets/css/*.css (fonts.css, tokens.css, base.css) keep stable names, so they revalidate.
+
+/assets/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/img/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/icons/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
