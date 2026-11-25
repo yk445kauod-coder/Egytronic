@@ -1,0 +1,10 @@
+{
+  "label": "Editorial — عرض/تقرير بصفحة واحدة",
+  "fontFamily": "Alexandria",
+  "preset": "a4-portrait",
+  "styles": {
+    "h1": { "size": "36pt", "weight": 800, "margin": "0 0 4mm" },
+    "h2": { "size": "18pt" },
+    "body": { "size": "10.5pt" }
+  }
+}

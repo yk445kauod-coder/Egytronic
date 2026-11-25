@@ -1,0 +1,10 @@
+{
+  "label": "Brief — صفحة A5 سريعة",
+  "fontFamily": "Noto Naskh Arabic",
+  "preset": "a5-portrait",
+  "styles": {
+    "h1": { "size": "26pt", "weight": 700 },
+    "h2": { "size": "14pt", "weight": 700 },
+    "body": { "size": "10pt", "leading": "1.75" }
+  }
+}

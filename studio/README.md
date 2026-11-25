@@ -71,8 +71,35 @@ Latin: Inter, Space Grotesk, DM Serif Display, Bebas Neue, Playfair Display, Jet
 | `toc` | page numbers computed by Paged.js `target-counter` |
 | `break` `spacer` `rule` | structure |
 
-Print → PDF from the toolbar button (or Ctrl+P). Bleed and crop marks only when
-`marks: true` is asked for. Page furniture (folio `1 / 4`) is on every page except the first.
+### Printing
+
+The only export is `window.print()` — the toolbar button calls it (Ctrl+P works too). The print
+stylesheet zeroes the paper margin (`@page { margin: 0 }`) because every Paged.js sheet already
+carries the document margins; leaving a paper margin there shrinks each page and adds blank sheets.
+Colours are forced (`print-color-adjust: exact`) so callouts and table heads survive the printer.
+
+### Templates — edit these, not the code
+
+```
+studio/templates/doc/
+  base.css        structure for every document (margins, columns, tables, TOC, print rules)
+  editorial.css   look: title block, hairlines        editorial.json  defaults: font, page, styles
+  report.css      look: dense two columns, accents    report.json
+  brief.css       look: A5, generous leading          brief.json
+```
+
+`<name>.json` sets the defaults (font family, preset, paragraph styles) and `<name>.css` sets the
+look; the two are inlined into the artifact together with `base.css`. Choose one with
+`template` in the model or `--template report`. To add a template, drop `<name>.json` +
+`<name>.css` in that folder — it is listed by `studio_doc` and the CLI immediately.
+
+Document `styles` still win over the template for one-off adjustments:
+
+```json
+{ "template": "report", "styles": { "h1": { "size": "26pt" }, "body": { "size": "9pt" } } }
+```
+
+Bleed and crop marks only when `marks: true` is asked for.
 
 ## Not built yet
 

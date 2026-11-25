@@ -9,7 +9,7 @@ import { listFonts } from "./lib/fonts.js";
 import { BLOCKS } from "./runtime/blocks.js";
 import { ARTIFACT_DIR, listArtifacts, resolveArtifact } from "./lib/artifacts.js";
 import { statSync } from "node:fs";
-import { buildDocToFile, PAGE_PRESETS, PAGE_SIZES } from "./lib/doc.js";
+import { buildDocToFile, PAGE_PRESETS, PAGE_SIZES, listTemplates } from "./lib/doc.js";
 
 const server = new McpServer({ name: "egytronic-studio", version: "0.1.0" });
 
@@ -178,14 +178,14 @@ server.registerTool(
     description:
       "Build a paginated print document: page size and margins, master page with running head and folio, paragraph styles, columns, figures, tables, callouts, automatic TOC with page numbers. Opens as HTML, prints to PDF from the browser.",
     inputSchema: {
-      doc: z.any().describe("Document model: {name,preset|page,margin,bleed,lang,fontFamily,styles,master,content[]}"),
+      doc: z.any().describe("Document model: {name,template,preset|page,margin,lang,fontFamily,styles,master,content[]}"),
       out: z.string().optional(),
     },
   },
   async ({ doc, out }) => {
     try {
       const { file } = buildDocToFile(doc, out || `${doc.name || "document"}.html`);
-      return json({ ok: true, artifact: file.path, bytes: file.bytes, page: doc.page || PAGE_PRESETS[doc.preset]?.size || "A4", sizes: Object.keys(PAGE_SIZES), print: "open then press the print button (or Ctrl+P) → save as PDF" });
+      return json({ ok: true, artifact: file.path, bytes: file.bytes, template: doc.template || "editorial", page: doc.page || PAGE_PRESETS[doc.preset]?.size || "A4", templates: listTemplates(), print: "open the file, press the print button (window.print) → save as PDF" });
     } catch (error) {
       return fail(error);
     }

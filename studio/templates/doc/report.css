@@ -1,0 +1,5 @@
+/* Report: dense, two columns, boxed callouts. */
+h1 { padding-bottom: 3mm; border-bottom: 2px solid var(--accent); }
+h2 { margin-top: 6mm; }
+table { font-size: 8.5pt; }
+.callout { border-radius: 0; border-inline-start: 4px solid var(--accent); background: #FAF7F0; }

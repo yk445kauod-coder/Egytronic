@@ -1,0 +1,7 @@
+/* Editorial: a title block that breathes, hairline rules, quiet captions. */
+h1 { letter-spacing: -0.01em; }
+.lead { color: #2A2A2A; max-width: 58ch; }
+h2 { padding-bottom: 1.5mm; border-bottom: 1px solid var(--rule); }
+.toc { margin-top: 8mm; }
+figure { border: 1px solid var(--rule); padding: 2mm; }
+thead th { background: transparent; border-bottom: 1.5px solid var(--ink); }

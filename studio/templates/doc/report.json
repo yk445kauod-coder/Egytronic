@@ -1,0 +1,10 @@
+{
+  "label": "Report — تقرير بعمودين",
+  "fontFamily": "IBM Plex Sans Arabic",
+  "preset": "a4-two-column",
+  "styles": {
+    "h1": { "size": "30pt", "weight": 700 },
+    "h2": { "size": "15pt", "weight": 600 },
+    "body": { "size": "9.5pt", "leading": "1.7" }
+  }
+}

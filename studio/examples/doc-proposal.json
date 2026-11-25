@@ -1,6 +1,7 @@
 {
   "name": "egytronic-proposal",
   "preset": "a4-two-column",
+  "template": "report",
   "lang": "ar",
   "fontFamily": "Alexandria",
   "master": { "header": "Egytronic — عرض تعاون", "pageNumbers": true },
