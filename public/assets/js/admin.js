@@ -241,58 +241,91 @@
   const empty = { rows: [] };
   const pick = (permission) => (permission && !can(permission) ? Promise.resolve(empty) : null);
 
+  // A single failing endpoint must never blank the whole console: each section
+  // settles on its own and keeps its previous data when the request fails.
+  const settle = (label, run) =>
+    Promise.resolve()
+      .then(run)
+      .then((value) => ({ label, value }))
+      .catch((error) => ({ label, error }));
+
   async function loadAll() {
     state.loading = true;
     setSync("جارٍ التحديث…");
-    try {
-      const integrationBundle = async () => {
-      const [overview, keys, connectors, automations, webhooks, events] = await Promise.all([
-        api("/integrations"),
-        api("/integrations/keys"),
-        api("/integrations/connectors"),
-        api("/integrations/automations"),
-        api("/integrations/webhooks"),
-        api("/integrations/events?limit=15"),
+    const prev = state.data;
+    const integrationBundle = async () => {
+      const parts = await Promise.all([
+        settle("integrators", () => api("/integrations")),
+        settle("keys", () => api("/integrations/keys")),
+        settle("connectors", () => api("/integrations/connectors")),
+        settle("automations", () => api("/integrations/automations")),
+        settle("webhooks", () => api("/integrations/webhooks")),
+        settle("events", () => api("/integrations/events?limit=15")),
       ]);
-      return { overview, keys: keys.rows, connectors: connectors.rows, automations: automations.rows, webhooks: webhooks.rows, events: events.rows };
+      const [overview, keys, connectors, automations, webhooks, events] = parts;
+      if (overview.error) throw overview.error;
+      return {
+        overview: overview.value,
+        keys: keys.value?.rows || [],
+        connectors: connectors.value?.rows || [],
+        automations: automations.value?.rows || [],
+        webhooks: webhooks.value?.rows || [],
+        events: events.value?.rows || [],
+      };
     };
 
-    const [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects, integrations] = await Promise.all([
-        api("/me"),
-        api("/metrics"),
-        pick("inquiries.view") ?? api("/inquiries?limit=300"),
-        pick("clients.view") ?? api("/clients"),
-        api("/tasks"),
-        api("/members"),
-        api("/channels"),
-        pick("agents.manage") ?? api("/agents"),
-        pick("inquiries.view") ?? api("/activities?limit=40"),
-        pick("projects.view") ?? api("/projects"),
-        pick("integrations.view") ?? integrationBundle(),
+    try {
+      const [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects, integrations] = await Promise.all([
+        settle("الحساب", () => api("/me")),
+        settle("الأرقام", () => api("/metrics")),
+        settle("الطلبات", () => pick("inquiries.view") ?? api("/inquiries?limit=300")),
+        settle("العملاء", () => pick("clients.view") ?? api("/clients")),
+        settle("المهام", () => api("/tasks")),
+        settle("الفريق", () => api("/members")),
+        settle("القنوات", () => api("/channels")),
+        settle("الوكلاء", () => pick("agents.manage") ?? api("/agents")),
+        settle("النشاط", () => pick("inquiries.view") ?? api("/activities?limit=40")),
+        settle("المشاريع", () => pick("projects.view") ?? api("/projects")),
+        settle("التكامل", () => pick("integrations.view") ?? integrationBundle()),
       ]);
-      state.space = space;
+
+      const failed = [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects, integrations]
+        .filter((part) => part.error)
+        .map((part) => part.label);
+      const unauthorised = [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects, integrations]
+        .some((part) => String(part.error?.message) === "unauthorized");
+      if (unauthorised) throw new Error("unauthorized");
+
+      state.space = space.value ?? prev.space ?? state.space;
       Object.assign(state.data, {
-        metrics,
-        leads: leads.rows,
-        clients: clients.rows,
-        tasks: tasks.rows,
-        members: members.rows,
-        channels: channels.rows,
-        agents: agents.rows,
-        activities: activities.rows,
-        projects: projects.rows || [],
-        integrations: integrations.overview ? integrations : { overview: null, keys: [], connectors: [], automations: [], webhooks: [], events: [] },
+        metrics: metrics.value ?? prev.metrics,
+        leads: leads.value?.rows ?? prev.leads,
+        clients: clients.value?.rows ?? prev.clients,
+        tasks: tasks.value?.rows ?? prev.tasks,
+        members: members.value?.rows ?? prev.members,
+        channels: channels.value?.rows ?? prev.channels,
+        agents: agents.value?.rows ?? prev.agents,
+        activities: activities.value?.rows ?? prev.activities,
+        projects: projects.value?.rows ?? prev.projects,
+        integrations: integrations.value?.overview
+          ? integrations.value
+          : prev.integrations || { overview: null, keys: [], connectors: [], automations: [], webhooks: [], events: [] },
       });
-      setSync("متصل");
+
+      if (failed.length) {
+        setSync(`تعذّر التحديث: ${failed.join("، ")}`);
+        toast(`تعذّر تحميل: ${failed.join("، ")}`, "bad");
+      } else {
+        setSync("متصل");
+      }
       const clock = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
       const sub = $("[data-sub]");
       if (sub) sub.textContent = `آخر تحديث ${clock}`;
       render();
     } catch (err) {
-      if (String(err.message) !== "unauthorized") {
-        setSync("تعذّر الاتصال");
-        toast("تعذّر تحميل البيانات", "bad");
-      }
+      if (String(err.message) === "unauthorized") return;
+      setSync("تعذّر الاتصال");
+      toast("تعذّر تحميل البيانات", "bad");
     } finally {
       state.loading = false;
     }

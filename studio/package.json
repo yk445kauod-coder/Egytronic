@@ -1,0 +1,21 @@
+{
+  "name": "@egytronic/studio",
+  "private": true,
+  "type": "module",
+  "description": "Agent-driven motion graphics, voice and print studio. Emits self-contained HTML renders.",
+  "bin": { "egx-studio": "./cli.js" },
+  "scripts": {
+    "bundle": "node scripts/bundle.mjs",
+    "mcp": "node mcp.js",
+    "example": "node cli.js reel examples/reel-egytronic.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "fflate": "^0.8.3",
+    "mediabunny": "^1.66.4",
+    "pagedjs": "^0.4.3",
+    "svgpath": "^2.6.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": { "esbuild": "^0.28.2" }
+}
