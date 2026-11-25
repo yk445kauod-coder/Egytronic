@@ -131,6 +131,8 @@ const PERMISSIONS = [
   "channels.post",
   "code.view",
   "code.manage",
+  "integrations.view",
+  "integrations.manage",
   "agents.manage",
   "settings.manage",
 ];
@@ -587,6 +589,8 @@ async function emit(env, kind, entity, entityId, actor, payload) {
     .prepare("INSERT INTO events (kind, entity, entity_id, actor, payload) VALUES (?, ?, ?, ?, ?)")
     .bind(kind, entity, entityId ?? null, actor || "system", payload ? JSON.stringify(payload) : null)
     .run();
+  // event automations subscribe to this bus; the query returns nothing when none match
+  await dispatchEvent(env, kind, payload || {}, actor || "system");
 }
 
 // every lead should land somewhere a human reads; the channel is created on demand
@@ -2264,6 +2268,665 @@ async function codeCommit(env, creds, url) {
 
 // ── router ───────────────────────────────────────────────────────────
 
+// ── integrations ─────────────────────────────────────────────────────
+// Keys in, connectors and automations out. An automation is one row: a trigger
+// (cron, event or manual), a connector and a message template. The event bus is
+// the existing `events` table, so anything the console records can fan out.
+
+const INTEGRATION_SCOPES = ["events:read", "events:write", "automations:run"];
+const CONNECTOR_KINDS = new Set(["http", "slack", "discord"]);
+const TRIGGER_TYPES = new Set(["cron", "event", "manual"]);
+const RUN_LIMIT = 3;
+const FETCH_TIMEOUT = 5000;
+
+const sqlNow = () => new Date().toISOString().slice(0, 19).replace("T", " ");
+const slugOk = (value) => /^[a-z0-9][a-z0-9-]{1,39}$/.test(String(value || ""));
+const publicBase = (request) => (request?.url ? new URL(request.url).origin : "https://egytronic.pages.dev");
+
+const hex = (bytes) => [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
+
+// https everywhere, plus plain http for services on the local network (an internal
+// ERP or a machine on the office LAN is a legitimate connector target).
+function connectorUrlOk(value) {
+  try {
+    const url = new URL(String(value || ""));
+    if (url.protocol === "https:") return true;
+    if (url.protocol !== "http:") return false;
+    const host = url.hostname;
+    return (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "::1" ||
+      host.endsWith(".local") ||
+      /^10\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function hmacHex(secret, message) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return hex(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message)));
+}
+
+async function integrationWho(env, request) {
+  const token = bearer(request, new URL(request.url));
+  if (!token || !token.startsWith("egx_int_")) return null;
+  const row = await env.DB
+    .prepare("SELECT id, name, scopes, active FROM integration_keys WHERE key_sha256 = ?")
+    .bind(await sha256(token))
+    .first();
+  if (!row || !row.active) return null;
+  await env.DB.prepare("UPDATE integration_keys SET last_used_at = datetime('now') WHERE id = ?").bind(row.id).run();
+  const scopes = String(row.scopes || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return { role: "integration", id: row.id, name: row.name, scopes };
+}
+
+const integrationCan = (who, scope) => Boolean(who?.scopes?.includes(scope) || who?.scopes?.includes("admin"));
+
+// ── cron (5 fields, UTC) ────────────────────────────────────────────
+
+function cronField(part, min, max) {
+  const values = new Set();
+  for (const piece of String(part ?? "").split(",")) {
+    const [span, stepRaw] = piece.split("/");
+    const step = Math.max(1, int(stepRaw, 1) || 1);
+    let start = min;
+    let end = max;
+    if (span !== "*") {
+      const [a, b] = span.split("-");
+      start = int(a, min);
+      end = b === undefined ? (stepRaw ? max : start) : int(b, max);
+    }
+    if (start === null || end === null || start > end) return null;
+    for (let v = start; v <= end; v += step) if (v >= min && v <= max) values.add(v);
+  }
+  return values.size ? values : null;
+}
+
+const CRON_RANGES = [
+  [0, 59],
+  [0, 23],
+  [1, 31],
+  [1, 12],
+  [0, 6],
+];
+
+function parseCron(expr) {
+  const parts = String(expr || "").trim().split(/\s+/);
+  if (parts.length !== 5) return null;
+  const fields = parts.map((part, index) => cronField(part, CRON_RANGES[index][0], CRON_RANGES[index][1]));
+  if (fields.some((field) => !field)) return null;
+  const [mi, ho, dom, mo, dow] = fields;
+  return { mi, ho, dom, mo, dow };
+}
+
+const cronMatches = (sets, date) =>
+  sets.mi.has(date.getUTCMinutes()) &&
+  sets.ho.has(date.getUTCHours()) &&
+  sets.mo.has(date.getUTCMonth() + 1) &&
+  sets.dom.has(date.getUTCDate()) &&
+  sets.dow.has(date.getUTCDay());
+
+function nextCron(expr, from = new Date()) {
+  const sets = parseCron(expr);
+  if (!sets) return null;
+  const cursor = new Date(Math.floor(from.getTime() / 60000) * 60000 + 60000);
+  for (let i = 0; i < 60 * 24 * 40; i += 1) {
+    if (cronMatches(sets, cursor)) return cursor.toISOString().slice(0, 19).replace("T", " ");
+    cursor.setUTCMinutes(cursor.getUTCMinutes() + 1);
+  }
+  return null;
+}
+
+// ── templates ───────────────────────────────────────────────────────
+
+function pickPath(source, path) {
+  return String(path)
+    .split(".")
+    .reduce((value, key) => {
+      if (value === null || value === undefined) return undefined;
+      if (Array.isArray(value)) return value[int(key, 0)];
+      return typeof value === "object" ? value[key] : undefined;
+    }, source);
+}
+
+function renderTemplate(template, ctx) {
+  return String(template ?? "").replace(/\{\{\s*(json\s+)?([a-zA-Z0-9_.]+)\s*\}\}/g, (_, asJson, path) => {
+    const value = pickPath(ctx, path);
+    if (value === undefined || value === null) return "";
+    if (asJson) return JSON.stringify(value);
+    return typeof value === "object" ? JSON.stringify(value) : String(value);
+  });
+}
+
+const matchEvent = (pattern, kind) => {
+  if (!pattern) return false;
+  if (pattern === "*") return true;
+  const body = String(pattern)
+    .split("*")
+    .map((chunk) => chunk.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join(".*");
+  return new RegExp(`^${body}$`).test(String(kind || ""));
+};
+
+// ── running an automation ───────────────────────────────────────────
+
+async function runAutomation(env, automation, trigger, ctx) {
+  const started = Date.now();
+  // id 0 is the connector test: it reports the result without writing a run row
+  const persist = Boolean(automation.id);
+  const finish = async (status, detail) => {
+    if (persist) {
+      await env.DB
+        .prepare("INSERT INTO automation_runs (automation_id, trigger, status, detail, duration_ms) VALUES (?, ?, ?, ?, ?)")
+        .bind(automation.id, trigger, status, String(detail || "").slice(0, 400), Date.now() - started)
+        .run();
+      await env.DB
+        .prepare("UPDATE automations SET runs = runs + 1, last_run_at = datetime('now'), last_status = ? WHERE id = ?")
+        .bind(status, automation.id)
+        .run();
+    }
+    return { id: automation.id, name: automation.name, status, detail: String(detail || "").slice(0, 200) };
+  };
+
+  const connector = automation.connector_id
+    ? await env.DB.prepare("SELECT * FROM connectors WHERE id = ?").bind(automation.connector_id).first()
+    : null;
+  if (!connector) return finish("no-connector", "الأتمتة مش مربوطة بموصّل");
+  if (!connector.active) return finish("paused", "الموصّل متوقف");
+
+  const text = renderTemplate(automation.template || "{{event.kind}}", ctx).slice(0, 4000);
+  const body =
+    connector.kind === "slack"
+      ? { text }
+      : connector.kind === "discord"
+        ? { content: text }
+        : { text, automation: automation.name, event: ctx.event, payload: ctx.payload ?? null };
+
+  const headers = { "content-type": "application/json" };
+  if (connector.headers) {
+    try {
+      Object.assign(headers, JSON.parse(connector.headers));
+    } catch {
+      /* a broken headers blob must not stop the run */
+    }
+  }
+  if (connector.secret) headers.authorization = `Bearer ${connector.secret}`;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  try {
+    const res = await fetch(connector.url, {
+      method: connector.method || "POST",
+      headers,
+      body: connector.method === "GET" ? undefined : JSON.stringify(body),
+      signal: controller.signal,
+    });
+    await env.DB
+      .prepare("UPDATE connectors SET last_status = ?, last_at = datetime('now') WHERE id = ?")
+      .bind(String(res.status), connector.id)
+      .run();
+    return finish(res.ok ? "sent" : `http-${res.status}`, `${connector.name} → HTTP ${res.status}`);
+  } catch (err) {
+    await env.DB.prepare("UPDATE connectors SET last_status = 'error', last_at = datetime('now') WHERE id = ?").bind(connector.id).run();
+    return finish("error", String(err?.message || err));
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function dispatchEvent(env, kind, payload, source) {
+  const { results } = await env.DB.prepare("SELECT * FROM automations WHERE enabled = 1 AND trigger_type = 'event'").all();
+  const matched = (results || []).filter((row) => matchEvent(row.event_key, kind)).slice(0, RUN_LIMIT);
+  if (!matched.length) return { matched: 0, ran: [] };
+
+  const ctx = { event: { kind, source: source || "system" }, payload: payload ?? null, now: new Date().toISOString() };
+  const ran = [];
+  for (const automation of matched) ran.push(await runAutomation(env, automation, `event:${kind}`, ctx));
+  return { matched: matched.length, ran };
+}
+
+async function runDueAutomations(env) {
+  const now = sqlNow();
+  const { results } = await env.DB.prepare("SELECT * FROM automations WHERE enabled = 1 AND trigger_type = 'cron'").all();
+  const ran = [];
+  for (const automation of results || []) {
+    if (automation.next_run_at && automation.next_run_at > now) continue;
+    const ctx = { event: { kind: "schedule", schedule: automation.schedule }, payload: null, now: new Date().toISOString() };
+    ran.push(await runAutomation(env, automation, "cron", ctx));
+    await env.DB
+      .prepare("UPDATE automations SET next_run_at = ? WHERE id = ?")
+      .bind(nextCron(automation.schedule, new Date()), automation.id)
+      .run();
+  }
+  return ran;
+}
+
+// ── console endpoints ───────────────────────────────────────────────
+
+const slimConnector = (row) => ({
+  id: row.id,
+  name: row.name,
+  kind: row.kind,
+  url: row.url,
+  method: row.method,
+  has_secret: Boolean(row.secret),
+  active: Boolean(row.active),
+  last_status: row.last_status,
+  last_at: row.last_at,
+});
+
+const slimAutomation = (row) => ({
+  id: row.id,
+  name: row.name,
+  description: row.description,
+  trigger_type: row.trigger_type,
+  schedule: row.schedule,
+  event_key: row.event_key,
+  connector_id: row.connector_id,
+  template: row.template,
+  enabled: Boolean(row.enabled),
+  runs: row.runs,
+  last_run_at: row.last_run_at,
+  last_status: row.last_status,
+  next_run_at: row.next_run_at,
+});
+
+const slimWebhook = (row) => ({
+  id: row.id,
+  slug: row.slug,
+  name: row.name,
+  has_secret: Boolean(row.secret),
+  active: Boolean(row.active),
+  deliveries: row.deliveries,
+  last_at: row.last_at,
+});
+
+async function integrationsOverview(env, request) {
+  const count = async (sql) => (await env.DB.prepare(sql).first())?.n ?? 0;
+  const [connectors, automations, hooks, keys, events] = await Promise.all([
+    count("SELECT COUNT(*) AS n FROM connectors"),
+    count("SELECT COUNT(*) AS n FROM automations WHERE enabled = 1"),
+    count("SELECT COUNT(*) AS n FROM webhooks WHERE active = 1"),
+    count("SELECT COUNT(*) AS n FROM integration_keys WHERE active = 1"),
+    count("SELECT COUNT(*) AS n FROM events"),
+  ]);
+  const runs = await env.DB
+    .prepare(
+      `SELECT r.id, r.created_at, r.trigger, r.status, r.detail, r.duration_ms, a.name
+       FROM automation_runs r LEFT JOIN automations a ON a.id = r.automation_id
+       ORDER BY r.id DESC LIMIT 10`
+    )
+    .all();
+  return json({
+    ok: true,
+    base: publicBase(request),
+    counts: { connectors, automations, hooks, keys, events },
+    runs: runs.results || [],
+    kinds: [...CONNECTOR_KINDS],
+    scopes: INTEGRATION_SCOPES,
+  });
+}
+
+async function listIntegrationKeys(env) {
+  const { results } = await env.DB
+    .prepare("SELECT id, created_at, name, scopes, active, last_used_at, created_by FROM integration_keys ORDER BY id DESC")
+    .all();
+  return json({ ok: true, rows: results });
+}
+
+async function createIntegrationKey(env, payload, who) {
+  const name = clean(payload.name, 60);
+  if (name.length < 2) return json({ ok: false, code: "name" }, 400);
+  const scopes = String(payload.scopes || "events:write")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => INTEGRATION_SCOPES.includes(s));
+  if (!scopes.length) scopes.push("events:write");
+  const key = `egx_int_${crypto.randomUUID().replace(/-/g, "")}`;
+  const row = await env.DB
+    .prepare("INSERT INTO integration_keys (name, key_sha256, scopes, created_by) VALUES (?, ?, ?, ?) RETURNING id, name, scopes, created_at")
+    .bind(name, await sha256(key), scopes.join(","), who?.name || null)
+    .first();
+  await emit(env, "integration.key_created", "integration_key", row.id, who?.name || "system", { name, scopes: scopes.join(",") });
+  return json({ ok: true, row: { ...row, key } });
+}
+
+async function patchIntegrationKey(env, id, payload) {
+  const sets = [];
+  const values = [];
+  if (payload.active !== undefined) {
+    sets.push("active = ?");
+    values.push(payload.active ? 1 : 0);
+  }
+  if (payload.name !== undefined) {
+    sets.push("name = ?");
+    values.push(clean(payload.name, 60));
+  }
+  if (!sets.length) return json({ ok: false, code: "nothing" }, 400);
+  await env.DB.prepare(`UPDATE integration_keys SET ${sets.join(", ")} WHERE id = ?`).bind(...values, id).run();
+  return json({ ok: true });
+}
+
+async function deleteIntegrationKey(env, id) {
+  await env.DB.prepare("DELETE FROM integration_keys WHERE id = ?").bind(id).run();
+  return json({ ok: true });
+}
+
+async function listConnectors(env) {
+  const { results } = await env.DB.prepare("SELECT * FROM connectors ORDER BY id DESC").all();
+  return json({ ok: true, rows: (results || []).map(slimConnector) });
+}
+
+async function createConnector(env, payload) {
+  const name = clean(payload.name, 60);
+  const url = clean(payload.url, 500);
+  const kind = CONNECTOR_KINDS.has(String(payload.kind)) ? String(payload.kind) : "http";
+  if (name.length < 2) return json({ ok: false, code: "name" }, 400);
+  if (!connectorUrlOk(url)) return json({ ok: false, code: "url" }, 400);
+  const headers = payload.headers ? JSON.stringify(payload.headers).slice(0, 2000) : null;
+  const row = await env.DB
+    .prepare("INSERT INTO connectors (name, kind, url, method, headers, secret) VALUES (?, ?, ?, ?, ?, ?) RETURNING id")
+    .bind(name, kind, url, clean(payload.method, 8) || "POST", headers, clean(payload.secret, 500) || null)
+    .first();
+  await emit(env, "integration.connector_created", "connector", row.id, "console", { name, kind });
+  return json({ ok: true, id: row.id });
+}
+
+async function patchConnector(env, id, payload) {
+  const sets = [];
+  const values = [];
+  if (payload.name !== undefined) {
+    sets.push("name = ?");
+    values.push(clean(payload.name, 60));
+  }
+  if (payload.url !== undefined) {
+    const url = clean(payload.url, 500);
+    if (!connectorUrlOk(url)) return json({ ok: false, code: "url" }, 400);
+    sets.push("url = ?");
+    values.push(url);
+  }
+  if (payload.kind !== undefined && CONNECTOR_KINDS.has(String(payload.kind))) {
+    sets.push("kind = ?");
+    values.push(String(payload.kind));
+  }
+  if (payload.method !== undefined) {
+    sets.push("method = ?");
+    values.push(clean(payload.method, 8) || "POST");
+  }
+  if (payload.active !== undefined) {
+    sets.push("active = ?");
+    values.push(payload.active ? 1 : 0);
+  }
+  if (payload.secret !== undefined) {
+    sets.push("secret = ?");
+    values.push(clean(payload.secret, 500) || null);
+  }
+  if (!sets.length) return json({ ok: false, code: "nothing" }, 400);
+  await env.DB.prepare(`UPDATE connectors SET ${sets.join(", ")} WHERE id = ?`).bind(...values, id).run();
+  return json({ ok: true });
+}
+
+async function deleteConnector(env, id) {
+  await env.DB.prepare("DELETE FROM connectors WHERE id = ?").bind(id).run();
+  return json({ ok: true });
+}
+
+async function testConnector(env, id) {
+  const connector = await env.DB.prepare("SELECT * FROM connectors WHERE id = ?").bind(id).first();
+  if (!connector) return json({ ok: false, code: "missing" }, 404);
+  const automation = { id: 0, name: "اختبار الموصّل", connector_id: connector.id, template: "اختبار من لوحة Egytronic — {{now}}" };
+  const started = Date.now();
+  const result = await runAutomation(env, { ...automation, id: 0 }, "test", { event: { kind: "test" }, payload: null, now: sqlNow() });
+  return json({ ok: result.status === "sent", result, ms: Date.now() - started });
+}
+
+async function listAutomations(env) {
+  const { results } = await env.DB.prepare("SELECT * FROM automations ORDER BY id DESC").all();
+  return json({ ok: true, rows: (results || []).map(slimAutomation) });
+}
+
+async function saveAutomation(env, payload, who, id = null) {
+  const name = clean(payload.name, 80);
+  if (name.length < 2) return json({ ok: false, code: "name" }, 400);
+  const triggerType = TRIGGER_TYPES.has(String(payload.trigger_type)) ? String(payload.trigger_type) : "cron";
+  const schedule = triggerType === "cron" ? clean(payload.schedule, 120) || "0 9 * * *" : null;
+  if (schedule && !parseCron(schedule)) return json({ ok: false, code: "schedule" }, 400);
+  const eventKey = triggerType === "event" ? clean(payload.event_key, 120) : null;
+  if (triggerType === "event" && !eventKey) return json({ ok: false, code: "event-key" }, 400);
+  const connectorId = int(payload.connector_id, null);
+  const template = text(payload.template, 4000) || "{{event.kind}}";
+  const enabled = payload.enabled === undefined ? 1 : payload.enabled ? 1 : 0;
+  const next = triggerType === "cron" ? nextCron(schedule, new Date()) : null;
+
+  if (id) {
+    await env.DB
+      .prepare(
+        `UPDATE automations SET name = ?, description = ?, trigger_type = ?, schedule = ?, event_key = ?,
+         connector_id = ?, template = ?, enabled = ?, next_run_at = ? WHERE id = ?`
+      )
+      .bind(name, clean(payload.description, 300) || null, triggerType, schedule, eventKey, connectorId, template, enabled, next, id)
+      .run();
+    return json({ ok: true, id, next_run_at: next });
+  }
+
+  const row = await env.DB
+    .prepare(
+      `INSERT INTO automations (name, description, trigger_type, schedule, event_key, connector_id, template, enabled, next_run_at, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
+    )
+    .bind(name, clean(payload.description, 300) || null, triggerType, schedule, eventKey, connectorId, template, enabled, next, who?.name || null)
+    .first();
+  await emit(env, "integration.automation_created", "automation", row.id, who?.name || "console", { name, trigger: triggerType });
+  return json({ ok: true, id: row.id, next_run_at: next });
+}
+
+async function patchAutomation(env, id, payload) {
+  const sets = [];
+  const values = [];
+  if (payload.enabled !== undefined) {
+    sets.push("enabled = ?");
+    values.push(payload.enabled ? 1 : 0);
+  }
+  if (payload.name !== undefined) {
+    sets.push("name = ?");
+    values.push(clean(payload.name, 80));
+  }
+  if (payload.template !== undefined) {
+    sets.push("template = ?");
+    values.push(text(payload.template, 4000));
+  }
+  if (!sets.length) return json({ ok: false, code: "nothing" }, 400);
+  await env.DB.prepare(`UPDATE automations SET ${sets.join(", ")} WHERE id = ?`).bind(...values, id).run();
+  return json({ ok: true });
+}
+
+async function deleteAutomation(env, id) {
+  await env.DB.prepare("DELETE FROM automations WHERE id = ?").bind(id).run();
+  return json({ ok: true });
+}
+
+async function runAutomationById(env, id, trigger, payload) {
+  const automation = await env.DB.prepare("SELECT * FROM automations WHERE id = ?").bind(id).first();
+  if (!automation) return json({ ok: false, code: "missing" }, 404);
+  const result = await runAutomation(env, automation, trigger, {
+    event: { kind: trigger, automation: automation.name },
+    payload: payload ?? null,
+    now: sqlNow(),
+  });
+  return json({ ok: result.status === "sent", result });
+}
+
+async function automationRuns(env, id) {
+  const { results } = await env.DB
+    .prepare("SELECT id, created_at, trigger, status, detail, duration_ms FROM automation_runs WHERE automation_id = ? ORDER BY id DESC LIMIT 20")
+    .bind(id)
+    .all();
+  return json({ ok: true, rows: results || [] });
+}
+
+async function listWebhooks(env, request) {
+  const { results } = await env.DB.prepare("SELECT * FROM webhooks ORDER BY id DESC").all();
+  return json({ ok: true, base: publicBase(request), rows: (results || []).map(slimWebhook) });
+}
+
+async function createWebhook(env, payload, who, request) {
+  const name = clean(payload.name, 60);
+  let slug = String(payload.slug || "").toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 40);
+  if (!slug) slug = `hook-${crypto.randomUUID().slice(0, 8)}`;
+  if (!slugOk(slug)) return json({ ok: false, code: "slug" }, 400);
+  const exists = await env.DB.prepare("SELECT id FROM webhooks WHERE slug = ?").bind(slug).first();
+  if (exists) return json({ ok: false, code: "slug-taken" }, 409);
+  const secret = `whsec_${crypto.randomUUID().replace(/-/g, "")}`;
+  const row = await env.DB
+    .prepare("INSERT INTO webhooks (slug, name, secret, created_by) VALUES (?, ?, ?, ?) RETURNING id, slug")
+    .bind(slug, name || slug, secret, who?.name || null)
+    .first();
+  return json({ ok: true, row, secret, url: `${publicBase(request)}/hooks/${row.slug}` });
+}
+
+async function rotateWebhook(env, id) {
+  const secret = `whsec_${crypto.randomUUID().replace(/-/g, "")}`;
+  await env.DB.prepare("UPDATE webhooks SET secret = ? WHERE id = ?").bind(secret, id).run();
+  return json({ ok: true, secret });
+}
+
+async function patchWebhook(env, id, payload) {
+  await env.DB.prepare("UPDATE webhooks SET active = ? WHERE id = ?").bind(payload.active ? 1 : 0, id).run();
+  return json({ ok: true });
+}
+
+async function deleteWebhook(env, id) {
+  await env.DB.prepare("DELETE FROM webhooks WHERE id = ?").bind(id).run();
+  return json({ ok: true });
+}
+
+async function webhookDeliveries(env, id) {
+  const { results } = await env.DB
+    .prepare("SELECT id, created_at, event_key, ok, summary FROM webhook_deliveries WHERE webhook_id = ? ORDER BY id DESC LIMIT 20")
+    .bind(id)
+    .all();
+  return json({ ok: true, rows: results || [] });
+}
+
+async function integrationEvents(env, url) {
+  const limit = Math.min(int(url.searchParams.get("limit"), 25), 100);
+  const { results } = await env.DB
+    .prepare("SELECT id, created_at, kind, entity, entity_id, actor FROM events ORDER BY id DESC LIMIT ?")
+    .bind(limit)
+    .all();
+  return json({ ok: true, rows: results || [] });
+}
+
+// ── inbound webhook ─────────────────────────────────────────────────
+
+async function handleHook(request, env, slug) {
+  if (request.method !== "POST") return json({ ok: false, code: "method" }, 405);
+  const hook = await env.DB.prepare("SELECT * FROM webhooks WHERE slug = ? AND active = 1").bind(slug).first();
+  if (!hook) return json({ ok: false, code: "unknown-hook" }, 404);
+
+  const raw = await request.text();
+  if (hook.secret) {
+    const given = String(request.headers.get("x-egytronic-signature") || "").trim();
+    const expected = `sha256=${await hmacHex(hook.secret, raw)}`;
+    if (given !== expected) return json({ ok: false, code: "bad-signature" }, 401);
+  }
+
+  let payload = null;
+  try {
+    payload = raw ? JSON.parse(raw) : null;
+  } catch {
+    payload = { raw: raw.slice(0, 2000) };
+  }
+  const kind = clean(payload?.event || payload?.type || `hook.${hook.slug}`, 80) || `hook.${hook.slug}`;
+
+  await env.DB
+    .prepare("UPDATE webhooks SET deliveries = deliveries + 1, last_at = datetime('now') WHERE id = ?")
+    .bind(hook.id)
+    .run();
+  const result = await dispatchEvent(env, kind, payload, `webhook:${hook.slug}`);
+  await env.DB
+    .prepare("INSERT INTO webhook_deliveries (webhook_id, event_key, ok, summary) VALUES (?, ?, ?, ?)")
+    .bind(hook.id, kind, result.ran.every((run) => run.status === "sent") ? 1 : 0, `${result.matched} أتمتة`)
+    .run();
+  return json({ ok: true, event: kind, matched: result.matched, ran: result.ran });
+}
+
+// ── public integration API (/api/v1) ────────────────────────────────
+
+const API_SCOPES = ["events:read", "events:write", "automations:run"];
+
+function openApiDoc(request) {
+  return {
+    openapi: "3.1.0",
+    info: { title: "Egytronic Integration API", version: "1.0.0" },
+    servers: [{ url: `${publicBase(request)}/api/v1` }],
+    security: [{ bearer: [] }],
+    paths: {
+      "/whoami": { get: { summary: "هوية المفتاح وصلاحياته" } },
+      "/events": {
+        get: { summary: "آخر الأحداث" },
+        post: {
+          summary: "إطلاق حدث يستهلكه أي أتمتة مشتركة عليه",
+          requestBody: { content: { "application/json": { example: { kind: "invoice.paid", payload: { amount: 1200 } } } } },
+        },
+      },
+      "/automations/{id}/run": { post: { summary: "تشغيل أتمتة يدويًا" } },
+    },
+    components: { securitySchemes: { bearer: { type: "http", scheme: "bearer" } } },
+  };
+}
+
+async function integrationApi(request, env, url, who) {
+  const parts = url.pathname.split("/").filter(Boolean); // api | v1 | resource | id | action
+  const resource = parts[2];
+  const id = parts[3];
+  const action = parts[4];
+  const method = request.method;
+
+  if (resource === "openapi.json" && method === "GET") return json(openApiDoc(request));
+
+  if (!who) return json({ ok: false, code: "unauthorized" }, 401);
+  if (resource === "whoami" && method === "GET") {
+    return json({ ok: true, id: who.id, name: who.name, scopes: who.scopes, available: API_SCOPES });
+  }
+
+  if (resource === "events") {
+    if (method === "GET") {
+      if (!integrationCan(who, "events:read")) return json({ ok: false, code: "forbidden" }, 403);
+      const limit = Math.min(int(url.searchParams.get("limit"), 50), 200);
+      const { results } = await env.DB
+        .prepare("SELECT id, created_at, kind, entity, entity_id, actor, payload FROM events ORDER BY id DESC LIMIT ?")
+        .bind(limit)
+        .all();
+      return json({ ok: true, rows: results || [] });
+    }
+    if (method === "POST") {
+      if (!integrationCan(who, "events:write")) return json({ ok: false, code: "forbidden" }, 403);
+      const payload = await body(request);
+      const kind = clean(payload.kind, 80);
+      if (!kind) return json({ ok: false, code: "kind" }, 400);
+      await emit(env, kind, clean(payload.entity, 40) || "external", int(payload.entity_id, null), who.name, payload.payload ?? payload);
+      return json({ ok: true, kind });
+    }
+  }
+
+  if (resource === "automations" && id && action === "run" && method === "POST") {
+    if (!integrationCan(who, "automations:run")) return json({ ok: false, code: "forbidden" }, 403);
+    const payload = await body(request).catch(() => ({}));
+    return runAutomationById(env, int(id), "api", payload?.payload ?? payload ?? null);
+  }
+
+  return json({ ok: false, code: "not-found" }, 404);
+}
+
 async function api(request, env, url, who) {
   const parts = url.pathname.split("/").filter(Boolean); // api | resource | id | action
   const resource = parts[1];
@@ -2416,6 +3079,62 @@ async function api(request, env, url, who) {
     return json({ ok: false, code: "not-found" }, 404);
   }
 
+  if (resource === "integrations") {
+    const sub = parts[2];
+    const subId = parts[3];
+    const subAction = parts[4];
+    if (!allow(who, method === "GET" ? "integrations.view" : "integrations.manage")) {
+      return json({ ok: false, code: "forbidden" }, 403);
+    }
+    if (!sub) return integrationsOverview(env, request);
+
+    if (sub === "keys") {
+      if (!subId && method === "GET") return listIntegrationKeys(env);
+      if (!subId && method === "POST") return createIntegrationKey(env, await body(request), who);
+      if (subId && method === "PATCH") return patchIntegrationKey(env, int(subId), await body(request));
+      if (subId && method === "DELETE") return deleteIntegrationKey(env, int(subId));
+    }
+
+    if (sub === "connectors") {
+      if (!subId && method === "GET") return listConnectors(env);
+      if (!subId && method === "POST") return createConnector(env, await body(request));
+      if (subId && subAction === "test" && method === "POST") return testConnector(env, int(subId));
+      if (subId && !subAction && method === "PATCH") return patchConnector(env, int(subId), await body(request));
+      if (subId && !subAction && method === "DELETE") return deleteConnector(env, int(subId));
+    }
+
+    if (sub === "automations") {
+      if (!subId && method === "GET") return listAutomations(env);
+      if (!subId && method === "POST") return saveAutomation(env, await body(request), who);
+      if (subId && subAction === "run" && method === "POST") return runAutomationById(env, int(subId), "manual", null);
+      if (subId && subAction === "runs" && method === "GET") return automationRuns(env, int(subId));
+      if (subId && !subAction && method === "PATCH") {
+        const payload = await body(request);
+        if (payload.name !== undefined || payload.trigger_type !== undefined) {
+          const row = await env.DB.prepare("SELECT * FROM automations WHERE id = ?").bind(int(subId)).first();
+          if (!row) return json({ ok: false, code: "missing" }, 404);
+          const merged = { ...slimAutomation(row), ...payload };
+          return saveAutomation(env, merged, who, int(subId));
+        }
+        return patchAutomation(env, int(subId), payload);
+      }
+      if (subId && !subAction && method === "DELETE") return deleteAutomation(env, int(subId));
+    }
+
+    if (sub === "webhooks") {
+      if (!subId && method === "GET") return listWebhooks(env, request);
+      if (!subId && method === "POST") return createWebhook(env, await body(request), who, request);
+      if (subId && subAction === "rotate" && method === "POST") return rotateWebhook(env, int(subId));
+      if (subId && subAction === "deliveries" && method === "GET") return webhookDeliveries(env, int(subId));
+      if (subId && !subAction && method === "PATCH") return patchWebhook(env, int(subId), await body(request));
+      if (subId && !subAction && method === "DELETE") return deleteWebhook(env, int(subId));
+    }
+
+    if (sub === "events" && method === "GET") return integrationEvents(env, url);
+    if (sub === "tick" && method === "POST") return json({ ok: true, ran: await runDueAutomations(env) });
+    return json({ ok: false, code: "not-found" }, 404);
+  }
+
   if (resource === "agents") {
     if (!id && method === "GET") return listAgents(env);
     if (!id && method === "POST") return createAgent(env, await body(request), who);
@@ -2447,6 +3166,22 @@ export default {
     if (url.pathname === "/api/contact" && request.method === "POST") return contact(request, env);
     if (url.pathname === "/api/admin/token" && request.method === "POST") return rotateToken(request, env);
     if (url.pathname === "/mcp") return mcp(request, env, url);
+
+    if (url.pathname.startsWith("/hooks/")) {
+      return handleHook(request, env, decodeURIComponent(url.pathname.slice(7).replace(/\/+$/, "")));
+    }
+
+    // integration keys drive the public API and the cron tick; sessions still work on the console routes
+    if (url.pathname === "/api/integrations/tick" && request.method === "POST") {
+      const key = await integrationWho(env, request);
+      if (key) {
+        if (!integrationCan(key, "automations:run")) return json({ ok: false, code: "forbidden" }, 403);
+        return json({ ok: true, ran: await runDueAutomations(env) });
+      }
+    }
+    if (url.pathname === "/api/v1" || url.pathname.startsWith("/api/v1/")) {
+      return integrationApi(request, env, url, await integrationWho(env, request));
+    }
 
     if (url.pathname.startsWith("/api/")) {
       const who = await identify(request, env, url);

@@ -62,7 +62,19 @@
     space: null,
     view: "overview",
     loading: false,
-    data: { metrics: null, leads: [], clients: [], tasks: [], members: [], channels: [], agents: [], activities: [], projects: [] },
+    data: {
+      metrics: null,
+      leads: [],
+      clients: [],
+      tasks: [],
+      members: [],
+      channels: [],
+      agents: [],
+      activities: [],
+      projects: [],
+      integrations: null,
+    },
+    integRuns: null,
     drawer: null,
     filters: { tasks: "open", pipeline: "" },
     activeChannel: null,
@@ -158,6 +170,7 @@
     team: "الفريق",
     channels: "القنوات",
     code: "الكود",
+    integrations: "التكامل",
     agents: "الوكلاء",
   };
 
@@ -232,7 +245,19 @@
     state.loading = true;
     setSync("جارٍ التحديث…");
     try {
-      const [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects] = await Promise.all([
+      const integrationBundle = async () => {
+      const [overview, keys, connectors, automations, webhooks, events] = await Promise.all([
+        api("/integrations"),
+        api("/integrations/keys"),
+        api("/integrations/connectors"),
+        api("/integrations/automations"),
+        api("/integrations/webhooks"),
+        api("/integrations/events?limit=15"),
+      ]);
+      return { overview, keys: keys.rows, connectors: connectors.rows, automations: automations.rows, webhooks: webhooks.rows, events: events.rows };
+    };
+
+    const [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects, integrations] = await Promise.all([
         api("/me"),
         api("/metrics"),
         pick("inquiries.view") ?? api("/inquiries?limit=300"),
@@ -243,6 +268,7 @@
         pick("agents.manage") ?? api("/agents"),
         pick("inquiries.view") ?? api("/activities?limit=40"),
         pick("projects.view") ?? api("/projects"),
+        pick("integrations.view") ?? integrationBundle(),
       ]);
       state.space = space;
       Object.assign(state.data, {
@@ -255,6 +281,7 @@
         agents: agents.rows,
         activities: activities.rows,
         projects: projects.rows || [],
+        integrations: integrations.overview ? integrations : { overview: null, keys: [], connectors: [], automations: [], webhooks: [], events: [] },
       });
       setSync("متصل");
       const clock = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -824,6 +851,370 @@
         </div>
       </section>`;
   }
+
+  // ── integrations & automations ──────────────────────────────────────
+
+  const INT_KINDS = { http: "HTTP", slack: "Slack", discord: "Discord" };
+  const INT_TRIGGERS = { cron: "مجدولة", event: "حدث", manual: "يدوي" };
+  const INT_STATUS = {
+    sent: "تم الإرسال",
+    "no-connector": "بلا موصّل",
+    paused: "موقوف",
+    error: "فشل",
+  };
+  const intStatusChip = (status) => {
+    const tone = status === "sent" ? "mint" : status === "error" || String(status || "").startsWith("http-") ? "danger" : "";
+    const label = INT_STATUS[status] || (String(status || "").startsWith("http-") ? `HTTP ${status.slice(5)}` : status || "—");
+    return `<span class="ops-chip ${tone ? `ops-chip--${tone}` : ""}">${esc(label)}</span>`;
+  };
+  const hostOf = (url) => {
+    try {
+      return new URL(url).host;
+    } catch {
+      return url;
+    }
+  };
+  const intData = () => state.data.integrations || {};
+
+  function renderIntegrations() {
+    const data = intData();
+    const overview = data.overview || { counts: {}, runs: [] };
+    const counts = overview.counts || {};
+    const keys = data.keys || [];
+    const connectors = data.connectors || [];
+    const automations = data.automations || [];
+    const webhooks = data.webhooks || [];
+    const events = data.events || [];
+    const base = overview.base || location.origin;
+    const connectorName = (id) => connectors.find((c) => c.id === id)?.name || "—";
+    const canManage = can("integrations.manage");
+    const runs = state.integRuns && state.integRuns.length ? state.integRuns : overview.runs || [];
+
+    return `
+      <div class="ops-kpis">
+        ${kpi("الموصّلات", num(counts.connectors), "وجهات الإرسال", "gold")}
+        ${kpi("الأتمتة النشطة", num(counts.automations), `${num(overview.runs?.length || 0)} تشغيل مؤخرًا`, "mint")}
+        ${kpi("ويب هوك وارد", num(counts.hooks), "مصادر خارجية تدخل", "")}
+        ${kpi("مفاتيح الربط", num(counts.keys), `${num(counts.events)} حدث مسجّل`, "")}
+      </div>
+
+      <section class="ops-panel">
+        <div class="ops-panel__head">
+          <h2>مفاتيح الربط</h2>
+          ${canManage ? `<button class="ops-btn ops-btn--sm" type="button" data-action="int-new-key">مفتاح جديد</button>` : ""}
+        </div>
+        <div class="ops-panel__body ops-panel__body--flush">
+          ${
+            keys.length
+              ? `<ul class="ops-list">${keys
+                  .map(
+                    (key) => `
+                <li class="ops-list__row">
+                  <span class="ops-list__main">
+                    <span class="ops-list__title">${esc(key.name)}</span>
+                    <span class="ops-list__meta" dir="ltr">${esc(key.scopes)}${key.last_used_at ? ` · ${esc(ago(key.last_used_at))}` : " · لم يُستخدم"}</span>
+                  </span>
+                  <span class="ops-chip ${key.active ? "ops-chip--mint" : ""}">${key.active ? "نشط" : "موقوف"}</span>
+                  ${
+                    canManage
+                      ? `<button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="int-key-toggle" data-id="${key.id}" data-on="${key.active ? 1 : 0}">${key.active ? "إيقاف" : "تنشيط"}</button>
+                         <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="int-key-delete" data-id="${key.id}">حذف</button>`
+                      : ""
+                  }
+                </li>`
+                  )
+                  .join("")}</ul>`
+              : `<p class="ops-empty">لا توجد مفاتيح. المفتاح يسمح لأي نظام خارجي بإطلاق أحداث أو تشغيل أتمتة.</p>`
+          }
+        </div>
+      </section>
+
+      <div class="ops-int__grid">
+        <section class="ops-panel">
+          <div class="ops-panel__head">
+            <h2>الموصّلات</h2>
+            ${canManage ? `<button class="ops-btn ops-btn--sm" type="button" data-action="int-new-connector">موصّل جديد</button>` : ""}
+          </div>
+          <div class="ops-panel__body ops-panel__body--flush">
+            ${
+              connectors.length
+                ? `<ul class="ops-list">${connectors
+                    .map(
+                      (c) => `
+                  <li class="ops-list__row">
+                    <span class="ops-list__main">
+                      <span class="ops-list__title">${esc(c.name)} <span class="ops-chip">${esc(INT_KINDS[c.kind] || c.kind)}</span></span>
+                      <span class="ops-list__meta" dir="ltr">${esc(hostOf(c.url))}${c.has_secret ? " · 🔑" : ""}</span>
+                    </span>
+                    ${c.last_status ? intStatusChip(String(c.last_status)) : ""}
+                    ${
+                      canManage
+                        ? `<button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="int-connector-test" data-id="${c.id}">اختبار</button>
+                           <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="int-connector-delete" data-id="${c.id}">حذف</button>`
+                        : ""
+                    }
+                  </li>`
+                    )
+                    .join("")}</ul>`
+                : `<p class="ops-empty">اربط Slack أو Discord أو أي خدمة بتستقبل JSON.</p>`
+            }
+          </div>
+        </section>
+
+        <section class="ops-panel">
+          <div class="ops-panel__head">
+            <h2>الأتمتة</h2>
+            ${canManage ? `<button class="ops-btn ops-btn--sm" type="button" data-action="int-new-automation">أتمتة جديدة</button>` : ""}
+          </div>
+          <div class="ops-panel__body ops-panel__body--flush">
+            ${
+              automations.length
+                ? `<ul class="ops-list">${automations
+                    .map(
+                      (a) => `
+                  <li class="ops-list__row" style="flex-wrap:wrap">
+                    <span class="ops-list__main">
+                      <span class="ops-list__title">${esc(a.name)} <span class="ops-chip">${esc(INT_TRIGGERS[a.trigger_type] || a.trigger_type)}</span></span>
+                      <span class="ops-list__meta">${
+                        a.trigger_type === "cron"
+                          ? `<span dir="ltr">${esc(a.schedule || "")}</span>${a.next_run_at ? ` · التالي <span dir="ltr">${esc(String(a.next_run_at).slice(11, 16))} UTC</span>` : ""}`
+                          : a.trigger_type === "event"
+                            ? `<span dir="ltr">${esc(a.event_key || "")}</span>`
+                            : "تشغيل يدوي فقط"
+                      } · ${esc(connectorName(a.connector_id))} · ${num(a.runs)} تشغيل</span>
+                    </span>
+                    ${a.last_status ? intStatusChip(a.last_status) : ""}
+                    <span class="ops-int__actions">
+                      <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="int-automation-run" data-id="${a.id}">تشغيل</button>
+                      <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="int-automation-runs" data-id="${a.id}">السجل</button>
+                      ${canManage ? `<button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="int-automation-toggle" data-id="${a.id}" data-on="${a.enabled ? 1 : 0}">${a.enabled ? "إيقاف" : "تنشيط"}</button>
+                      <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="int-automation-delete" data-id="${a.id}">حذف</button>` : ""}
+                    </span>
+                  </li>`
+                    )
+                    .join("")}</ul>`
+                : `<p class="ops-empty">لا توجد أتمتة. اختر حدثًا أو موعدًا وموصّلًا ونص الرسالة.</p>`
+            }
+          </div>
+        </section>
+
+        <section class="ops-panel">
+          <div class="ops-panel__head">
+            <h2>ويب هوك وارد</h2>
+            ${canManage ? `<button class="ops-btn ops-btn--sm" type="button" data-action="int-new-webhook">مصدر جديد</button>` : ""}
+          </div>
+          <div class="ops-panel__body ops-panel__body--flush">
+            ${
+              webhooks.length
+                ? `<ul class="ops-list">${webhooks
+                    .map(
+                      (w) => `
+                  <li class="ops-list__row" style="flex-wrap:wrap">
+                    <span class="ops-list__main">
+                      <span class="ops-list__title">${esc(w.name)}</span>
+                      <span class="ops-list__meta" dir="ltr">${esc(base)}/hooks/${esc(w.slug)}</span>
+                    </span>
+                    <span class="ops-chip ${w.active ? "ops-chip--mint" : ""}">${num(w.deliveries)} استقبال</span>
+                    <span class="ops-int__actions">
+                      <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="int-webhook-deliveries" data-id="${w.id}">السجل</button>
+                      ${
+                        canManage
+                          ? `<button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="int-webhook-rotate" data-id="${w.id}">مفتاح جديد</button>
+                             <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="int-webhook-toggle" data-id="${w.id}" data-on="${w.active ? 1 : 0}">${w.active ? "إيقاف" : "تنشيط"}</button>
+                             <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="int-webhook-delete" data-id="${w.id}">حذف</button>`
+                          : ""
+                      }
+                    </span>
+                  </li>`
+                    )
+                    .join("")}</ul>`
+                : `<p class="ops-empty">افتح رابطًا موقّعًا يستقبل أحداث أي خدمة خارجية.</p>`
+            }
+          </div>
+        </section>
+
+        <section class="ops-panel">
+          <div class="ops-panel__head"><h2>آخر التشغيلات</h2></div>
+          <div class="ops-panel__body ops-panel__body--flush">
+            ${
+              runs.length
+                ? `<ul class="ops-list">${runs
+                    .map(
+                      (r) => `
+                  <li class="ops-list__row">
+                    <span class="ops-list__main">
+                      <span class="ops-list__title">${esc(r.name || "أتمتة محذوفة")}</span>
+                      <span class="ops-list__meta">${esc(INT_TRIGGERS[String(r.trigger || "").split(":")[0]] || r.trigger || "")} · ${esc(r.detail || "")}</span>
+                    </span>
+                    ${intStatusChip(r.status)}
+                    <span class="ops-list__meta">${esc(ago(r.created_at))}</span>
+                  </li>`
+                    )
+                    .join("")}</ul>`
+                : `<p class="ops-empty">مفيش تشغيل لسه.</p>`
+            }
+          </div>
+        </section>
+      </div>
+
+      <section class="ops-panel">
+        <div class="ops-panel__head"><h2>آخر الأحداث</h2><a class="ops-btn ops-btn--ghost ops-btn--sm" href="/api/v1/openapi.json" target="_blank" rel="noreferrer">مواصفات API</a></div>
+        <div class="ops-panel__body ops-panel__body--flush">
+          ${
+            events.length
+              ? `<ul class="ops-list">${events
+                  .map(
+                    (e) => `
+                <li class="ops-list__row">
+                  <span class="ops-list__main">
+                    <span class="ops-list__title" dir="ltr">${esc(e.kind)}</span>
+                    <span class="ops-list__meta">${esc(e.entity || "")}${e.entity_id ? ` #${e.entity_id}` : ""} · ${esc(e.actor || "")}</span>
+                  </span>
+                  <span class="ops-list__meta">${esc(ago(e.created_at))}</span>
+                </li>`
+                  )
+                  .join("")}</ul>`
+              : `<p class="ops-empty">لا توجد أحداث بعد.</p>`
+          }
+        </div>
+      </section>
+
+      <section class="ops-panel">
+        <div class="ops-panel__head"><h2>طريقة الربط</h2></div>
+        <div class="ops-panel__body ops-int__guide">
+          <p>أي نظام خارجي يبعت حدثًا بمفتاح الربط، وأي أتمتة مشتركة على الحدث بتوصله للموصّل اللي تختاره.</p>
+          <pre class="ops-int__code" dir="ltr">curl -X POST ${esc(base)}/api/v1/events \\
+  -H "authorization: Bearer egx_int_..." \\
+  -H "content-type: application/json" \\
+  -d '{"kind":"invoice.paid","payload":{"id":"INV-77","amount":4200}}'</pre>
+          <p>وللخدمات اللي بتبعت ويب هوك: وقّع الجسم بـ HMAC-SHA256 بالمفتاح السري وأرسله في <code>X-Egytronic-Signature: sha256=…</code> إلى رابط المصدر.</p>
+          <pre class="ops-int__code" dir="ltr">curl -X POST ${esc(base)}/api/integrations/tick \\
+  -H "authorization: Bearer egx_int_..."</pre>
+          <p>الـ Pages مالهاش جدولة داخلية، فشغّل <code>tick</code> من أي كرون خارجي (Cloudflare Worker أو GitHub Actions) كل دقيقة، وهو بيشغّل الأتمتة المستحقة مرة واحدة.</p>
+        </div>
+      </section>`;
+  }
+
+  function dialogInfo(title, html) {
+    openDialog({ title, body: html, onSubmit: null, submit: "إغلاق" });
+  }
+
+  const dialogIntegrationKey = () =>
+    openDialog({
+      title: "مفتاح ربط جديد",
+      body: `
+        <label class="ops-field"><span>الاسم</span><input class="ops-input" name="name" required placeholder="Make / Zapier / نظام المحاسبة"></label>
+        <fieldset class="ops-int__scopes">
+          <legend>الصلاحيات</legend>
+          <label class="ops-check"><input type="checkbox" name="scope" value="events:write" checked> إطلاق أحداث</label>
+          <label class="ops-check"><input type="checkbox" name="scope" value="events:read"> قراءة الأحداث</label>
+          <label class="ops-check"><input type="checkbox" name="scope" value="automations:run"> تشغيل الأتمتة</label>
+        </fieldset>`,
+      submit: "إنشاء",
+      onSubmit: async (fd) => {
+        const scopes = fd.getAll("scope");
+        const res = await api("/integrations/keys", { method: "POST", body: { name: fd.get("name"), scopes: scopes.join(",") } });
+        await loadAll();
+        dialogInfo(
+          "المفتاح جاهز",
+          `<p class="ops-int__note">انسخه الآن — لن يظهر مرة أخرى.</p>
+           <pre class="ops-int__code" dir="ltr">${esc(res.row.key)}</pre>`
+        );
+        return { keepOpen: true };
+      },
+    });
+
+  const dialogConnector = () =>
+    openDialog({
+      title: "موصّل جديد",
+      body: `
+        <div class="ops-row">
+          <label class="ops-field"><span>الاسم</span><input class="ops-input" name="name" required placeholder="Slack فريق البيع"></label>
+          <label class="ops-field"><span>النوع</span>
+            <select class="ops-select" name="kind">
+              <option value="slack">Slack</option>
+              <option value="discord">Discord</option>
+              <option value="http">HTTP / نظام خاص</option>
+            </select>
+          </label>
+        </div>
+        <label class="ops-field"><span>الرابط</span><input class="ops-input" name="url" required dir="ltr" placeholder="https://hooks.slack.com/services/…"></label>
+        <label class="ops-field"><span>التوكن (اختياري)</span><input class="ops-input" name="secret" dir="ltr" placeholder="يُرسل كـ Authorization: Bearer"></label>`,
+      submit: "إضافة",
+      onSubmit: async (fd) => {
+        await api("/integrations/connectors", {
+          method: "POST",
+          body: { name: fd.get("name"), kind: fd.get("kind"), url: fd.get("url"), secret: fd.get("secret") },
+        });
+        toast("تمت إضافة الموصّل.", "ok");
+        await loadAll();
+      },
+    });
+
+  const dialogAutomation = () => {
+    const connectors = intData().connectors || [];
+    return openDialog({
+      title: "أتمتة جديدة",
+      body: `
+        <label class="ops-field"><span>الاسم</span><input class="ops-input" name="name" required placeholder="إشعار ليد جديد"></label>
+        <div class="ops-row">
+          <label class="ops-field"><span>المشغّل</span>
+            <select class="ops-select" name="trigger_type" data-int-trigger>
+              <option value="event">حدث</option>
+              <option value="cron">موعد مجدول</option>
+              <option value="manual">يدوي</option>
+            </select>
+          </label>
+          <label class="ops-field"><span>الموصّل</span>
+            <select class="ops-select" name="connector_id">
+              ${connectors.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}
+            </select>
+          </label>
+        </div>
+        <label class="ops-field"><span>مفتاح الحدث</span><input class="ops-input" name="event_key" dir="ltr" value="inquiry.*" placeholder="inquiry.created / order.* / *"></label>
+        <label class="ops-field"><span>الجدول (cron)</span><input class="ops-input" name="schedule" dir="ltr" placeholder="0 9 * * *" hidden></label>
+        <label class="ops-field"><span>نص الرسالة</span><textarea class="ops-textarea" name="template" rows="3" dir="auto">ليد جديد: {{payload.name}} — {{payload.package}}</textarea></label>
+        <p class="ops-int__note">المتغيّرات: <code>{{event.kind}}</code> · <code>{{payload.amount}}</code> · <code>{{json payload}}</code> · <code>{{now}}</code></p>`,
+      submit: "إنشاء",
+      onSubmit: async (fd) => {
+        await api("/integrations/automations", {
+          method: "POST",
+          body: {
+            name: fd.get("name"),
+            trigger_type: fd.get("trigger_type"),
+            event_key: fd.get("event_key"),
+            schedule: fd.get("schedule"),
+            connector_id: fd.get("connector_id"),
+            template: fd.get("template"),
+          },
+        });
+        toast("تم إنشاء الأتمتة.", "ok");
+        await loadAll();
+      },
+    });
+  };
+
+  const dialogWebhook = () =>
+    openDialog({
+      title: "مصدر ويب هوك",
+      body: `
+        <label class="ops-field"><span>الاسم</span><input class="ops-input" name="name" required placeholder="متجر Shopify"></label>
+        <label class="ops-field"><span>المعرّف في الرابط</span><input class="ops-input" name="slug" dir="ltr" placeholder="shopify-orders"></label>`,
+      submit: "إنشاء",
+      onSubmit: async (fd) => {
+        const res = await api("/integrations/webhooks", {
+          method: "POST",
+          body: { name: fd.get("name"), slug: fd.get("slug") },
+        });
+        await loadAll();
+        dialogInfo(
+          "المصدر جاهز",
+          `<p class="ops-int__note">انسخ الرابط والمفتاح الآن — المفتاح لن يظهر مرة أخرى.</p>
+           <pre class="ops-int__code" dir="ltr">${esc(res.url)}\n\n${esc(res.secret)}</pre>`
+        );
+        return { keepOpen: true };
+      },
+    });
 
   // ── code: GitHub repositories ───────────────────────────────────────
 
@@ -1656,8 +2047,8 @@
         </header>
         <div class="ops-dialog__body">${body}</div>
         <footer class="ops-dialog__foot">
-          <button class="ops-btn ops-btn--ghost" type="button" data-action="close-dialog">إلغاء</button>
-          <button class="ops-btn" type="submit">${esc(submit)}</button>
+          <button class="ops-btn ops-btn--ghost" type="button" data-action="close-dialog">${onSubmit ? "إلغاء" : "إغلاق"}</button>
+          ${onSubmit ? `<button class="ops-btn" type="submit">${esc(submit)}</button>` : ""}
         </footer>
       </form>`;
     state.dialogSubmit = onSubmit;
@@ -1963,6 +2354,7 @@
       team: renderTeam,
       channels: renderChannels,
       code: renderCode,
+      integrations: renderIntegrations,
       agents: renderAgents,
     };
     const panel = $(`[data-panel="${state.view}"]`);
@@ -2137,6 +2529,80 @@
     "new-project": (el) => dialogProject(el.dataset.client),
     "new-agent": () => dialogAgent(),
     "edit-member": (el) => dialogMember(state.data.members.find((m) => m.id === Number(el.dataset.id))),
+    "int-new-key": () => dialogIntegrationKey(),
+    "int-new-connector": () => dialogConnector(),
+    "int-new-automation": () => dialogAutomation(),
+    "int-new-webhook": () => dialogWebhook(),
+    "int-key-toggle": async (el) => {
+      await api(`/integrations/keys/${el.dataset.id}`, { method: "PATCH", body: { active: el.dataset.on !== "1" } });
+      toast("تم تحديث المفتاح.", "ok");
+      await loadAll();
+    },
+    "int-key-delete": async (el) => {
+      await api(`/integrations/keys/${el.dataset.id}`, { method: "DELETE" });
+      toast("تم حذف المفتاح.", "ok");
+      await loadAll();
+    },
+    "int-connector-test": async (el) => {
+      toast("بيتم اختبار الموصّل…");
+      const res = await api(`/integrations/connectors/${el.dataset.id}/test`, { method: "POST" });
+      toast(res.ok ? "الموصّل وصل بنجاح." : "الموصّل رجّع خطأ.", res.ok ? "ok" : "bad");
+      await loadAll();
+    },
+    "int-connector-delete": async (el) => {
+      await api(`/integrations/connectors/${el.dataset.id}`, { method: "DELETE" });
+      toast("تم حذف الموصّل.", "ok");
+      await loadAll();
+    },
+    "int-automation-run": async (el) => {
+      const res = await api(`/integrations/automations/${el.dataset.id}/run`, { method: "POST" });
+      toast(res.ok ? "تم التشغيل والإرسال." : `لم يُرسل: ${res.result?.detail || ""}`, res.ok ? "ok" : "bad");
+      await loadAll();
+    },
+    "int-automation-runs": async (el) => {
+      const { rows } = await api(`/integrations/automations/${el.dataset.id}/runs`);
+      state.integRuns = rows;
+      render();
+      toast(rows.length ? `${rows.length} تشغيل في السجل.` : "مفيش تشغيل لسه.");
+    },
+    "int-automation-toggle": async (el) => {
+      await api(`/integrations/automations/${el.dataset.id}`, { method: "PATCH", body: { enabled: el.dataset.on !== "1" } });
+      toast("تم تحديث الأتمتة.", "ok");
+      await loadAll();
+    },
+    "int-automation-delete": async (el) => {
+      await api(`/integrations/automations/${el.dataset.id}`, { method: "DELETE" });
+      toast("تم حذف الأتمتة.", "ok");
+      await loadAll();
+    },
+    "int-webhook-rotate": async (el) => {
+      const res = await api(`/integrations/webhooks/${el.dataset.id}/rotate`, { method: "POST" });
+      await loadAll();
+      dialogInfo("المفتاح الجديد", `<p class="ops-int__note">انسخه الآن — لن يظهر مرة أخرى.</p><pre class="ops-int__code" dir="ltr">${esc(res.secret)}</pre>`);
+    },
+    "int-webhook-toggle": async (el) => {
+      await api(`/integrations/webhooks/${el.dataset.id}`, { method: "PATCH", body: { active: el.dataset.on !== "1" } });
+      toast("تم تحديث المصدر.", "ok");
+      await loadAll();
+    },
+    "int-webhook-delete": async (el) => {
+      await api(`/integrations/webhooks/${el.dataset.id}`, { method: "DELETE" });
+      toast("تم حذف المصدر.", "ok");
+      await loadAll();
+    },
+    "int-webhook-deliveries": async (el) => {
+      const { rows } = await api(`/integrations/webhooks/${el.dataset.id}/deliveries`);
+      dialogInfo(
+        "آخر الاستقبالات",
+        rows.length
+          ? `<ul class="ops-list ops-int__dense">${rows
+              .map(
+                (r) => `<li class="ops-list__row"><span class="ops-list__main"><span class="ops-list__title" dir="ltr">${esc(r.event_key || "—")}</span><span class="ops-list__meta">${esc(r.summary || "")}</span></span><span class="ops-chip ${r.ok ? "ops-chip--mint" : "ops-chip--danger"}">${r.ok ? "تم" : "خطأ"}</span><span class="ops-list__meta">${esc(ago(r.created_at))}</span></li>`
+              )
+              .join("")}</ul>`
+          : `<p class="ops-empty">لا يوجد استقبال بعد.</p>`
+      );
+    },
     "code-refresh": async () => {
       await codeLoadStatus();
       if (codeState().status?.configured) await codeLoadRepos();
@@ -2184,6 +2650,15 @@
   });
 
   document.addEventListener("change", (event) => {
+    if (event.target.matches("[data-int-trigger]")) {
+      const form = event.target.closest("form");
+      const schedule = form?.querySelector("input[name=schedule]");
+      const eventKey = form?.querySelector("input[name=event_key]");
+      const cron = event.target.value === "cron";
+      if (schedule) schedule.hidden = !cron;
+      if (eventKey) eventKey.hidden = cron;
+      return;
+    }
     if (event.target.matches("[data-code-branch]")) {
       codeSwitchBranch(event.target.value).catch((err) => toast(codeMessage(err), "bad"));
     }
