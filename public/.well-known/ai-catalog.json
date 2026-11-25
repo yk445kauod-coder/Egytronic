@@ -1,0 +1,57 @@
+{
+  "specVersion": "0.1",
+  "host": {
+    "name": "Egytronic",
+    "url": "https://egytronic.pages.dev/",
+    "description": "Egyptian software studio: sites, identities, management systems and AI. Prices are published."
+  },
+  "entries": [
+    {
+      "id": "urn:air:egytronic.pages.dev:pricing:packages",
+      "displayName": "Package pricing",
+      "type": "application/json",
+      "url": "https://egytronic.pages.dev/pricing.json",
+      "description": "The five packages with prices, what each includes and delivery windows.",
+      "representativeQueries": [
+        "كم سعر موقع لاندينج؟",
+        "how much does a landing page cost",
+        "what is included in the identity package"
+      ]
+    },
+    {
+      "id": "urn:air:egytronic.pages.dev:faq:answers",
+      "displayName": "FAQ answers",
+      "type": "application/json",
+      "url": "https://egytronic.pages.dev/faq.json",
+      "description": "Answers to pre-sales questions: payments, hosting, ownership, timelines.",
+      "representativeQueries": [
+        "هل الاستضافة مجانية؟",
+        "who owns the code",
+        "how do payments work"
+      ]
+    },
+    {
+      "id": "urn:air:egytronic.pages.dev:guide:llms",
+      "displayName": "Site guide for AI systems",
+      "type": "text/plain",
+      "url": "https://egytronic.pages.dev/llms.txt",
+      "description": "What the studio does, its packages, and which page answers which question.",
+      "representativeQueries": [
+        "what does Egytronic do",
+        "which page has the portfolio",
+        "contact details"
+      ]
+    },
+    {
+      "id": "urn:air:egytronic.pages.dev:feed:blog",
+      "displayName": "Blog feed",
+      "type": "application/rss+xml",
+      "url": "https://egytronic.pages.dev/feed.xml",
+      "description": "Newest articles on digital transformation, ERP and AI for Egyptian businesses.",
+      "representativeQueries": [
+        "latest articles about ERP",
+        "مقالات التحول الرقمي"
+      ]
+    }
+  ]
+}

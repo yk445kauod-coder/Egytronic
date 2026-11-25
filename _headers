@@ -1,4 +1,6 @@
+# Agent discovery (RFC 8288). Every target below is a real, public document.
 /*
+  Link: </.well-known/api-catalog>; rel="api-catalog", </api/openapi.json>; rel="service-desc", </llms.txt>; rel="service-doc", </feed.xml>; rel="alternate"; type="application/rss+xml", </.well-known/ai-catalog.json>; rel="describedby"
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
@@ -54,3 +56,6 @@
 /admin/*
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
+
+
+

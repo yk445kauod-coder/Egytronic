@@ -54,4 +54,8 @@ User-agent: CCBot
 Allow: /
 Disallow: /admin/
 
+# AI usage preferences (contentsignals.org): answers may be grounded on this site,
+# search indexing is welcome, model training is not.
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+
 Sitemap: https://egytronic.pages.dev/sitemap.xml

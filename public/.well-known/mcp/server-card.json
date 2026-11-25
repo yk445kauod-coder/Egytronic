@@ -1,0 +1,27 @@
+{
+  "serverInfo": {
+    "name": "egytronic-ops",
+    "version": "1.0.0",
+    "title": "Egytronic operations"
+  },
+  "description": "Egytronic's operations endpoint: inquiries, tasks, channels and project events. Requires an agent key (Authorization: Bearer <key>); no tool is public.",
+  "transport": {
+    "type": "streamable-http",
+    "url": "https://egytronic.pages.dev/mcp",
+    "protocolVersion": "2025-06-18"
+  },
+  "capabilities": {
+    "tools": {
+      "listChanged": false
+    }
+  },
+  "authentication": {
+    "schemes": [
+      "bearer"
+    ],
+    "required": true
+  },
+  "contact": {
+    "url": "https://egytronic.pages.dev/contact/"
+  }
+}

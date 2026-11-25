@@ -1,0 +1,61 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://egytronic.pages.dev/pricing.json",
+      "service-desc": [
+        {
+          "href": "https://egytronic.pages.dev/pricing.json",
+          "type": "application/json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://egytronic.pages.dev/llms.txt",
+          "type": "text/plain"
+        }
+      ],
+      "describedby": [
+        {
+          "href": "https://egytronic.pages.dev/llms.txt",
+          "type": "text/plain"
+        }
+      ]
+    },
+    {
+      "anchor": "https://egytronic.pages.dev/faq.json",
+      "service-desc": [
+        {
+          "href": "https://egytronic.pages.dev/faq.json",
+          "type": "application/json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://egytronic.pages.dev/llms.txt",
+          "type": "text/plain"
+        }
+      ]
+    },
+    {
+      "anchor": "https://egytronic.pages.dev/mcp",
+      "service-desc": [
+        {
+          "href": "https://egytronic.pages.dev/.well-known/mcp/server-card.json",
+          "type": "application/json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://egytronic.pages.dev/llms.txt",
+          "type": "text/plain"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://egytronic.pages.dev/api/openapi.json",
+          "type": "application/json"
+        }
+      ]
+    }
+  ]
+}

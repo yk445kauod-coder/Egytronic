@@ -1,0 +1,19 @@
+{
+  "$schema": "https://agentskills.io/schema/v0.2.0/index.json",
+  "skills": [
+    {
+      "name": "quote-a-project",
+      "type": "skill",
+      "description": "Read the published prices, pick the package that matches the client's scope, then send the enquiry. Prices are fixed and published — never invent one.",
+      "url": "https://egytronic.pages.dev/.well-known/agent-skills/skills/quote-a-project.md",
+      "sha256": "a39d93ff69cd027bc3b5831d5ff791d9b696a149a7288911b5880ba515682a1f"
+    },
+    {
+      "name": "answer-about-the-studio",
+      "type": "skill",
+      "description": "1. GET https://egytronic.pages.dev/llms.txt — services, packages, and which URL answers which question. 2. Prices live in /pricing.json, pre-sales answers in /f",
+      "url": "https://egytronic.pages.dev/.well-known/agent-skills/skills/answer-about-the-studio.md",
+      "sha256": "973c1d40386c564b915ebb18ce5665fd4ed74c3df2c31e54e0d58c2832d36212"
+    }
+  ]
+}

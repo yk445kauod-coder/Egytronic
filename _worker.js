@@ -5,6 +5,15 @@
 // Auth: one admin token (sha256 in settings) plus per-agent keys (agents table).
 // Agents carry scopes — read, write, admin — and only get what they need.
 
+// Discovery documents that must not be served as text/plain: Pages derives the type from the
+// extension and _headers only appends a second value, so the worker sets it outright.
+const AGENT_DOCS = {
+  "/.well-known/api-catalog": "application/linkset+json",
+  "/.well-known/ai-catalog.json": "application/json",
+  "/.well-known/mcp/server-card.json": "application/json",
+  "/.well-known/agent-skills/index.json": "application/json",
+};
+
 const PACKAGES = new Set(["logo", "landing", "static", "identity", "dynamic", "transform", "unsure"]);
 const INQUIRY_STATUS = new Set(["new", "contacted", "qualified", "proposal", "won", "lost"]);
 const TASK_STATUS = new Set(["todo", "doing", "done"]);
@@ -3219,6 +3228,15 @@ export default {
     if (url.pathname.startsWith("/api/")) {
       const who = await identify(request, env, url);
       return api(request, env, url, who);
+    }
+
+    const agentType = AGENT_DOCS[url.pathname];
+    if (agentType) {
+      const asset = await env.ASSETS.fetch(request);
+      const headers = new Headers(asset.headers);
+      headers.set("content-type", agentType);
+      headers.set("access-control-allow-origin", "*");
+      return new Response(asset.body, { status: asset.status, headers });
     }
 
     return env.ASSETS.fetch(request);
