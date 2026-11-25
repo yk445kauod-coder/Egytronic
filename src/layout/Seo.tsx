@@ -1,12 +1,9 @@
+import { Head } from "vite-react-ssg";
 import type { Locale } from "../i18n/useLocale";
 import catalog from "../data/catalog.json";
 import { buildGraph } from "./Schema";
 
 const BASE = catalog.site;
-/* Set at build time by the Search Console step: VITE_GOOGLE_SITE_VERIFICATION=<token>. */
-// Search Console ownership. The token is public by design (it ships in the HTML), so it lives here
-// as the default and the env var can still override it.
-const GSC_TOKEN = (import.meta.env.VITE_GOOGLE_SITE_VERIFICATION as string | undefined) || "LD42BDyIchUHWtltC7PZsyUi9oT8mic03JhlOuUL9TU";
 const OG_IMAGE = `${BASE}/assets/img/og-image.png`;
 
 export default function Seo({
@@ -42,12 +39,11 @@ export default function Seo({
   });
 
   return (
-    <>
+    <Head>
       <title>{title}</title>
       <meta name="description" content={description} />
       <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
       <meta name="theme-color" content="#161616" />
-      {GSC_TOKEN ? <meta name="google-site-verification" content={GSC_TOKEN} /> : null}
       <meta property="og:type" content={pageType ?? "website"} />
       <meta property="og:title" content={ogTitle ?? title} />
       <meta property="og:description" content={description} />
@@ -70,6 +66,6 @@ export default function Seo({
       <link rel="alternate" type="application/json" href={`${BASE}/pricing.json`} title="Egytronic package catalogue (JSON)" />
       <link rel="alternate" type="text/plain" href={`${BASE}/llms.txt`} title="Egytronic site guide for AI systems" />
       <script type="application/ld+json">{JSON.stringify(graph)}</script>
-    </>
+    </Head>
   );
 }

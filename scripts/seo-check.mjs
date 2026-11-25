@@ -51,32 +51,31 @@ async function checkPage(file) {
   const isEn = url.startsWith(`${BASE}/en/`);
   const label = relative(DIST, file);
 
-  const title = html.match(/<title>([^<]*)<\/title>/)?.[1];
+  const title = html.match(/<title[^>]*>([^<]*)<\/title>/)?.[1];
   if (!title) fail(`${label}: missing <title>`);
   else if (decode(title).length > 70) fail(`${label}: title is ${decode(title).length} chars (max 70)`);
 
-  const desc = html.match(/<meta name="description" content="([^"]*)"/)?.[1];
+  const desc = html.match(/<meta[^>]*name="description"[^>]*content="([^"]*)"/)?.[1];
   if (!desc) fail(`${label}: missing meta description`);
   else {
     const len = decode(desc).length;
     if (len < 60 || len > 165) fail(`${label}: description is ${len} chars (60-165)`);
   }
 
-  if (!html.includes("<link rel=\"canonical\"")) fail(`${label}: missing canonical`);
-  if (!/canonical" href="([^"]+)"/.test(html) || !html.includes(`<link rel="canonical" href="${url}"`)) {
-    fail(`${label}: canonical does not point at ${url}`);
-  }
+  const canonicalHref = html.match(/<link[^>]*rel="canonical"[^>]*href="([^"]+)"/)?.[1];
+  if (!canonicalHref) fail(`${label}: missing canonical`);
+  else if (canonicalHref !== url) fail(`${label}: canonical does not point at ${url}`);
   for (const lang of ["ar", "en", "x-default"]) {
     if (!html.toLowerCase().includes(`hreflang="${lang}"`)) fail(`${label}: missing hreflang ${lang}`);
   }
-  if (!html.includes('<meta name="robots" content="index')) fail(`${label}: missing robots meta`);
-  if (!html.includes("<meta name=\"theme-color\"")) fail(`${label}: missing theme-color`);
-  if (!html.includes('property="og:image"')) fail(`${label}: missing og:image`);
+  if (!/<meta[^>]*name="robots"[^>]*content="index/.test(html)) fail(`${label}: missing robots meta`);
+  if (!/<meta[^>]*name="theme-color"/.test(html)) fail(`${label}: missing theme-color`);
+  if (!/<meta[^>]*property="og:image"/.test(html)) fail(`${label}: missing og:image`);
 
   const h1s = html.match(/<h1[ >]/g) ?? [];
   if (h1s.length !== 1) fail(`${label}: ${h1s.length} h1 elements (expected 1)`);
 
-  const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+  const blocks = [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)];
   if (!blocks.length) fail(`${label}: no JSON-LD`);
   let types = new Set();
   for (const block of blocks) {
