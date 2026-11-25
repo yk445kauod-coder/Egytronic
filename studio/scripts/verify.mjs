@@ -4,13 +4,9 @@ import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { readFileSync, existsSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { buildDocToFile, listTemplates } from "../lib/doc.js";
-import { renderToFile } from "../lib/reel.js";
-import { writeCaptions } from "../lib/captions.js";
+import { buildDocToFile, listTemplates, DOC_THEMES, DOC_BLOCKS } from "../lib/doc.js";
 import { listFonts, fontBytes, MANIFEST } from "../lib/fonts.js";
 import { ARTIFACT_DIR } from "../lib/artifacts.js";
-import { BLOCKS } from "../runtime/blocks.js";
-import { PRESETS } from "../lib/reel.js";
 
 const results = [];
 const check = (name, ok, detail = "") => {
@@ -49,7 +45,6 @@ await page.waitForSelector('html[data-ready="1"]', { timeout: 60000 });
 
 const dom = await page.evaluate(() => ({
   pages: document.querySelectorAll(".pagedjs_page").length,
-  toc: [...document.querySelectorAll(".toc a")].map((a) => Number(getComputedStyle(a, "::before").content.replace(/["']/g, ""))),
   fontOk: document.fonts.check('16px "IBM Plex Sans Arabic"'),
   printSheet: [...document.querySelectorAll("style[data-studio]")].map((s) => s.textContent).join(" "),
   firstPage: (document.querySelector(".pagedjs_page")?.innerText || "").slice(0, 80),
@@ -57,8 +52,17 @@ const dom = await page.evaluate(() => ({
 }));
 check("doc: pages laid out", dom.pages >= 2, `${dom.pages} sheets`);
 check("doc: embedded font is active", dom.fontOk === true, 'document.fonts.check("IBM Plex Sans Arabic")');
-check("doc: TOC folios resolved", dom.toc.length >= 3 && dom.toc.every((value) => Number.isInteger(value) && value >= 1), dom.toc.join(" / "));
 check("doc: A4 sheet width", Math.round(dom.sheetWidth) === 794, `${Math.round(dom.sheetWidth)}px`);
+
+// The page margin used to vanish: Paged.js read the print @page rule and paginated with margin 0,
+// so text sat on the paper edge.
+const margins = await page.evaluate(() => {
+  const sheet = document.querySelector(".pagedjs_page").getBoundingClientRect();
+  // A real block, not the paginator's multi-page flow wrapper that sits first in the content box.
+  const block = document.querySelector(".pagedjs_page .cover").getBoundingClientRect();
+  return { inset: Math.round(block.left - sheet.left), right: Math.round(sheet.right - block.right) };
+});
+check("doc: page margins hold (text is not on the paper edge)", margins.inset >= 40 && margins.right >= 40, `inset ${margins.inset}/${margins.right}px`);
 
 await page.emulateMedia({ media: "print" });
 const printCss = await page.evaluate(() => {
@@ -81,10 +85,17 @@ check("print css: sheets stack with no gap", printCss.pagesDisplay === "block" &
 check("print css: sheet margin is zero (no double margin)", printCss.sheetMargin === "0px", printCss.sheetMargin);
 check("print css: page rule is last and A4 with margin 0", printCss.rule?.size === "A4" && printCss.rule?.margin === "0", JSON.stringify(printCss.rule));
 check("print css: sheet is A4 tall", Math.abs(printCss.sheetHeight - 1123) <= 2, `${printCss.sheetHeight}px`);
-await page.emulateMedia({ media: "screen" });
+// Not "screen": the emulation would also apply to page.pdf() and print the screen layout.
+await page.emulateMedia({ media: null });
 
+// Print from a fresh load: emulating print media on the measuring page leaves the layout in a
+// state Chrome then prints twice as tall.
 const pdfPath = join(ARTIFACT_DIR, "verify-doc.pdf");
-await page.pdf({ path: pdfPath, printBackground: true, preferCSSPageSize: true });
+const printPage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+await printPage.goto(docUrl, { waitUntil: "load" });
+await printPage.waitForSelector('html[data-ready="1"]', { timeout: 60000 });
+await printPage.pdf({ path: pdfPath, printBackground: true, preferCSSPageSize: true });
+await printPage.close();
 const pdf = await pdfPages(pdfPath);
 check("print: PDF page count matches the sheets", pdf.count === dom.pages, `${pdf.count} PDF pages vs ${dom.pages} sheets`);
 check("print: no blank page", pdf.pages.every((p) => p.text.length > 0), pdf.pages.map((p) => p.text.length).join(","));
@@ -93,9 +104,31 @@ check("print: every page after the cover carries a folio", folio, folio ? "page 
 check("print: A4 paper size", pdf.pages.every((p) => Math.abs(p.size[0] - 595) < 3 && Math.abs(p.size[1] - 842) < 3), `${pdf.pages[0].size.join("x")}pt`);
 check("print: cover carries text", pdf.pages[0].text.replace(/\s/g, "").length > 20, pdf.pages[0].text.slice(0, 40));
 
+// TOC on its own document: three sections, one per page, so the folios must be 2, 3 and 4.
+const tocDoc = buildDocToFile(
+  {
+    name: "verify-toc",
+    template: "editorial",
+    content: [
+      { type: "toc", title: "المحتويات" },
+      { type: "break" },
+      { type: "h1", text: "الأول" },
+      { type: "break" },
+      { type: "h1", text: "الثاني" },
+      { type: "break" },
+      { type: "h1", text: "الثالث" },
+    ],
+  },
+  "verify-toc.html",
+);
+await page.goto(pathToFileURL(tocDoc.file.path).href, { waitUntil: "load" });
+await page.waitForSelector('html[data-ready="1"]', { timeout: 60000 });
+const tocFolios = await page.evaluate(() => [...document.querySelectorAll(".toc a")].map((a) => Number((a.getAttribute("data-page") || "").trim())));
+check("doc: TOC folios resolved and ordered", tocFolios.length === 3 && tocFolios.every((v, i) => Number.isInteger(v) && v === i + 2), tocFolios.join(" / ") || "no data-page");
+
 // 1b. Every template builds, and a document-level style override wins over the template
 const templatePages = [];
-for (const id of ["editorial", "report", "brief"]) {
+for (const id of ["editorial", "report", "brief", "proposal"]) {
   const built = buildDocToFile(
     { name: `verify-${id}`, template: id, content: [{ type: "h2", text: "قسم" }, { type: "p", text: "نص تجريبي" }] },
     `verify-${id}.html`,
@@ -109,7 +142,7 @@ for (const id of ["editorial", "report", "brief"]) {
   });
   templatePages.push({ id, ...measured });
 }
-check("templates: all three build and paginate", templatePages.every((t) => t.sheets >= 1), templatePages.map((t) => `${t.id}:${t.sheets}@${t.w}px`).join(" "));
+check("templates: all four build and paginate", templatePages.length === 4 && templatePages.every((t) => t.sheets >= 1), templatePages.map((t) => `${t.id}:${t.sheets}@${t.w}px`).join(" "));
 check("templates: page size follows the template (A4 / A5)", templatePages.find((t) => t.id === "brief")?.w < 600 && templatePages.find((t) => t.id === "report")?.w > 700,
   templatePages.map((t) => `${t.id}:${t.w}px`).join(" "));
 
@@ -122,86 +155,45 @@ await page.waitForSelector('html[data-ready="1"]', { timeout: 60000 });
 const overrideSize = await page.evaluate(() => getComputedStyle(document.querySelector("h1")).fontSize);
 check("templates: document style override beats the template", parseFloat(overrideSize) > 45, `${overrideSize} (40pt = 53.3px)`);
 
-// 2. Reel → frames render, motion changes the frame, export hooks exist
-const { file: reelFile } = renderToFile(
+// 1c. Themes: a named theme moves the accent, a bogus token is dropped, the cover starts a new sheet
+const themed = buildDocToFile(
   {
-    name: "verify-reel",
-    preset: "reel",
-    seconds: 3,
-    fontFamily: "Alexandria",
-    scenes: [
-      { at: 0, durationMs: 1500, block: "type.headline", props: { text: "بنتعلم بسرعة", accentWords: ["بسرعة"] } },
-      { at: 1500, durationMs: 1500, block: "captions.karaoke", props: { text: "سطر أول، سطر تاني" } },
+    name: "verify-theme",
+    template: "proposal",
+    theme: { accent: "#0F6E8C", h1Size: "34pt", ink: "#123456", rule: "red; } body { display: none !important }" },
+    content: [
+      { type: "cover", kicker: "Egytronic", title: "عرض تجريبي", subtitle: "غلاف يفتح الملف", meta: ["لـ: شركة تجريبية", "تاريخ: 2026"] },
+      { type: "h1", text: "النطاق" },
+      { type: "p", text: "نص بعد الغلاف." },
     ],
   },
-  "verify-reel.html",
+  "verify-theme.html",
 );
-await page.goto(pathToFileURL(reelFile.path).href + "?bare=1", { waitUntil: "load" });
-await page.waitForFunction(() => window.__studio && window.__studio.ready !== false, { timeout: 30000 });
-
-const frameHash = async (seconds) => {
-  await page.evaluate((t) => window.seek(t), seconds);
-  await page.waitForTimeout(120);
-  return page.evaluate(() => {
-    const canvas = document.querySelector("canvas");
-    const ctx = canvas.getContext("2d");
-    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    let sum = 0;
-    let ink = 0;
-    for (let i = 0; i < data.length; i += 4 * 7) {
-      const luma = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      sum += luma;
-      if (luma > 150) ink += 1;
-    }
-    return { n: Math.round(sum), ink, w: canvas.width, h: canvas.height };
-  });
-};
-
-const a = await frameHash(0.3);
-const b = await frameHash(1.9);
-check("reel: canvas is 1080x1920", a.w === 1080 && a.h === 1920, `${a.w}x${a.h}`);
-check("reel: image is not blank", a.n > 0 && b.n > 0, `luma ${a.n}/${b.n}`);
-check("reel: frame has contrast (type drawn)", a.ink + b.ink > 50, `light samples ${a.ink}/${b.ink}`);
-check("reel: motion changes the frame", a.n !== b.n, `${a.n} vs ${b.n}`);
-check("reel: the two frames differ", Math.abs(a.n - b.n) > 100, `${a.n} vs ${b.n}`);
-const hooks = await page.evaluate(() => ({ seek: typeof window.seek, duration: window.duration, api: Object.keys(window.__studio || {}) }));
-check("reel: seek/duration API", hooks.seek === "function" && hooks.duration > 0, `duration=${hooks.duration}s api=${hooks.api.join(",")}`);
-
-// 3. Logo block draws
-const { file: logoFile } = renderToFile(
-  {
-    name: "verify-logo",
-    preset: "square",
-    seconds: 2,
-    scenes: [{ at: 0, durationMs: 2000, block: "logo.reveal", props: { paths: ["M40 40h120v120H40z"], color: "#FF6A00" } }],
-  },
-  "verify-logo.html",
-);
-await page.goto(pathToFileURL(logoFile.path).href + "?bare=1", { waitUntil: "load" });
-await page.waitForFunction(() => Boolean(window.__studio), { timeout: 30000 });
-await page.waitForTimeout(150);
-const logo = await page.evaluate(() => {
-  window.seek(1.6);
-  const canvas = window.__studio.canvas;
-  const { data } = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
-  let bright = 0;
-  for (let i = 0; i < data.length; i += 4) if (data[i] > 200 && data[i + 3] > 128) bright += 1;
-  return bright;
+await page.goto(pathToFileURL(themed.file.path).href, { waitUntil: "load" });
+await page.waitForSelector('html[data-ready="1"]', { timeout: 60000 });
+const themeProbe = await page.evaluate(() => {
+  const root = getComputedStyle(document.documentElement);
+  const cover = document.querySelector(".cover");
+  const h1 = document.querySelector(".cover h1");
+  return {
+    accent: root.getPropertyValue("--accent").trim(),
+    ink: root.getPropertyValue("--ink").trim(),
+    rule: root.getPropertyValue("--rule").trim(),
+    h1Size: h1 ? getComputedStyle(h1).fontSize : null,
+    coverText: cover ? cover.innerText.replace(/\s/g, "").slice(0, 30) : "",
+    coverPage: cover ? cover.closest(".pagedjs_page")?.getAttribute("data-page-number") : null,
+    pages: document.querySelectorAll(".pagedjs_page").length,
+    bodyDisplay: getComputedStyle(document.body).display,
+  };
 });
-check("logo: mark is painted", logo > 1000, `${logo} accent pixels`);
-
-// 4. Captions
-const words = [
-  { text: "بنتعلم", start: 0, end: 0.4 },
-  { text: "بسرعة", start: 0.45, end: 0.9 },
-  { text: "وبنكتب", start: 1.4, end: 1.9 },
-];
-const captions = writeCaptions(words, "verify-captions");
-for (const ext of ["srt", "vtt", "ass"]) {
-  const text = readFileSync(captions.files[ext], "utf8");
-  check(`captions: ${ext.toUpperCase()} written`, text.length > 20 && text.includes("بنتعلم"), `${text.length} bytes`);
-}
-check("captions: SRT timing", /00:00:00,000 --> 00:00:0\d,\d{3}/.test(readFileSync(captions.files.srt, "utf8")), "cue present");
+check("theme: accent token reaches the page", themeProbe.accent.toLowerCase() === "#0f6e8c", themeProbe.accent);
+check("theme: h1Size token resizes headings", parseFloat(themeProbe.h1Size) > 40, `${themeProbe.h1Size} (34pt = 45.3px)`);
+check("theme: a value with a CSS injection attempt is dropped", !/display/.test(themeProbe.rule) && themeProbe.bodyDisplay !== "none", `rule=${themeProbe.rule || "kept default"}`);
+check("cover: renders on its own first sheet", themeProbe.coverText.includes("عرضتجريبي") && themeProbe.coverPage === "1" && themeProbe.pages >= 2, `page ${themeProbe.coverPage}, ${themeProbe.pages} sheets`);
+check("cover: the body starts on the next sheet", await page.evaluate(() => {
+  const heading = [...document.querySelectorAll("h1")].find((h) => h.textContent.trim() === "النطاق");
+  return Boolean(heading) && heading.closest(".pagedjs_page")?.getAttribute("data-page-number") !== "1";
+}), "النطاق is on page 2+");
 
 // 5. Fonts
 const fonts = listFonts();
@@ -218,9 +210,9 @@ try { await tts({ text: "x" }); } catch (error) { voiceError = error.message; }
 check("voice: refuses without a key, with a clear message", /no voice provider/.test(voiceError), voiceError);
 
 // 7. Library surface
-check("blocks: 9 blocks", Object.keys(BLOCKS).length >= 9, Object.keys(BLOCKS).join(","));
-check("presets: reel/square/story", Boolean(PRESETS.reel && PRESETS.square), Object.keys(PRESETS).join(","));
-check("templates: three", listTemplates().length === 3, listTemplates().map((t) => t.id).join(","));
+check("blocks: documented block list covers the builder", DOC_BLOCKS.length >= 14 && DOC_BLOCKS.some((b) => b.type === "cover"), DOC_BLOCKS.map((b) => b.type).join(","));
+check("themes: five named themes", Object.keys(DOC_THEMES).length === 5, Object.keys(DOC_THEMES).join(","));
+check("templates: four", listTemplates().length === 4, listTemplates().map((t) => t.id).join(","));
 
 await browser.close();
 const failed = results.filter((r) => !r.ok);

@@ -1,15 +1,13 @@
 #!/usr/bin/env node
-// Egytronic Studio MCP server (stdio). Every tool writes a self-contained HTML
-// render into studio/artifacts/; the video is encoded in the creator's browser.
+// Egytronic Studio MCP server (stdio). Files, not footage: every tool writes a
+// self-contained print document into studio/artifacts/ that prints to PDF.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { renderToFile, PRESETS } from "./lib/reel.js";
 import { listFonts } from "./lib/fonts.js";
-import { BLOCKS } from "./runtime/blocks.js";
 import { ARTIFACT_DIR, listArtifacts, resolveArtifact } from "./lib/artifacts.js";
 import { statSync } from "node:fs";
-import { buildDocToFile, PAGE_PRESETS, PAGE_SIZES, listTemplates } from "./lib/doc.js";
+import { buildDocToFile, PAGE_PRESETS, PAGE_SIZES, listTemplates, DOC_THEMES, DOC_BLOCKS } from "./lib/doc.js";
 
 const server = new McpServer({ name: "egytronic-studio", version: "0.1.0" });
 
@@ -18,16 +16,17 @@ const fail = (error) => ({ isError: true, content: [{ type: "text", text: String
 
 function catalogue() {
   return {
-    blocks: Object.values(BLOCKS).map((block) => ({ id: block.id, label: block.label, props: block.props })),
-    docBlocks: ["h1", "h2", "h3", "p", "lead", "columns", "quote", "callout", "list", "figure", "table", "toc", "break", "spacer", "rule"],
-    fonts: listFonts(),
-    presets: PRESETS,
+    docBlocks: DOC_BLOCKS,
+    docTemplates: listTemplates(),
+    docThemes: Object.entries(DOC_THEMES).map(([id, theme]) => ({ id, label: theme.label, tokens: theme.tokens })),
     docPresets: PAGE_PRESETS,
+    pageSizes: Object.keys(PAGE_SIZES),
+    fonts: listFonts(),
     artifactDir: ARTIFACT_DIR,
-    renderContract: {
-      artifact: "one .html file, fonts + audio inlined, opens offline",
-      export: "in the page press R (or ?record=1) — MP4 via WebCodecs, WebM fallback, PNG ZIP option",
-      seek: "?frame=<ms> renders a single frame, ?bare=1 hides the player bar",
+    contract: {
+      artifact: "one .html file with fonts inlined; opens offline",
+      print: "open the file and press the print button — the browser saves it as PDF",
+      model: "{name,template,theme,preset|page,margin,lang,rtl,fontFamily,styles,master,content[]}",
     },
   };
 }
@@ -36,86 +35,17 @@ server.registerTool(
   "studio_catalog",
   {
     title: "Studio catalog",
-    description: "List motion blocks with their props, the built-in Arabic/Latin fonts, size presets and the render contract.",
+    description: "List document blocks, templates with their design tokens, named themes, page presets, page sizes and the Arabic/Latin fonts available for print.",
     inputSchema: {},
   },
   async () => json(catalogue()),
 );
 
 server.registerTool(
-  "studio_reel",
-  {
-    title: "Compose a reel",
-    description:
-      "Compose motion graphics into one self-contained HTML artifact. Provide scenes (block id + props + at/durationMs). Returns the artifact path the creator opens to record.",
-    inputSchema: {
-      spec: z.any().describe("Composition spec: {name,size|preset,fps,seconds,fontFamily,theme,scenes[],audio[]}"),
-      out: z.string().optional().describe("File name inside studio/artifacts (default: <name>.html)"),
-    },
-  },
-  async ({ spec, out }) => {
-    try {
-      const { file, comp } = renderToFile(spec, out || `${spec.name || "studio-render"}.html`);
-      return json({
-        ok: true,
-        artifact: file.path,
-        bytes: file.bytes,
-        durationMs: comp.durationMs,
-        size: comp.size,
-        fps: comp.fps,
-        font: comp.fontFamily,
-        scenes: comp.scenes.length,
-        open: `file://${file.path}`,
-      });
-    } catch (error) {
-      return fail(error);
-    }
-  },
-);
-
-server.registerTool(
-  "studio_logo",
-  {
-    title: "Animated logo",
-    description: "Build an animated logo reveal from SVG path data (draw-on stroke, then fill, optional glow).",
-    inputSchema: {
-      paths: z.array(z.string()).optional().describe("SVG path d strings"),
-      svg: z.string().optional().describe("Raw SVG markup; paths are extracted from it"),
-      seconds: z.number().optional(),
-      color: z.string().optional(),
-      size: z.string().optional(),
-      fontFamily: z.string().optional(),
-      glow: z.boolean().optional(),
-      name: z.string().optional(),
-    },
-  },
-  async ({ paths, svg, seconds = 4, color, size = "1080x1080", fontFamily, glow = true, name = "logo-reveal" }) => {
-    try {
-      const extracted = paths?.length ? paths : [...String(svg || "").matchAll(/<path[^>]*\sd="([^"]+)"/g)].map((match) => match[1]);
-      if (!extracted.length) throw new Error("no paths: pass paths[] or svg with <path d=\"...\">");
-      const { file, comp } = renderToFile(
-        {
-          name,
-          size,
-          fps: 60,
-          seconds,
-          fontFamily: fontFamily || "Alexandria",
-          scenes: [{ at: 0, durationMs: seconds * 1000, block: "logo.reveal", props: { paths: extracted.map((d) => ({ d })), color, glow, width: 0.42 } }],
-        },
-        `${name}.html`,
-      );
-      return json({ ok: true, artifact: file.path, bytes: file.bytes, paths: extracted.length, durationMs: comp.durationMs, size: comp.size });
-    } catch (error) {
-      return fail(error);
-    }
-  },
-);
-
-server.registerTool(
   "studio_tts",
   {
     title: "Voice-over (TTS)",
-    description: "Generate a voice-over WAV with Gemini TTS. Returns the path; pass it to studio_reel audio[] as a data URI or file path.",
+    description: "Generate a voice-over WAV with Gemini TTS. Returns the path to the audio file.",
     inputSchema: {
       text: z.string(),
       voice: z.string().optional().describe("Gemini: Kore, Puck, Zephyr… | OpenRouter: alloy, verse, shimmer"),
@@ -152,19 +82,20 @@ server.registerTool(
 );
 
 server.registerTool(
-  "studio_captions",
+  "studio_doc",
   {
-    title: "Caption files",
-    description: "Write SRT, VTT and ASS from timed words. Words in seconds; values above 1000 are treated as milliseconds.",
+    title: "Print document (InDesign-like)",
+    description:
+      "Build a paginated print document: cover page, page size and margins, master page with running head and folio, named colour themes, paragraph styles, columns, figures, tables, callouts, automatic TOC with page numbers. Opens as HTML, prints to PDF from the browser.",
     inputSchema: {
-      words: z.array(z.object({ text: z.string(), start: z.number(), end: z.number().optional() })),
+      doc: z.any().describe("Document model: {name,template,theme,preset|page,margin,lang,fontFamily,styles,master,content[]}"),
       out: z.string().optional(),
     },
   },
-  async ({ words, out }) => {
+  async ({ doc, out }) => {
     try {
-      const { writeCaptions } = await import("./lib/captions.js");
-      return json(await writeCaptions(words, out || "captions"));
+      const { file } = buildDocToFile(doc, out || `${doc.name || "document"}.html`);
+      return json({ ok: true, artifact: file.path, bytes: file.bytes, template: doc.template || "editorial", theme: doc.theme || "default", page: doc.page || PAGE_PRESETS[doc.preset]?.size || "A4", print: "open the file, press the print button (window.print) → save as PDF" });
     } catch (error) {
       return fail(error);
     }
@@ -172,24 +103,21 @@ server.registerTool(
 );
 
 server.registerTool(
-  "studio_doc",
+  "studio_doc_themes",
   {
-    title: "Print document (InDesign-like)",
+    title: "Document themes",
     description:
-      "Build a paginated print document: page size and margins, master page with running head and folio, paragraph styles, columns, figures, tables, callouts, automatic TOC with page numbers. Opens as HTML, prints to PDF from the browser.",
-    inputSchema: {
-      doc: z.any().describe("Document model: {name,template,preset|page,margin,lang,fontFamily,styles,master,content[]}"),
-      out: z.string().optional(),
-    },
+      "The design system behind the documents: every template with the paragraph styles it sets, the named colour themes, and how to override tokens per document. Read this before composing, so the file matches the brand instead of the defaults.",
+    inputSchema: {},
   },
-  async ({ doc, out }) => {
-    try {
-      const { file } = buildDocToFile(doc, out || `${doc.name || "document"}.html`);
-      return json({ ok: true, artifact: file.path, bytes: file.bytes, template: doc.template || "editorial", page: doc.page || PAGE_PRESETS[doc.preset]?.size || "A4", templates: listTemplates(), print: "open the file, press the print button (window.print) → save as PDF" });
-    } catch (error) {
-      return fail(error);
-    }
-  },
+  async () =>
+    json({
+      templates: listTemplates(),
+      themes: Object.entries(DOC_THEMES).map(([id, theme]) => ({ id, label: theme.label, use: theme.use, tokens: theme.tokens })),
+      override: "Pass doc.theme as a theme id, or as {accent,ink,muted,rule,paper,screen,callout,bodySize,h1Size} to override single tokens.",
+      blocks: DOC_BLOCKS,
+      print: "open the artifact and press the print button; the browser writes the PDF",
+    }),
 );
 
 server.registerTool(

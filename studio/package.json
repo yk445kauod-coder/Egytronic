@@ -2,31 +2,22 @@
   "name": "@egytronic/studio",
   "private": true,
   "type": "module",
-  "description": "Agent-driven motion graphics, voice and print studio. Emits self-contained HTML renders.",
+  "description": "Agent-driven print studio: paginated documents from a JSON model. Emits self-contained HTML that prints to PDF.",
   "bin": {
     "egx-studio": "./cli.js"
   },
   "scripts": {
-    "bundle": "node scripts/bundle.mjs",
     "mcp": "node mcp.js",
-    "example": "node cli.js reel examples/reel-egytronic.json",
     "verify": "node scripts/verify.mjs",
     "doc": "node cli.js doc examples/doc-proposal.json --out proposal.html",
-    "reels": "node scripts/export-clean.mjs examples/reels/01-hook.json examples/reels/02-numbers.json examples/reels/03-logo.json examples/reels/04-captions.json",
-    "reels:check": "node scripts/check-video.mjs artifacts/reels/reel-hook.mp4 && node scripts/check-video.mjs artifacts/reels/reel-numbers.mp4 && node scripts/check-video.mjs artifacts/reels/reel-logo.mp4 && node scripts/check-video.mjs artifacts/reels/reel-captions.mp4",
-    "reels:gallery": "node scripts/reel-gallery.mjs"
+    "catalog": "node cli.js catalog"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
-    "fflate": "^0.8.3",
-    "mediabunny": "^1.66.4",
     "pagedjs": "^0.4.3",
-    "svgpath": "^2.6.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "esbuild": "^0.28.2",
     "pdfjs-dist": "^4.7.76",
     "playwright": "^1.49.1"
   }

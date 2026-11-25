@@ -120,26 +120,25 @@ body { display: flex; flex-direction: column; align-items: center; min-height: 1
   {{pageFurniture}}
 }
 
+/* The cover carries no running head and no folio. */
+@page:first {
+  @top-center { content: none; }
+  @bottom-center { content: none; }
+}
+
 /* Print: the pages are already full-page sheets, so the paper margin is zero
    and the sheet's own margins do the work. Printing with margins here would
    shrink every page and add blank sheets. */
-@media print {
-  @page { size: {{pageSize}}; margin: 0; }
-  html, body { background: #fff; }
-  /* body is a flex column on screen; as a flex item the sheet shrinks to the page box height
-     and prints squeezed. Print is plain block flow. */
-  body { display: block !important; min-height: 0 !important; }
-  .toolbar { display: none !important; }
-  .pagedjs_pages { display: block !important; gap: 0 !important; padding: 0 !important; }
-  .pagedjs_page {
-    margin: 0 !important;
-    box-shadow: none !important;
-    width: var(--pagedjs-pagebox-width) !important;
-    height: var(--pagedjs-pagebox-height) !important;
-    break-after: page;
-    page-break-after: always;
-    break-inside: avoid;
-  }
-  .pagedjs_page:last-child { break-after: auto; page-break-after: auto; }
-  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+/* Cover: one page, a rule in the accent, then the document starts on a fresh sheet. */
+/* Block flow, not grid: Paged.js fragments grid containers across pages, which split the
+   cover in two and drew its rule twice. */
+.cover {
+  padding-block: 18mm 8mm;
+  border-block-end: 2px solid var(--accent);
 }
+.cover__kicker { margin: 0 0 4mm; font-size: 9pt; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+.cover h1 { margin: 0 0 5mm; font-size: 38pt; line-height: 1.06; letter-spacing: -0.01em; }
+.cover__sub { margin: 0; max-width: 46ch; font-size: 13pt; line-height: 1.5; color: var(--muted); }
+.cover__meta { margin: 10mm 0 0; padding: 0; list-style: none; font-size: 9.5pt; color: var(--muted); }
+.cover__meta li { padding-block: 2.5mm; border-block-start: 1px solid var(--rule); }
+.cover__meta li:last-child { border-block-end: 1px solid var(--rule); }

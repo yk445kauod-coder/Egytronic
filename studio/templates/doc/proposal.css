@@ -1,0 +1,11 @@
+/* Proposal: numbers lead, tables carry the scope, the callout is where the total lands. */
+h1 { letter-spacing: -0.01em; }
+h2 { border-block-end: 1px solid var(--rule); padding-block-end: 1.5mm; }
+.lead { font-size: 12pt; max-width: 58ch; }
+table { border-collapse: collapse; width: 100%; font-size: 9.5pt; }
+th, td { border-block-end: 1px solid var(--rule); padding: 2.5mm 3mm; text-align: start; vertical-align: top; }
+th { font-weight: 700; background: var(--callout); }
+td:last-child, th:last-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.callout { border: 1px solid var(--rule); border-inline-start: 4px solid var(--accent); background: var(--callout); }
+.callout strong { display: block; margin-block-end: 1.5mm; font-size: 11pt; }
+blockquote { border-inline-start-width: 4px; font-size: 12pt; }

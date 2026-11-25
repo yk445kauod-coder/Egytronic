@@ -26,6 +26,72 @@ export const PAGE_PRESETS = {
 
 export const DEFAULT_TEMPLATE = "editorial";
 
+// Named colour themes: tokens map onto the CSS custom properties in base.css.
+export const DOC_THEMES = {
+  egytronic: {
+    label: "Egytronic — برتقالي على أبيض",
+    use: "الافتراضي: ملفات الشركة والعروض.",
+    tokens: { accent: "#FF6A00", ink: "#0B0B0C", muted: "#6B6B6B", rule: "#D8D4CC", paper: "#FFFFFF", screen: "#EDEAE4", callout: "#F6F3EC" },
+  },
+  press: {
+    label: "Press — أسود وحبر",
+    use: "تقارير ودراسات؛ لا لون غير الحبر.",
+    tokens: { accent: "#111111", ink: "#111111", muted: "#5A5A5A", rule: "#D5D5D5", paper: "#FFFFFF", screen: "#F0F0F0", callout: "#F5F5F4" },
+  },
+  desert: {
+    label: "Desert — طيني ورملي",
+    use: "عروض ومقترحات دافئة.",
+    tokens: { accent: "#B4532A", ink: "#2A211C", muted: "#7A6A5F", rule: "#E0D3C6", paper: "#FDF9F3", screen: "#F1E9DE", callout: "#F7EFE4" },
+  },
+  sea: {
+    label: "Sea — أزرق هادئ",
+    use: "ملفات تقنية وأبحاث.",
+    tokens: { accent: "#0F6E8C", ink: "#0C1C22", muted: "#516A73", rule: "#CBDCE1", paper: "#FFFFFF", screen: "#EAF1F3", callout: "#F0F6F8" },
+  },
+  ink: {
+    label: "Ink — ليلي",
+    use: "نسخة شاشة، أو ملف يُقرأ في الإضاءة المنخفضة.",
+    tokens: { accent: "#FFB454", ink: "#F4EFE7", muted: "#A7A29A", rule: "#2E2E32", paper: "#111113", screen: "#0A0A0B", callout: "#1A1A1D" },
+  },
+};
+
+export const DOC_BLOCKS = [
+  { type: "cover", fields: "kicker, title, subtitle, meta[]", note: "صفحة غلاف تنتهي بفاصل صفحات وبخط برتقالي." },
+  { type: "h1", fields: "text", note: "عنوان رئيسي؛ يُدرج تلقائيًا في فهرس المحتويات." },
+  { type: "h2", fields: "text", note: "عنوان قسم؛ يُدرج تلقائيًا في الفهرس." },
+  { type: "h3", fields: "text" },
+  { type: "p", fields: "text, html?", note: "html:true يمرّر الوسم كما هو." },
+  { type: "lead", fields: "text", note: "فقرة تمهيدية أكبر." },
+  { type: "columns", fields: "text[], count?, gap?", note: "أعمدة نصية بارتفاع متوازن." },
+  { type: "quote", fields: "text, source?" },
+  { type: "callout", fields: "title?, text", note: "صندوق ملاحظة بحدود وخلفية خفيفة." },
+  { type: "list", fields: "items[], ordered?" },
+  { type: "figure", fields: "src, alt?, caption?, fit?, ratio?" },
+  { type: "table", fields: "head[], rows[][], caption?" },
+  { type: "toc", fields: "title?", note: "فهرس بأرقام صفحات حقيقية عبر Paged.js." },
+  { type: "break", note: "فاصل صفحات يدوي." },
+  { type: "spacer", fields: "height?" },
+  { type: "rule", note: "خط فاصل." },
+];
+
+// Theme tokens are interpolated into CSS, so only shapes we can validate get through.
+const COLOR = /^(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\))$/;
+const LEN = /^[0-9.]+(pt|px|mm|cm|em|rem|%)$/;
+const TOKEN_VARS = {
+  accent: "--accent", ink: "--ink", muted: "--muted", rule: "--rule",
+  paper: "--paper", screen: "--screen", callout: "--callout",
+  bodySize: "--body-size", h1Size: "--h1-size",
+};
+
+function themeCss(theme) {
+  const tokens = typeof theme === "string" ? DOC_THEMES[theme]?.tokens : theme;
+  if (!tokens || typeof tokens !== "object") return "";
+  const decls = Object.entries(tokens)
+    .filter(([key, value]) => TOKEN_VARS[key] && (typeof value === "string" && (COLOR.test(value) || LEN.test(value))))
+    .map(([key, value]) => `${TOKEN_VARS[key]}:${value}`);
+  return decls.length ? `:root{${decls.join(";")}}` : "";
+}
+
 export function listTemplates() {
   return readdirSync(TEMPLATES)
     .filter((name) => name.endsWith(".json"))
@@ -95,6 +161,14 @@ function blockHtml(block, index) {
       const entries = (block.entries || []).map((entry) => `<li><a href="#${escAttr(entry.id)}">${esc(entry.text)}</a></li>`).join("");
       return `<nav class="toc"><h2>${esc(block.title || "المحتويات")}</h2><ul>${entries}</ul></nav>`;
     }
+    case "cover":
+      return `<section class="cover">${
+        block.kicker ? `<p class="cover__kicker">${esc(block.kicker)}</p>` : ""
+      }<h1>${esc(block.title)}</h1>${
+        block.subtitle ? `<p class="cover__sub">${esc(block.subtitle)}</p>` : ""
+      }${
+        (block.meta || []).length ? `<ul class="cover__meta">${block.meta.map((line) => `<li>${esc(line)}</li>`).join("")}</ul>` : ""
+      }</section><div class="page-break"></div>`;
     case "break": return `<div class="page-break"></div>`;
     case "spacer": return `<div style="height:${esc(block.height || "10mm")}"></div>`;
     case "rule": return "<hr>";
@@ -135,7 +209,9 @@ export function buildDocHtml(doc = {}) {
     .filter(({ block }) => ["h1", "h2"].includes(block.type))
     .map(({ block, index }) => ({ id: block.id || slug(block.text || "", index), text: block.text }));
 
-  const html = content
+  // The cover closes its own page; a break directly after it would open a blank sheet.
+  const flow = content.filter((block, index) => !(block.type === "break" && content[index - 1]?.type === "cover"));
+  const html = flow
     .map((block, index) => blockHtml(block.type === "toc" ? { ...block, entries: block.entries || tocEntries } : block, index))
     .join("\n");
 
@@ -163,6 +239,8 @@ export function buildDocHtml(doc = {}) {
 <meta name="studio-template" content="${escAttr(template.id)}">
 <style>${fontCss(family.family)}</style>
 <style>${css}
+/* theme */
+${themeCss(doc.theme)}
 /* document-level overrides */
 ${styleOverrides}
 </style>
@@ -190,9 +268,16 @@ window.PagedConfig = { auto: true, after: function () { if (window.__studioDocSe
     "@media print{" +
       "html,body{background:#fff!important;display:block!important;min-height:0!important}" +
       ".toolbar{display:none!important}" +
-      ".pagedjs_pages{display:block!important;gap:0!important;padding:0!important;min-height:0!important;max-height:none!important;overflow:visible!important}" +
-      ".pagedjs_page{width:var(--pagedjs-pagebox-width)!important;height:var(--pagedjs-pagebox-height)!important;min-height:0!important;max-height:none!important;margin:0!important;box-shadow:none!important;break-after:page;page-break-after:always}" +
+      /* height:auto matters: the screen rule pins the stack to the viewport height, so in print the
+     three sheets overflow that box and Chrome spills two extra pages. */".pagedjs_pages{display:block!important;gap:0!important;padding:0!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important}" +
+      /* A hair under the page box: a sheet that measures exactly A4 can round past the paper and
+     Chrome spills a blank page after it. */".pagedjs_page{width:var(--pagedjs-pagebox-width)!important;height:calc(var(--pagedjs-pagebox-height) - 1px)!important;min-height:0!important;max-height:none!important;margin:0!important;box-shadow:none!important;break-after:page;page-break-after:always}" +
       ".pagedjs_page:last-child{break-after:auto!important;page-break-after:auto!important}" +
+      /* The inner sheet is a millimetre taller than the trimmed page and spills a sliver, which
+         is a blank page per sheet. Make the stack fill the page exactly. */
+      ".pagedjs_sheet,.pagedjs_pagebox{height:100%!important;width:100%!important;min-height:0!important;max-height:100%!important}" +
+      ".pagedjs_page{overflow:hidden!important}" +
+      "*{-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
     "}";
   var ready = false;
   var resolveReady;

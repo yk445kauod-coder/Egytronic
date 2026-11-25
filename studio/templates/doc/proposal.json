@@ -1,0 +1,10 @@
+{
+  "label": "Proposal — عرض بمقترح وسعر",
+  "fontFamily": "IBM Plex Sans Arabic",
+  "preset": "a4-portrait",
+  "styles": {
+    "h1": { "size": "24pt", "weight": 700 },
+    "h2": { "size": "15pt", "weight": 700 },
+    "body": { "size": "10.5pt", "leading": "1.7" }
+  }
+}
