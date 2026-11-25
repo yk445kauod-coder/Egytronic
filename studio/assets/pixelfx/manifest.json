@@ -1,0 +1,65 @@
+{
+  "generated": 4,
+  "art": [
+    {
+      "id": "aurora",
+      "file": "aurora.png",
+      "effect": "Aurora",
+      "effectPath": "aurora",
+      "size": [
+        320,
+        180
+      ],
+      "at": 2.4,
+      "sha256": "a4591a6ee41ec2f0",
+      "bytes": 51090,
+      "source": "patch-gg/pixelfx @ 5294518",
+      "license": "MIT (c) 2026 Patch, Hugo Duprez"
+    },
+    {
+      "id": "campfire",
+      "file": "campfire.png",
+      "effect": "Campfire",
+      "effectPath": "campfire",
+      "size": [
+        128,
+        128
+      ],
+      "at": 1.2,
+      "sha256": "b2676bb9f47fbb5b",
+      "bytes": 4314,
+      "source": "patch-gg/pixelfx @ 5294518",
+      "license": "MIT (c) 2026 Patch, Hugo Duprez"
+    },
+    {
+      "id": "crt-off",
+      "file": "crt-off.png",
+      "effect": "CRT off",
+      "effectPath": "crt-off",
+      "size": [
+        320,
+        180
+      ],
+      "at": 0.5,
+      "sha256": "77902f98d4b61286",
+      "bytes": 5739,
+      "source": "patch-gg/pixelfx @ 5294518",
+      "license": "MIT (c) 2026 Patch, Hugo Duprez"
+    },
+    {
+      "id": "confetti",
+      "file": "confetti.png",
+      "effect": "Confetti",
+      "effectPath": "confetti",
+      "size": [
+        200,
+        140
+      ],
+      "at": 1.1,
+      "sha256": "9222e0a7e49c2adb",
+      "bytes": 2880,
+      "source": "patch-gg/pixelfx @ 5294518",
+      "license": "MIT (c) 2026 Patch, Hugo Duprez"
+    }
+  ]
+}

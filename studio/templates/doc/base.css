@@ -142,3 +142,67 @@ body { display: flex; flex-direction: column; align-items: center; min-height: 1
 .cover__meta { margin: 10mm 0 0; padding: 0; list-style: none; font-size: 9.5pt; color: var(--muted); }
 .cover__meta li { padding-block: 2.5mm; border-block-start: 1px solid var(--rule); }
 .cover__meta li:last-child { border-block-end: 1px solid var(--rule); }
+
+/* ——— Pixel art system ————————————————————————————————————————
+   The artwork comes from the PixelFx effects rendered by scripts/gen-pixelfx.mjs; themes set
+   --art-banner / --art-mark to the PNG as a data URI, so a document stays one file. */
+
+.pixel-art {
+  display: block;
+  width: 100%;
+  background-image: var(--art-banner);
+  background-size: cover;
+  background-position: center;
+  image-rendering: pixelated;
+  border: 2px solid var(--ink);
+  aspect-ratio: 16 / 9;
+}
+.pixel-art--mark {
+  width: 26mm;
+  aspect-ratio: 1;
+  border-width: 2px;
+  background-image: var(--art-mark);
+  background-size: 100% auto;
+  background-position: center bottom;
+  background-color: var(--paper);
+}
+.pixel-art--strip {
+  height: 14mm;
+  aspect-ratio: auto;
+  background-size: 100% auto;
+  background-repeat: repeat-x;
+}
+.pixel-art img { display: block; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+
+/* hard 4 px grid: no radius, doubled rules, offset shadow block */
+.pixel-card {
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 6mm;
+  break-inside: avoid;
+}
+.pixel-chip {
+  display: inline-block;
+  padding: 1mm 3mm;
+  border: 2px solid var(--ink);
+  background: var(--accent);
+  color: #fff;
+  font-size: 8.5pt;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.pixel-rule { height: 4px; border: 0; margin: 4mm 0; background: var(--ink); image-rendering: pixelated; }
+
+/* quotation */
+.quote__meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; margin: 6mm 0 0; border-block-start: 2px solid var(--ink); }
+.quote__meta div { padding: 3mm 0; border-block-end: 1px solid var(--rule); }
+.quote__meta dt { font-size: 8pt; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0 0 1mm; }
+.quote__meta dd { margin: 0; font-size: 10.5pt; font-weight: 600; }
+.quote__totals { width: 100%; border-collapse: collapse; margin: 6mm 0 0; break-inside: avoid; }
+.quote__totals td { padding: 3mm 0; border-block-start: 1px solid var(--rule); font-size: 10.5pt; }
+.quote__totals tr:first-child td { border-block-start: 2px solid var(--ink); }
+.quote__totals td:last-child { text-align: end; font-variant-numeric: tabular-nums; }
+.quote__totals .total td { border-block: 2px solid var(--ink); font-size: 13pt; font-weight: 800; }
+.quote__totals .total td:last-child { color: var(--accent); }
+.sign { display: grid; grid-template-columns: 1fr 1fr; gap: 12mm; margin-block-start: 12mm; break-inside: avoid; }
+.sign > div { border-block-start: 2px solid var(--ink); padding-block-start: 3mm; font-size: 9pt; color: var(--muted); }

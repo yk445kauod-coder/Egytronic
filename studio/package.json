@@ -10,7 +10,9 @@
     "mcp": "node mcp.js",
     "verify": "node scripts/verify.mjs",
     "doc": "node cli.js doc examples/doc-proposal.json --out proposal.html",
-    "catalog": "node cli.js catalog"
+    "catalog": "node cli.js catalog",
+    "art": "node scripts/gen-pixelfx.mjs",
+    "quote": "node cli.js doc examples/doc-quote.json --out quote.html"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

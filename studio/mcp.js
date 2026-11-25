@@ -7,7 +7,7 @@ import { z } from "zod";
 import { listFonts } from "./lib/fonts.js";
 import { ARTIFACT_DIR, listArtifacts, resolveArtifact } from "./lib/artifacts.js";
 import { statSync } from "node:fs";
-import { buildDocToFile, PAGE_PRESETS, PAGE_SIZES, listTemplates, DOC_THEMES, DOC_BLOCKS } from "./lib/doc.js";
+import { buildDocToFile, PAGE_PRESETS, PAGE_SIZES, listTemplates, listArt, DOC_THEMES, DOC_BLOCKS } from "./lib/doc.js";
 
 const server = new McpServer({ name: "egytronic-studio", version: "0.1.0" });
 
@@ -18,7 +18,8 @@ function catalogue() {
   return {
     docBlocks: DOC_BLOCKS,
     docTemplates: listTemplates(),
-    docThemes: Object.entries(DOC_THEMES).map(([id, theme]) => ({ id, label: theme.label, tokens: theme.tokens })),
+    docThemes: Object.entries(DOC_THEMES).map(([id, theme]) => ({ id, label: theme.label, tokens: theme.tokens, art: theme.art })),
+    docArt: listArt().map(({ id, effect, size }) => ({ id, effect, size })),
     docPresets: PAGE_PRESETS,
     pageSizes: Object.keys(PAGE_SIZES),
     fonts: listFonts(),
@@ -113,7 +114,8 @@ server.registerTool(
   async () =>
     json({
       templates: listTemplates(),
-      themes: Object.entries(DOC_THEMES).map(([id, theme]) => ({ id, label: theme.label, use: theme.use, tokens: theme.tokens })),
+      themes: Object.entries(DOC_THEMES).map(([id, theme]) => ({ id, label: theme.label, use: theme.use, tokens: theme.tokens, art: theme.art })),
+      art: listArt().map(({ id, effect, size, source, license }) => ({ id, effect, size, source, license })),
       override: "Pass doc.theme as a theme id, or as {accent,ink,muted,rule,paper,screen,callout,bodySize,h1Size} to override single tokens.",
       blocks: DOC_BLOCKS,
       print: "open the artifact and press the print button; the browser writes the PDF",

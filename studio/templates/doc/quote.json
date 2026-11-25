@@ -1,0 +1,10 @@
+{
+  "label": "Quote — عرض سعر",
+  "fontFamily": "Rubik",
+  "preset": "a4-portrait",
+  "styles": {
+    "body": { "size": "10pt", "leading": 1.6 },
+    "h2": { "size": "15pt" },
+    "h1": { "size": "26pt" }
+  }
+}

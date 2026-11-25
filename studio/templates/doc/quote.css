@@ -1,0 +1,33 @@
+/* Quote: a pixel-art quotation. Structure comes from base.css; this file is the look.
+   Colours come from the theme tokens, so the same template prints in any palette. */
+
+.cover { padding-block: 0 8mm; border-block-end: 0; }
+.cover__art { margin: 0 0 8mm; }
+.cover__kicker { margin: 0 0 3mm; font-size: 10pt; letter-spacing: 0; text-transform: none; }
+.cover h1 { font-size: 34pt; }
+.cover__sub { max-width: 52ch; }
+.cover__meta { margin-block-start: 8mm; }
+
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 3mm;
+  padding-block-end: 2mm;
+  border-block-end: 2px solid var(--ink);
+}
+h2::before {
+  content: "";
+  inline-size: 4mm;
+  block-size: 4mm;
+  background: var(--accent);
+  flex: none;
+}
+
+table thead th { background: var(--ink); color: var(--paper); }
+table tbody tr:nth-child(even) { background: var(--callout); }
+
+.callout { border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--accent); background: var(--callout); }
+
+.totals-note { font-size: 9pt; color: var(--muted); margin-block-start: 3mm; }
+
+@page { @bottom-inline-end { content: "عرض سعر — Egytronic"; } }

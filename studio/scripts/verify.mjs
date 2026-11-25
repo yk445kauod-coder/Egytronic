@@ -3,6 +3,7 @@ import { chromium } from "playwright";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { readFileSync, existsSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { buildDocToFile, listTemplates, DOC_THEMES, DOC_BLOCKS } from "../lib/doc.js";
 import { listFonts, fontBytes, MANIFEST } from "../lib/fonts.js";
@@ -209,10 +210,46 @@ let voiceError = "";
 try { await tts({ text: "x" }); } catch (error) { voiceError = error.message; }
 check("voice: refuses without a key, with a clear message", /no voice provider/.test(voiceError), voiceError);
 
+// 6b. Pixel art system: real PixelFx frames, embedded, and the quotation template
+const artDir = new URL("../assets/pixelfx/", import.meta.url);
+const artManifest = JSON.parse(readFileSync(new URL("manifest.json", artDir), "utf8"));
+const artBad = artManifest.art.filter((art) => {
+  const bytes = readFileSync(new URL(art.file, artDir));
+  return createHash("sha256").update(bytes).digest("hex").slice(0, 16) !== art.sha256 || bytes.length !== art.bytes;
+});
+check("art: manifest matches the rendered PNGs", artManifest.art.length >= 4 && artBad.length === 0, artBad.map((a) => a.file).join(",") || `${artManifest.art.length} pieces`);
+
+const quoteDoc = buildDocToFile(
+  {
+    name: "verify-quote",
+    template: "quote",
+    theme: "pixel",
+    content: [
+      { type: "cover", art: "banner", kicker: "Egytronic", title: "عرض سعر", meta: ["رقم: 1"] },
+      { type: "h2", text: "الحساب" },
+      { type: "table", head: ["البند", "المبلغ"], rows: [["هوية", "10,000"], ["موقع", "6,000"]] },
+    ],
+  },
+  "verify-quote.html",
+);
+const quoteHtml = readFileSync(quoteDoc.file.path, "utf8");
+check("pixel: the artwork is embedded, not linked", /data:image\/png;base64,[A-Za-z0-9+/]{2000,}/.test(quoteHtml), `${Math.round(quoteHtml.length / 1024)} KB single file`);
+
+await page.goto(pathToFileURL(quoteDoc.file.path).href, { waitUntil: "load" });
+await page.waitForSelector('html[data-ready="1"]', { timeout: 60000 });
+const quoteDom = await page.evaluate(() => ({
+  accent: getComputedStyle(document.querySelector("html")).getPropertyValue("--accent").trim(),
+  art: getComputedStyle(document.querySelector(".cover__art")).backgroundImage.includes("data:image/png"),
+  sheets: document.querySelectorAll(".pagedjs_page").length,
+  rows: document.querySelectorAll("table tbody tr").length,
+}));
+check("pixel: theme tokens and cover art reach the page", quoteDom.accent === "#C9281F" && quoteDom.art, `${quoteDom.accent} · art ${quoteDom.art}`);
+check("pixel: the quotation paginates with its table", quoteDom.sheets >= 1 && quoteDom.rows === 2, `${quoteDom.sheets} sheet(s), ${quoteDom.rows} rows`);
+
 // 7. Library surface
 check("blocks: documented block list covers the builder", DOC_BLOCKS.length >= 14 && DOC_BLOCKS.some((b) => b.type === "cover"), DOC_BLOCKS.map((b) => b.type).join(","));
-check("themes: five named themes", Object.keys(DOC_THEMES).length === 5, Object.keys(DOC_THEMES).join(","));
-check("templates: four", listTemplates().length === 4, listTemplates().map((t) => t.id).join(","));
+check("themes: seven named themes", Object.keys(DOC_THEMES).length === 7, Object.keys(DOC_THEMES).join(","));
+check("templates: five", listTemplates().length === 5, listTemplates().map((t) => t.id).join(","));
 
 await browser.close();
 const failed = results.filter((r) => !r.ok);

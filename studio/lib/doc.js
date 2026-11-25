@@ -2,6 +2,7 @@
 // Paged.js lays the pages out; the browser prints them with window.print().
 // Structure lives in templates/doc/base.css, looks in templates/doc/<name>.css.
 import { readFileSync, readdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { fontCss, resolveFamily } from "./fonts.js";
 import { writeArtifact } from "./artifacts.js";
 
@@ -53,6 +54,19 @@ export const DOC_THEMES = {
     use: "نسخة شاشة، أو ملف يُقرأ في الإضاءة المنخفضة.",
     tokens: { accent: "#FFB454", ink: "#F4EFE7", muted: "#A7A29A", rule: "#2E2E32", paper: "#111113", screen: "#0A0A0B", callout: "#1A1A1D" },
   },
+  /* Pixel art: palette taken from the PixelFx effects that draw the artwork, not invented. */
+  pixel: {
+    label: "Pixel — حبر على ورق",
+    use: "عروض أسعار وملفات العملاء: حدود سميكة، بلا انحناءات، فن بكسل على الغلاف.",
+    tokens: { accent: "#C9281F", ink: "#1B1420", muted: "#6B5F72", rule: "#D9D2E0", paper: "#FFFFFF", screen: "#F2EEF6", callout: "#F7F4FA" },
+    art: { banner: "confetti", mark: "campfire" },
+  },
+  "pixel-night": {
+    label: "Pixel Night — ليلي",
+    use: "النسخة الليلية: غلاف بشفق Aurora، ونص فاتح.",
+    tokens: { accent: "#3FD88E", ink: "#EAF7F0", muted: "#93A8A0", rule: "#26343A", paper: "#0B0D14", screen: "#07080C", callout: "#121A21" },
+    art: { banner: "aurora", mark: "crt-off" },
+  },
 };
 
 export const DOC_BLOCKS = [
@@ -67,6 +81,7 @@ export const DOC_BLOCKS = [
   { type: "callout", fields: "title?, text", note: "صندوق ملاحظة بحدود وخلفية خفيفة." },
   { type: "list", fields: "items[], ordered?" },
   { type: "figure", fields: "src, alt?, caption?, fit?, ratio?" },
+  { type: "art", fields: "name, variant?, caption?", note: "فن بكسل من PixelFx (اسم من assets/pixelfx/manifest.json)." },
   { type: "table", fields: "head[], rows[][], caption?" },
   { type: "toc", fields: "title?", note: "فهرس بأرقام صفحات حقيقية عبر Paged.js." },
   { type: "break", note: "فاصل صفحات يدوي." },
@@ -83,12 +98,38 @@ const TOKEN_VARS = {
   bodySize: "--body-size", h1Size: "--h1-size",
 };
 
+const ART_DIR = new URL("../assets/pixelfx/", import.meta.url);
+const artCache = new Map();
+
+/** A PixelFx PNG as a data URI, so the document stays a single file with no external requests. */
+export function artDataUri(id) {
+  if (artCache.has(id)) return artCache.get(id);
+  const file = new URL(`${String(id).replace(/[^a-z0-9-]/gi, "")}.png`, ART_DIR);
+  const uri = existsSync(file) ? `data:image/png;base64,${readFileSync(file).toString("base64")}` : "";
+  artCache.set(id, uri);
+  return uri;
+}
+
+export function listArt() {
+  try {
+    return JSON.parse(readFileSync(new URL("manifest.json", ART_DIR), "utf8")).art;
+  } catch {
+    return [];
+  }
+}
+
 function themeCss(theme) {
-  const tokens = typeof theme === "string" ? DOC_THEMES[theme]?.tokens : theme;
+  const named = typeof theme === "string" ? DOC_THEMES[theme] : null;
+  const tokens = named ? named.tokens : theme;
   if (!tokens || typeof tokens !== "object") return "";
   const decls = Object.entries(tokens)
     .filter(([key, value]) => TOKEN_VARS[key] && (typeof value === "string" && (COLOR.test(value) || LEN.test(value))))
     .map(([key, value]) => `${TOKEN_VARS[key]}:${value}`);
+  const art = named?.art || {};
+  for (const [slot, id] of Object.entries(art)) {
+    const uri = artDataUri(id);
+    if (uri) decls.push(`--art-${slot}:url(${uri})`);
+  }
   return decls.length ? `:root{${decls.join(";")}}` : "";
 }
 
@@ -161,8 +202,16 @@ function blockHtml(block, index) {
       const entries = (block.entries || []).map((entry) => `<li><a href="#${escAttr(entry.id)}">${esc(entry.text)}</a></li>`).join("");
       return `<nav class="toc"><h2>${esc(block.title || "المحتويات")}</h2><ul>${entries}</ul></nav>`;
     }
+    case "art": {
+      const uri = artDataUri(block.name);
+      const variant = block.variant ? ` pixel-art--${escAttr(block.variant)}` : "";
+      if (!uri) return "";
+      return `<div class="pixel-art${variant}"${block.caption ? ` title="${escAttr(block.caption)}"` : ""}></div>`;
+    }
     case "cover":
       return `<section class="cover">${
+        block.art ? `<div class="cover__art pixel-art${block.art === "mark" ? " pixel-art--mark" : ""}"></div>` : ""
+      }${
         block.kicker ? `<p class="cover__kicker">${esc(block.kicker)}</p>` : ""
       }<h1>${esc(block.title)}</h1>${
         block.subtitle ? `<p class="cover__sub">${esc(block.subtitle)}</p>` : ""

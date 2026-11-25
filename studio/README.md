@@ -67,6 +67,26 @@ MCP (stdio): `node studio/mcp.js`. Register it in Claude Desktop / Cursor / Open
 | `toc` | page numbers written onto each link after pagination |
 | `break` `spacer` `rule` | structure (a `break` right after a `cover` is dropped, the cover already breaks) |
 
+## Pixel art (PixelFx)
+
+`assets/pixelfx/` holds four frames rendered from the real code of
+[patch-gg/pixelfx](https://github.com/patch-gg/pixelfx) (MIT, vendored under `vendor/pixelfx/`):
+aurora, campfire, a CRT switch-off and confetti. Nothing is drawn by hand and nothing is fetched at
+print time — `scripts/gen-pixelfx.mjs` runs the effect modules in Node, composites a frame and writes
+a PNG; the theme carries it into the document as a base64 data URI.
+
+```bash
+npm run art          # re-render assets/pixelfx/*.png + manifest.json (deterministic)
+npm run quote        # the pixel quotation example → artifacts/quote.html
+```
+
+- Themes `pixel` and `pixel-night` set `--art-banner` and `--art-mark`; `.pixel-art` paints them with
+  `image-rendering: pixelated`, a 2px ink border and 4px offset shadows, no radius anywhere.
+- Blocks: `cover` with `"art": "banner"|"mark"`, and `{ "type": "art", "name": "aurora", "variant": "strip" }`.
+  `studio_catalog` lists every art id; `studio_doc_themes` shows which theme uses which.
+- Regenerating changes the bytes; `npm run verify` compares each file to the manifest hash, so commit
+  both.
+
 ## Themes
 
 Tokens map onto the custom properties in `base.css`; pass a theme id, or a partial object to move
@@ -79,6 +99,8 @@ one token.
 | `desert` | warm proposals (terracotta on cream) |
 | `sea` | technical files and research (calm blue) |
 | `ink` | dark, screen reading |
+| `pixel` | quotations and client files, ink on paper, PixelFx art on the cover |
+| `pixel-night` | the same in the dark, aurora cover |
 
 ```json
 { "theme": { "accent": "#0F6E8C", "h1Size": "34pt" } }
@@ -104,6 +126,7 @@ studio/templates/doc/
   report.css      look: dense two columns, accents    report.json
   brief.css       look: A5, generous leading          brief.json
   proposal.css    look: scope table, total callout    proposal.json
+  quote.css       look: pixel quotation, totals, sign  quote.json
 ```
 
 `<name>.json` sets the defaults (font family, preset, paragraph styles) and `<name>.css` sets the
@@ -123,7 +146,7 @@ Latin: Inter, Space Grotesk, DM Serif Display, Bebas Neue, Playfair Display, Jet
 npm run verify     # builds every artifact, opens it in Chromium, prints the PDF, asserts
 ```
 
-30 checks: sheets/pages, embedded font active, page margins hold, TOC folios resolved and ordered,
+34 checks (art hashes, the pixel theme and the quotation among them): sheets/pages, embedded font active, page margins hold, TOC folios resolved and ordered,
 theme tokens applied and hostile values dropped, cover on its own sheet, print media (toolbar
 hidden, sheets stack flat), PDF is A4 `595×842pt` with no blank page and a folio on every sheet
 after the cover, all four templates build, 16 font families embedded, voice refusing without a key.

@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { listFonts } from "./lib/fonts.js";
 import { listArtifacts } from "./lib/artifacts.js";
-import { buildDocToFile, listTemplates, DOC_THEMES, DOC_BLOCKS, PAGE_PRESETS } from "./lib/doc.js";
+import { buildDocToFile, listTemplates, DOC_THEMES, DOC_BLOCKS, listArt, PAGE_PRESETS } from "./lib/doc.js";
 
 const [command, ...rest] = process.argv.slice(2);
 
@@ -36,9 +36,10 @@ try {
   } else if (command === "catalog") {
     console.log(JSON.stringify({
       templates: listTemplates(),
-      themes: Object.entries(DOC_THEMES).map(([id, theme]) => ({ id, label: theme.label, use: theme.use })),
+      themes: Object.entries(DOC_THEMES).map(([id, theme]) => ({ id, label: theme.label, use: theme.use, art: theme.art })),
       blocks: DOC_BLOCKS,
       presets: PAGE_PRESETS,
+      art: listArt().map(({ id, effect, size }) => ({ id, effect, size })),
       fonts: listFonts(),
       artifacts: listArtifacts(),
     }, null, 2));
