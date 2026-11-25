@@ -49,7 +49,7 @@ server.registerTool(
     description:
       "Compose motion graphics into one self-contained HTML artifact. Provide scenes (block id + props + at/durationMs). Returns the artifact path the creator opens to record.",
     inputSchema: {
-      spec: z.object({}).describe("Composition spec: {name,size|preset,fps,seconds,fontFamily,theme,scenes[],audio[]}"),
+      spec: z.any().describe("Composition spec: {name,size|preset,fps,seconds,fontFamily,theme,scenes[],audio[]}"),
       out: z.string().optional().describe("File name inside studio/artifacts (default: <name>.html)"),
     },
   },
@@ -178,7 +178,7 @@ server.registerTool(
     description:
       "Build a paginated print document: page size and margins, master page with running head and folio, paragraph styles, columns, figures, tables, callouts, automatic TOC with page numbers. Opens as HTML, prints to PDF from the browser.",
     inputSchema: {
-      doc: z.object({}).describe("Document model: {name,preset|page,margin,bleed,lang,fontFamily,styles,master,content[]}"),
+      doc: z.any().describe("Document model: {name,preset|page,margin,bleed,lang,fontFamily,styles,master,content[]}"),
       out: z.string().optional(),
     },
   },
