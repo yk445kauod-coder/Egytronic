@@ -44,9 +44,13 @@ const tools: Tool[] = [
   },
 ];
 
-const context = (document as unknown as { modelContext?: { registerTool: (t: Tool, o?: { signal?: AbortSignal }) => Promise<unknown> } }).modelContext;
-if (context?.registerTool) {
-  for (const tool of tools) {
-    context.registerTool(tool).catch(() => {});
-  }
+/* The API moved from document.modelContext to navigator.modelContext; support both. */
+type Context = { registerTool: (t: Tool, o?: { signal?: AbortSignal }) => Promise<unknown> };
+const contexts = [
+  (document as unknown as { modelContext?: Context }).modelContext,
+  (navigator as unknown as { modelContext?: Context }).modelContext,
+].filter((c): c is Context => Boolean(c?.registerTool));
+
+for (const context of new Set(contexts)) {
+  for (const tool of tools) context.registerTool(tool).catch(() => {});
 }
