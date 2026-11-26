@@ -1,4 +1,7 @@
 {
+"واتساب": "WhatsApp",
+"أعمالنا": "Work",
+"الخصوصية": "Privacy",
 "            بطاقة النموذج\n": "            Model card\n",
 "            تعذّر إرسال الطلب. راسلنا على\n": "            Sending failed. Write to us at\n",
 "          البرمجيات\n": "          Software\n",
@@ -127,7 +130,7 @@
 "تدريب": "Train",
 "تدريب على الاستخدام": "Training on how to use it",
 "ترى سعر كل باقة قبل أن تتواصل معنا.": "You see each package's price before you contact us.",
-"تسطيب": "Install",
+"تركيب": "Install",
 "تسليم جاهز": "Ready on delivery",
 "تسليم في 3–4 أسابيع": "Delivered in 3–4 weeks",
 "تسليم في 3–5 أيام": "Delivered in 3–5 days",
@@ -135,7 +138,7 @@
 "تسليم في 7–10 أيام": "Delivered in 7–10 days",
 "تعذّر النسخ. انسخ البريد يدويًا.": "Copy failed. Please copy the email manually.",
 "تقارير لحظية": "Live reports",
-"تكييف": "Adapt",
+"تخصيص": "Customise",
 "تم نسخ البريد": "Email copied",
 "تنقل سريع": "Quick navigation",
 "تهيئة أساسية لمحركات البحث وسرعة تحميل": "Basic SEO and fast loading",
@@ -166,7 +169,7 @@
 "شركة برمجيات مصرية · أسعار معلنة": "Egyptian software studio · public pricing",
 "شركة برمجيات مصرية تبني المواقع والهويات والأنظمة الإدارية وأنظمة الذكاء الاصطناعي، بأسعار معلنة تُنشر قبل البدء.": "An Egyptian software company building websites, brand identities and AI systems, delivered ready to run.",
 "شركة برمجيات مصرية يعمل عليها المؤسس مباشرة، من تحديد النطاق حتى التشغيل.": "An Egyptian software company where the founder works directly, from scope to launch.",
-"شركة برمجيات مصرية. نبني موقعك أو هويتك، ونسطّب نظامك الإداري ونكيّفه على شغلك. خمس باقات من 5,000 جنيه.": "An Egyptian software company. We build your site or brand, and install and adapt a management system for your business. Five packages from EGP 5,000.",
+"شركة برمجيات مصرية. نبني موقعك أو هويتك، ونركّب نظامك الإداري ونخصّصه على شغلك. خمس باقات من 5,000 جنيه.": "An Egyptian software company. We build your site or brand, and install and adapt a management system for your business. Five packages from EGP 5,000.",
 "شركة لديها خدمات وصفحات": "A company with services and pages",
 "شعار يميّز مشروعك، ويصلح للطباعة والاستخدام الرقمي.": "A logo that distinguishes your business, ready for print and digital.",
 "شهر متابعة بعد التسليم": "One month of follow-up after delivery",
@@ -243,7 +246,7 @@
 "ناقش مشروعك": "Discuss your project",
 "ناقش مشروعك معنا": "Talk through your project",
 "نحدد المطلوب والنطاق والقيود، ثم نصمم الواجهات والتدفقات قبل كتابة أي كود.": "We set the goal, scope and limits before writing any code.",
-"نختار معك النظام المناسب لنشاطك، ونثبّته لدى فريقك، ونكيّفه على طريقة عملك: الصلاحيات والتقارير والفواتير والمصطلحات التي يستخدمها فريقك، مع تدريب حتى يعمل عليه بثقة.": "We pick the right system for your line of work with you, install it, and tailor it to how you operate: permissions, reports, invoices and the words your team already uses — with training until they run it with confidence.",
+"نختار معك النظام المناسب لنشاطك، ونثبّته لدى فريقك، ونخصّصه على طريقة عملك: الصلاحيات والتقارير والفواتير والمصطلحات التي يستخدمها فريقك، مع تدريب حتى يعمل عليه بثقة.": "We pick the right system for your line of work with you, install it, and tailor it to how you operate: permissions, reports, invoices and the words your team already uses — with training until they run it with confidence.",
 "نرد على البريد الإلكتروني أو رقم واتساب الذي أدخلته.": "We reply on the email or WhatsApp you left.",
 "نسخ البريد": "Copy email",
 "نطاق محدد وسعر معلن وموعد تسليم مكتوب قبل البدء، والدفع على مرحلتين.": "Fixed scope, a published price and a delivery date agreed before we start. Payment in two instalments.",
@@ -271,5 +274,7 @@
 "ونحدد النطاق معك.": "and we will scope it with you.",
 "يتحدد بعد الاتفاق": "set after the scope is agreed",
 "يتولى رؤية المنتج ومعمارية الأنظمة والإطلاق.": "Leads product vision, system architecture and launch.",
-"يوسف خميس": "Yousef Khamis"
+"يوسف خميس": "Yousef Khamis",
+"شوف الأعمال": "See the work",
+"مواقع شغّالة الآن": "Live right now"
 }

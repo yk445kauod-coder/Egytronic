@@ -45,7 +45,7 @@ export const ANSWERS: Answer[] = [
   },
   {
     q: "هل Egytronic بيعمل أنظمة ERP؟",
-    a: "أيوه، بين أنظمة جاهزة تُكيَّف على طريقة عمل الفريق: ERP للمخزون والفواتير، CRM للعملاء، POS للكاشير، HMS للفنادق، LMS للتعليم، وإدارة العيادات. يشمل الترحيل من ملفات إكسل والتدريب.",
+    a: "أيوه، بين أنظمة جاهزة تُخصَّص على طريقة عمل الفريق: ERP للمخزون والفواتير، CRM للعملاء، POS للكاشير، HMS للفنادق، LMS للتعليم، وإدارة العيادات. يشمل الترحيل من ملفات إكسل والتدريب.",
     en_q: "Does Egytronic build ERP systems?",
     en_a: "Yes. It installs ready systems adapted to how the team works: ERP for stock and invoices, CRM, POS, hotel management, LMS and clinic management, including migration from Excel files and training.",
   },

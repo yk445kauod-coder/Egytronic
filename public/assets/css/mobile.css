@@ -93,7 +93,8 @@ body {
 /* ── hero: tighter stack on phones ──────────────────────── */
 @media (max-width: 620px) {
   .hero {
-    padding-block-start: calc(var(--nav-h) + 34px);
+    padding-block-start: calc(var(--nav-h) + 24px);
+    padding-block-end: calc(72px + 96px);
   }
   .hero__actions {
     flex-direction: column;
@@ -121,7 +122,7 @@ body {
   }
 
   body {
-    padding-block-end: calc(76px + env(safe-area-inset-bottom, 0px));
+    padding-block-end: calc(96px + env(safe-area-inset-bottom, 0px));
   }
 
   .tabbar {
@@ -145,7 +146,7 @@ body {
     min-block-size: 48px;
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     letter-spacing: 0.02em;
     text-decoration: none;
   }
@@ -170,9 +171,6 @@ body {
 
 /* iPhone SE and narrower: keep the type from crowding */
 @media (max-width: 380px) {
-  .tabbar a {
-    font-size: 10px;
-  }
   .prod__amt {
     font-size: 27px;
   }
@@ -188,7 +186,7 @@ body {
 /* anchor jumps must clear the tab bar, not hide behind it */
 @media (max-width: 768px) {
   html {
-    scroll-padding-block-end: calc(80px + env(safe-area-inset-bottom, 0px));
-    scroll-padding-block-start: 76px;
+    scroll-padding-block-end: calc(96px + env(safe-area-inset-bottom, 0px));
+    scroll-padding-block-start: calc(var(--nav-h) + 12px);
   }
 }

@@ -17,6 +17,9 @@ export default function Footer() {
 
         <ul className="footer__links">
           <li><a href={`${p("/")}#faq`}>{t("الأسئلة")}</a></li>
+          <li><a href={p("/privacy/")}>{t("الخصوصية")}</a></li>
+          <li><a href={p("/terms/")}>{t("الشروط")}</a></li>
+          <li><a href={p("/work/")}>{t("أعمالنا")}</a></li>
           <li><a href={p("/pricing/")}>{t("الأسعار")}</a></li>
           <li><a href={p("/blog/")}>{t("المدونة")}</a></li>
           <li><a href={p("/software/")}>{t("البرمجيات")}</a></li>
@@ -24,6 +27,11 @@ export default function Footer() {
             <a href="https://github.com/yk445kauod-coder/Egytronic" target="_blank" rel="noopener">
               <svg className="icon icon--sm" aria-hidden="true"><use href="#i-github" /></svg>
               GitHub
+            </a>
+          </li>
+          <li>
+            <a href="tel:+201277593815">
+              {t("واتساب")} <bdi dir="ltr">+20 127 759 3815</bdi>
             </a>
           </li>
           <li>

@@ -18,7 +18,7 @@ export default function SubNav({ items, cta }: { items: SubNavItem[]; cta?: SubN
             <li key={item.href} className="shrink-0">
               <a
                 href={item.href}
-                className="inline-flex min-h-[44px] items-center px-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted transition-colors duration-150 hover:text-gold"
+                className="inline-flex min-h-[44px] items-center px-3 font-mono text-[13px] uppercase tracking-[0.14em] text-muted transition-colors duration-150 hover:text-gold"
               >
                 {t(item.label)}
               </a>
@@ -28,7 +28,7 @@ export default function SubNav({ items, cta }: { items: SubNavItem[]; cta?: SubN
         {cta ? (
           <a
             href={cta.href}
-            className="hidden shrink-0 items-center gap-2 border border-line/70 px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-text transition-colors duration-150 hover:border-gold/70 hover:text-gold sm:inline-flex"
+            className="hidden shrink-0 items-center gap-2 border border-line/70 px-3 py-1.5 font-mono text-[13px] uppercase tracking-[0.14em] text-text transition-colors duration-150 hover:border-gold/70 hover:text-gold sm:inline-flex"
           >
             {t(cta.label)}
             <span aria-hidden="true">↗</span>

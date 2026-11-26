@@ -50,11 +50,11 @@ export default function Systems() {
 
       <ul className="systems__how reveal">
         <li><b>Install</b> Existing data and users</li>
-        <li><b>Adapt</b> Permissions, invoices, reports and wording</li>
+        <li><b>Customise</b> Permissions, invoices, reports and wording</li>
         <li><b>Train</b> Your team, plus a runbook</li>
       </ul>
 
-      <p className="systems__note reveal">Not seeing what you need? <a href="/contact/">Ask for a custom system</a> and we will scope it with you.</p>
+      <p className="systems__note reveal">Not seeing what you need? <a href="/en/contact/">Ask for a custom system</a> and we will scope it with you.</p>
     </div>
   </section>
     </>

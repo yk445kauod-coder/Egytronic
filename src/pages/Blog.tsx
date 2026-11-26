@@ -74,14 +74,14 @@ export default function Blog({ locale }: { locale: Locale }) {
                     href={postPath(locale, post.slug)}
                     className="group flex h-full flex-col gap-3 border border-line/70 bg-panel/50 p-5 transition-colors duration-150 hover:border-gold/60 hover:bg-panel"
                   >
-                    <span className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
+                    <span className="flex items-center gap-3 font-mono text-[13px] uppercase tracking-[0.18em] text-gold">
                       <span>{post.tag[locale]}</span>
                       <span aria-hidden="true">·</span>
                       <time dateTime={post.date}>{formatDate(post.date, locale)}</time>
                     </span>
                     <span className="font-display text-2xl leading-snug text-text">{post.title[locale]}</span>
                     <span className="text-[15px] leading-7 text-muted">{post.excerpt[locale]}</span>
-                    <span className="mt-auto font-mono text-[11px] tracking-[0.08em] text-gold">
+                    <span className="mt-auto font-mono text-[13px] tracking-[0.08em] text-gold">
                       {post.read} {c.minutes} ↗
                     </span>
                   </a>

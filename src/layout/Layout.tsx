@@ -25,6 +25,11 @@ export default function Layout({
 }) {
   useEffect(() => mountSiteEffects(document.body), []);
 
+  const localize = (href: string) =>
+    locale === "en" && href.startsWith("/") && !href.startsWith("/en") ? `/en${href}` : href;
+  const rail = subnav.map((item) => ({ ...item, href: localize(item.href) }));
+  const railCta = cta ? { ...cta, href: localize(cta.href) } : undefined;
+
   return (
     <LocaleContext.Provider value={locale}>
       <div className="rail" aria-hidden="true"><i /></div>
@@ -32,7 +37,7 @@ export default function Layout({
       <a className="skip" href="#main">{locale === "ar" ? "تخطَّ إلى المحتوى" : "Skip to content"}</a>
       <Boot />
       <Header path={path} />
-      <SubNav items={subnav} cta={cta} />
+      <SubNav items={rail} cta={railCta} />
       {children}
       <Endcap />
       <Footer />

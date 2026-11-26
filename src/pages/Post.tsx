@@ -10,14 +10,12 @@ const ui = {
   ar: {
     back: "كل المقالات",
     minutes: "دقائق قراءة",
-    cta: "اطّلع على الأسعار",
     ctaNote: "الأسعار معلنة بالجنيه المصري قبل البدء.",
     missing: "هذا المقال غير متوفر.",
   },
   en: {
     back: "All posts",
     minutes: "min read",
-    cta: "See prices",
     ctaNote: "Prices are published in Egyptian pounds before work starts.",
     missing: "This post is not available.",
   },
@@ -102,10 +100,10 @@ export default function PostPage({ locale, post }: { locale: Locale; post: Post 
       <main id="main">
         <article className="section">
           <div className="wrap max-w-[74ch]">
-            <a href={locale === "en" ? "/en/blog/" : "/blog/"} className="font-mono text-[11px] uppercase tracking-[0.16em] text-gold">
+            <a href={locale === "en" ? "/en/blog/" : "/blog/"} className="font-mono text-[13px] uppercase tracking-[0.16em] text-gold">
               ← {uiCopy.back}
             </a>
-            <div className="mt-6 flex flex-wrap items-center gap-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+            <div className="mt-6 flex flex-wrap items-center gap-3 font-mono text-[13px] uppercase tracking-[0.18em] text-muted">
               <span className="text-gold">{post.tag[locale]}</span>
               <span aria-hidden="true">·</span>
               <time dateTime={post.date}>{formatDate(post.date, locale)}</time>
@@ -120,8 +118,18 @@ export default function PostPage({ locale, post }: { locale: Locale; post: Post 
 
             <aside className="mt-12 border border-line/70 bg-panel/50 p-5">
               <p className="text-[15px] leading-7 text-muted">{uiCopy.ctaNote}</p>
-              <a className="mt-4 inline-flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.14em] text-gold" href={locale === "en" ? "/en/pricing/" : "/pricing/"}>
-                {uiCopy.cta} ↗
+              <a
+                className="mt-4 inline-flex items-center gap-2 font-mono text-[13px] uppercase tracking-[0.14em] text-gold"
+                href={locale === "en" ? `/en${post.packageLink ?? "/pricing/"}` : (post.packageLink ?? "/pricing/")}
+              >
+                {(post.packageLink ?? "").startsWith("/contact")
+                  ? locale === "en"
+                    ? "Start your project"
+                    : "ابدأ مشروعك"
+                  : locale === "en"
+                    ? "Order the related package"
+                    : "اطلب الباقة المرتبطة"}{" "}
+                ↗
               </a>
             </aside>
           </div>
