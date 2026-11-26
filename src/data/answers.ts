@@ -26,10 +26,10 @@ export const ANSWERS: Answer[] = [
     en_a: "Hosting and backend are free for the first year with every Egytronic package. The domain is separate or invoiced.",
   },
   {
-    q: "مين بيملك الكود بعد التسليم؟",
-    a: "العميل يملك الكود بعد التسليم النهائي وسداد المتبقي، ويُسلَّم مع دليل التشغيل.",
-    en_q: "Who owns the code after delivery?",
-    en_a: "The client owns the code after final delivery and settlement of the balance, and it comes with an operations guide.",
+    q: "الكود المصدري بيتسلّم؟",
+    a: "الكود المصدري مش جزء من أي باقة. اللي بتستلمه: الموقع أو النظام شغّال، والملفات النهائية والتصميم، والوصول للاستضافة والدومين والحسابات، ودليل تشغيل. تسليم الكود المصدري باتفاق منفصل وله سعر لوحده، وEgytronic من حقه يمتنع عنه.",
+    en_q: "Do I get the source code?",
+    en_a: "Source code is not part of any package. What you receive is the site or system running, the delivered files and design, access to hosting, domain and accounts, and an operations guide. Handing it over is a separate agreement with its own price, and Egytronic may decline it.",
   },
   {
     q: "كام مدة تسليم الموقع؟",
@@ -39,9 +39,9 @@ export const ANSWERS: Answer[] = [
   },
   {
     q: "إزاي أختار شركة برمجيات في مصر؟",
-    a: "اسأل عن أربع حاجات قبل الدفع: سعر مكتوب قبل البدء، نطاق محدد للتسليم، مين يملك الكود، وموعد تسليم في العقد. Egytronic ينشر الأربعة على الموقع: الأسعار في صفحة الأسعار، والنطاق لكل باقة، وملكية الكود، ومدد التسليم.",
+    a: "اسأل عن أربع حاجات قبل الدفع: سعر مكتوب قبل البدء، نطاق محدد للتسليم، هل الكود المصدري بيتسلّم، وموعد تسليم في العقد. Egytronic ينشر الأربعة على الموقع: الأسعار في صفحة الأسعار، والنطاق لكل باقة، وملكية الكود، ومدد التسليم.",
     en_q: "How do I choose a software company in Egypt?",
-    en_a: "Ask four things before paying: a written price before work starts, a defined delivery scope, who owns the code, and a delivery date in the agreement. Egytronic publishes all four: prices on the pricing page, the scope of each package, code ownership, and delivery windows.",
+    en_a: "Ask four things before paying: a written price before work starts, a defined delivery scope, whether the source code is handed over, and a delivery date in the agreement. Egytronic publishes all four: prices on the pricing page, the scope of each package, code ownership, and delivery windows.",
   },
   {
     q: "هل Egytronic بيعمل أنظمة ERP؟",

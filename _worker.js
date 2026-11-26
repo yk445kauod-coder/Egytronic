@@ -5,6 +5,10 @@
 // Auth: one admin token (sha256 in settings) plus per-agent keys (agents table).
 // Agents carry scopes — read, write, admin — and only get what they need.
 
+// Every deploy also answers on its own <hash>.egytronic.pages.dev alias, which serves the
+// whole site. Those aliases must never compete with production in search results.
+const PROD_HOST = "egytronic.pages.dev";
+
 // Discovery documents that must not be served as text/plain: Pages derives the type from the
 // extension and _headers only appends a second value, so the worker sets it outright.
 const AGENT_DOCS = {
@@ -3347,7 +3351,13 @@ export default {
       return new Response(asset.body, { status: asset.status, headers });
     }
 
-    return env.ASSETS.fetch(request);
+    const asset = await env.ASSETS.fetch(request);
+    if (url.hostname === PROD_HOST || !(asset.headers.get("content-type") || "").includes("text/html")) {
+      return asset;
+    }
+    const headers = new Headers(asset.headers);
+    headers.set("x-robots-tag", "noindex");
+    return new Response(asset.body, { status: asset.status, headers });
   },
 };
 

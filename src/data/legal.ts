@@ -10,13 +10,13 @@ export const TERMS: { ar: LegalDoc; en: LegalDoc } = {
     title: "الشروط والأحكام",
     updated: "نوفمبر 2026",
     intro:
-      "تنطبق على كل باقة أو مشروع يُطلب من Egytronic. إرسال الطلب يعني قراءتها والموافقة عليها.",
+      "تنطبق على كل باقة أو مشروع يُطلب من Egytronic. بمجرد إرسالك طلبًا — من الموقع أو واتساب أو البريد — فأنت تقرّ بأنك قرأت هذه الشروط ووافقت عليها.",
     blocks: [
       {
         h: "طبيعة العمل: أساس مفتوح المصدر وتخصيص كامل",
         p: [
           "المواقع تُبنى لطلبك: التصميم والمحتوى والواجهات تُكتب من أجلك.",
-          "الأنظمة الإدارية (ERP، CRM، POS، الفنادق، العيادات، منصات التعليم) قائمة على أساس مفتوح المصدر (Open Source)، ونطوّرها ونخصّصها بالكامل على طريقة عمل فريقك: الصلاحيات، الفواتير، التقارير، المصطلحات، مخرجات الطباعة، والترحيل من ملفاتك الحالية، مع الكود متاحًا لك بلا قيود ترخيص.",
+          "الأنظمة الإدارية (ERP، CRM، POS، الفنادق، العيادات، منصات التعليم) قائمة على أساس مفتوح المصدر (Open Source)، ونطوّرها ونخصّصها بالكامل على طريقة عمل فريقك: الصلاحيات، الفواتير، التقارير، المصطلحات، مخرجات الطباعة، والترحيل من ملفاتك الحالية. الكود المصدري يبقى عند Egytronic ولا يُسلَّم ضمن الباقة.",
           "لو كان عندك إجراء تشغيلي خاص لا يغطيه الأساس المفتوح، نبنيه لك كإضافة مخصّصة، ويُتفق على نطاقها وسعرها كتابة قبل التنفيذ.",
         ],
       },
@@ -47,8 +47,16 @@ export const TERMS: { ar: LegalDoc; en: LegalDoc } = {
         h: "الاستضافة والدومين والملكية",
         p: [
           "الاستضافة والباكند مجانًا في السنة الأولى؛ الدومين منفصل ويبقى ملكك.",
-          "الكود والمحتوى والتصميم ملكك بعد سداد كامل القيمة، مع دليل تشغيل.",
-          "الأساس المفتوح المصدر يبقى تحت ترخيصه الحر، وأنت تملك بياناتك وتخصيصاتك وإضافاتك بالكامل.",
+          "المحتوى والتصميم والملفات النهائية ملكك بعد سداد كامل القيمة، مع دليل تشغيل.",
+          "الأساس المفتوح المصدر يبقى تحت ترخيصه الحر، وأنت تملك بياناتك بالكامل. التخصيصات والإضافات التي نكتبها تبقى جزءًا من عملنا.",
+        ],
+      },
+      {
+        h: "الكود المصدري",
+        p: [
+          "الكود المصدري غير مشمول في التسليم: ما تستلمه هو الموقع أو النظام جاهزًا للعمل، والملفات النهائية، والتصميم، والوصول إلى الاستضافة والدومين والحسابات، مع دليل تشغيل.",
+          "يحق لـ Egytronic الامتناع عن تسليم الكود المصدري، دون إبداء أسباب.",
+          "إذا اتُّفق على تسليمه، فله سعر منفصل يُكتب في عرض مستقل ويُسدَّد قبل التسليم.",
         ],
       },
       {
@@ -70,13 +78,13 @@ export const TERMS: { ar: LegalDoc; en: LegalDoc } = {
     title: "Terms and conditions",
     updated: "November 2026",
     intro:
-      "These apply to every package or project ordered from Egytronic. Sending an enquiry means you have read and accepted them.",
+      "These apply to every package or project ordered from Egytronic. The moment you send a request — from the site, WhatsApp or email — you confirm that you have read these terms and accepted them.",
     blocks: [
       {
         h: "The work: an open-source foundation, customised for you",
         p: [
           "Websites are built for you: design, content and interfaces are written for your project.",
-          "Management systems (ERP, CRM, POS, hotel, clinic, learning platforms) are based on open-source foundations, and we develop and customise them fully to fit how your team works: permissions, invoices, reports, terminology, printed output, and migration from your current files, with the code available to you without licence restrictions.",
+          "Management systems (ERP, CRM, POS, hotel, clinic, learning platforms) are based on open-source foundations, and we develop and customise them fully to fit how your team works: permissions, invoices, reports, terminology, printed output, and migration from your current files. The source code stays with Egytronic and is not part of the package.",
           "If you have a process the open-source foundation does not cover, we build it for you as a custom extension, agreed in writing with its own scope and price before work starts.",
         ],
       },
@@ -107,8 +115,16 @@ export const TERMS: { ar: LegalDoc; en: LegalDoc } = {
         h: "Hosting, domain and ownership",
         p: [
           "Hosting and backend are free for the first year; the domain is separate and stays yours.",
-          "Code, content and design are yours once the full amount is paid, with an operations guide.",
-          "The open-source foundation stays under its free licence; you own your data, your customisations and your extensions outright.",
+          "Content, design and the delivered files are yours once the full amount is paid, with an operations guide.",
+          "The open-source foundation stays under its free licence, and your data is yours outright. The customisations and extensions we write stay part of our work.",
+        ],
+      },
+      {
+        h: "Source code",
+        p: [
+          "Source code is not part of delivery: what you receive is the site or system running, the delivered files, the design, access to the hosting, domain and accounts, and an operations guide.",
+          "Egytronic may decline to hand over the source code, without giving a reason.",
+          "If handover is agreed, it carries its own price, written in a separate offer and paid before delivery.",
         ],
       },
       {
