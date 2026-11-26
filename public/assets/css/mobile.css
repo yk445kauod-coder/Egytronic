@@ -136,6 +136,13 @@ body {
     background: color-mix(in srgb, var(--ink) 92%, transparent);
     backdrop-filter: blur(10px);
     border-block-start: 2px solid var(--line);
+    transition: transform 0.22s var(--ease-steps);
+  }
+
+  /* scrolling down gives the content back; scrolling up brings the bar in */
+  .tabbar[data-hidden="true"] {
+    transform: translateY(110%);
+    pointer-events: none;
   }
 
   .tabbar a {
@@ -156,8 +163,29 @@ body {
     height: 21px;
   }
 
-  .tabbar a {
+  .tabbar a,
+  .tabbar__more {
     position: relative;
+  }
+
+  .tabbar__more {
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    padding: 7px 2px 5px;
+    min-block-size: 48px;
+    background: none;
+    border: 0;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+
+  .tabbar__more .icon {
+    width: 21px;
+    height: 21px;
   }
 
   .tabbar a[aria-current="page"] {

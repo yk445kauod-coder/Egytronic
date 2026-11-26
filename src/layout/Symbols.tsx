@@ -3,6 +3,7 @@ export default function Symbols() {
     <svg xmlns="http://www.w3.org/2000/svg" style={{ position: "absolute", width: "0", height: "0", overflow: "hidden" }} aria-hidden="true" focusable="false">
   <symbol id="i-external-link" viewBox="0 0 24 24"><path d="M11 5H5v2h6V5ZM5 7H3v12h2V7Zm12 12H5v2h12v-2Zm2-6h-2v6h2v-6Zm-8 0H9v2h2v-2Zm2-2h-2v2h2v-2Zm2-2h-2v2h2V9Zm2-2h-2v2h2V7Zm2-2h-2v2h2V5Zm2-2h-2v8h2V3Z" />
   <path d="M21 3h-8v2h8V3Z" /></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M5 5h2v2H5zm12 0h2v2h-2zM7 7h2v2H7zm8 0h2v2h-2zM9 9h2v2H9zm4 0h2v2h-2zM11 11h2v2h-2zM9 13h2v2H9zm4 0h2v2h-2zM7 15h2v2H7zm8 0h2v2h-2zM5 17h2v2H5zm12 0h2v2h-2z" /></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M20 18H4v-2h16v2Zm0-5H4v-2h16v2Zm0-5H4V6h16v2Z" /></symbol>
   <symbol id="i-mail" viewBox="0 0 24 24"><path d="M6 8h2v2H6zm2 2h2v2H8zm10-2h-2v2h2zm-2 2h-2v2h2zm-6 2h4v2h-4zM2 6h2v12H2zm18 0h2v12h-2zM4 4h16v2H4zm0 14h16v2H4z" /></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><path d="M8 6h12v2H8zM4 2h12v2H4zm2 6h2v12H6zM2 4h2v12H2zm6 16h12v2H8zM20 8h2v12h-2zm-4-4h2v2h-2zM4 16h2v2H4z" /></symbol>

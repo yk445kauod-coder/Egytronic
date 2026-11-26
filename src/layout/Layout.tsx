@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
 import TabBar from "./TabBar";
+import Sidebar from "./Sidebar";
 import Symbols from "./Symbols";
 import Boot from "./Boot";
 import SubNav, { type SubNavItem } from "./SubNav";
@@ -42,6 +43,7 @@ export default function Layout({
       <Endcap />
       <Footer />
       <TabBar path={path} />
+      <Sidebar path={path} />
     </LocaleContext.Provider>
   );
 }

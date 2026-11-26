@@ -1,4 +1,4 @@
-import { useNavToggle } from "./useNavToggle";
+import { sidebar, useSidebarOpen } from "./sidebar-store";
 import { localePath, switchPath, useLocale } from "../i18n/useLocale";
 import { useT } from "../i18n/useT";
 
@@ -7,7 +7,7 @@ const MAIL = "mailto:egytronic.official@googlemail.com";
 export default function Header({ path }: { path: string }) {
   const locale = useLocale();
   const t = useT();
-  const { open, toggle, close } = useNavToggle();
+  const open = useSidebarOpen();
   const home = path === "/" || path === "/en/";
 
   const items = [
@@ -30,14 +30,13 @@ export default function Header({ path }: { path: string }) {
         </a>
 
         <nav aria-label={t("التنقل الرئيسي")}>
-          <ul className="nav-links" data-nav-links data-open={String(open)}>
+          <ul className="nav-links">
             {items.map((item) => (
               <li key={item.href}>
                 <a
                   href={localePath(locale, item.href)}
                   className={item.active ? "is-active" : undefined}
                   aria-current={item.active ? "page" : undefined}
-                  onClick={close}
                 >
                   {item.label}
                 </a>
@@ -72,12 +71,10 @@ export default function Header({ path }: { path: string }) {
           )}
           <button
             className="nav-toggle"
-            data-nav-toggle
             aria-expanded={String(open)}
+            aria-controls="site-drawer"
             aria-label={t("فتح القائمة")}
-            data-label-open={t("فتح القائمة")}
-            data-label-close={t("إغلاق القائمة")}
-            onClick={toggle}
+            onClick={() => sidebar.toggle()}
           >
             <svg className="icon" aria-hidden="true"><use href="#i-menu" /></svg>
           </button>

@@ -130,7 +130,7 @@
 }
 
 .nav-toggle {
-  display: none;
+  display: grid;
   width: 44px;
   height: 44px;
   place-items: center;
@@ -148,33 +148,140 @@
     display: grid;
   }
   .nav-links {
-    position: absolute;
-    inset-inline: 0;
-    top: var(--nav-h);
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    padding: 12px var(--gutter) 20px;
-    background: var(--ink-2);
-    border-bottom: 2px solid var(--line);
-    display: none;
-  }
-  .nav-links[data-open="true"] {
-    display: flex;
-  }
-  .nav-links a {
-    padding: 14px 8px;
-    border-bottom: 1px solid var(--line-soft);
-  }
-  .nav-links a::after {
-    display: none;
+    display: none !important;
   }
   .nav-actions .px-btn {
     display: none;
   }
-  .nav-ext {
-    display: block;
-  }
+}
+
+/* ── the drawer: one menu for every width ──────────────── */
+html.is-drawer-open {
+  overflow: hidden;
+}
+
+.drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+.drawer[data-open="true"] {
+  pointer-events: auto;
+}
+.drawer__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  appearance: none;
+  background-color: rgba(4, 4, 8, 0.66);
+  opacity: 0;
+  transition: opacity 0.22s var(--ease-steps);
+  cursor: pointer;
+}
+.drawer[data-open="true"] .drawer__scrim {
+  opacity: 1;
+}
+.drawer__panel {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: min(86vw, 390px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  background-color: #1d1d1d;
+  color: #fff;
+  border-inline-end: 2px solid var(--line);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateX(-101%);
+  transition: transform 0.24s var(--ease-steps);
+}
+[dir="rtl"] .drawer__panel {
+  transform: translateX(101%);
+}
+.drawer[data-open="true"] .drawer__panel {
+  transform: translateX(0);
+}
+.drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.drawer__title {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ff6a00;
+}
+.drawer__close {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--line);
+  background: transparent;
+  color: var(--text);
+}
+.drawer__close:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.drawer__cta {
+  justify-content: center;
+}
+.drawer__nav {
+  display: grid;
+  gap: 20px;
+}
+.drawer__group h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.drawer__group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.drawer__group a {
+  display: flex;
+  align-items: center;
+  min-block-size: 46px;
+  padding-block: 10px;
+  color: #fff;
+  font-size: var(--fs-base);
+  text-decoration: none;
+  border-block-end: 1px solid var(--line-soft);
+}
+.drawer__group a:hover,
+.drawer__group a:focus-visible {
+  color: var(--gold);
+}
+.drawer__foot {
+  margin-block-start: auto;
+  padding-block-start: 16px;
+  border-block-start: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.drawer__note {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--muted);
 }
 
 /* ── icons (masked so they inherit the text colour) ────── */
