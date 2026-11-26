@@ -22,7 +22,7 @@ export default function Products() {
             <li>Delivered in 3–5 days</li>
           </ul>
           <p className="prod__price"><span className="prod__amt">5,000</span> <span className="prod__cur">EGP</span></p>
-          <a className="prod__link" href="/contact/">Book this package</a>
+          <a className="prod__link" href="/en/contact/">Book this package</a>
         </li>
         <li className="prod prod--pick">
           <span className="prod__flag">Best place to start</span>
@@ -37,7 +37,7 @@ export default function Products() {
             <li>Delivered in 5–7 days</li>
           </ul>
           <p className="prod__price"><span className="prod__amt">6,000</span> <span className="prod__cur">EGP</span></p>
-          <a className="prod__link" href="/contact/">Book this package</a>
+          <a className="prod__link" href="/en/contact/">Book this package</a>
         </li>
         <li className="prod">
           <span className="prod__n">03</span>
@@ -51,7 +51,7 @@ export default function Products() {
             <li>Delivered in 7–10 days</li>
           </ul>
           <p className="prod__price"><span className="prod__amt">8,000</span> <span className="prod__cur">EGP</span></p>
-          <a className="prod__link" href="/contact/">Book this package</a>
+          <a className="prod__link" href="/en/contact/">Book this package</a>
         </li>
         <li className="prod">
           <span className="prod__n">04</span>
@@ -65,7 +65,7 @@ export default function Products() {
             <li>A short usage guide</li>
           </ul>
           <p className="prod__price"><span className="prod__amt">10,000</span> <span className="prod__cur">EGP</span></p>
-          <a className="prod__link" href="/contact/">Book this package</a>
+          <a className="prod__link" href="/en/contact/">Book this package</a>
         </li>
         <li className="prod prod--from">
           <span className="prod__n">05</span>
@@ -79,7 +79,7 @@ export default function Products() {
             <li>Delivered in 3–4 weeks</li>
           </ul>
           <p className="prod__price"><span className="prod__cur">from</span> <span className="prod__amt">18,000</span> <span className="prod__cur">EGP</span></p>
-          <a className="prod__link" href="/contact/">Discuss your project</a>
+          <a className="prod__link" href="/en/contact/">Discuss your project</a>
         </li>
       </ul>
 
@@ -99,7 +99,7 @@ export default function Products() {
       </ul>
 
       <div className="prods__foot reveal">
-        <a className="px-btn" href="/pricing/">Details and booking</a>
+        <a className="px-btn" href="/en/pricing/">Details and booking</a>
         <p className="prods__note">Full digital transformation is priced after the scope is agreed · hosting and backend free in the first year · domain separate or by invoice</p>
       </div>
     </div>

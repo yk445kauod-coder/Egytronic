@@ -18,7 +18,7 @@ export default function About() {
           <div className="founder__role">Founder</div>
           <h3>Yousef Khamis</h3>
           <p>Leads product vision, system architecture and launch.</p>
-          <a className="founder__link" href="/software/">
+          <a className="founder__link" href="/en/software/">
             Software
             <svg className="icon icon--sm" aria-hidden="true"><use href="#i-external-link"></use></svg>
           </a>

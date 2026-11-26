@@ -12,7 +12,7 @@ export default function Contact() {
           <p>Write to us at the address below and we will get back to you.</p>
           <a className="cta__mail" href="mailto:egytronic.official@googlemail.com">egytronic.official@googlemail.com</a>
           <div className="cta__actions">
-            <a className="px-btn" href="/contact/">
+            <a className="px-btn" href="/en/contact/">
               Open the contact portal
               <svg className="icon" aria-hidden="true"><use href="#i-mail"></use></svg>
             </a>

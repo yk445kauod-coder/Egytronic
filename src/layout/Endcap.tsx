@@ -17,7 +17,7 @@ export default function Endcap() {
     <section aria-labelledby="endcap-title" className="border-t border-line/60 bg-ink-2">
       <div className="wrap grid gap-8 py-14 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:items-end">
         <div>
-          <p className="mb-3 inline-flex items-center gap-2 border border-line/70 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
+          <p className="mb-3 inline-flex items-center gap-2 border border-line/70 px-2 py-1 font-mono text-[13px] uppercase tracking-[0.18em] text-gold">
             <span aria-hidden="true" className="inline-block h-1.5 w-1.5 bg-gold" />
             {t("الخطوة التالية")}
           </p>
@@ -36,9 +36,9 @@ export default function Endcap() {
                 href={tile.href}
                 className="group flex h-full flex-col gap-2 border border-line/70 bg-panel/60 p-4 transition-colors duration-150 hover:border-gold/60 hover:bg-panel"
               >
-                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">{tile.kicker}</span>
+                <span className="font-mono text-[13px] uppercase tracking-[0.18em] text-gold">{tile.kicker}</span>
                 <span className="font-display text-lg font-normal leading-tight text-text">{tile.title}</span>
-                <span className="mt-auto text-[12px] text-muted">{tile.note}</span>
+                <span className="mt-auto text-[13px] text-muted">{tile.note}</span>
               </a>
             </li>
           ))}

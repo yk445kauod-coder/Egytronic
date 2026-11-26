@@ -1,3 +1,5 @@
+import { PROJECTS } from "../../../data/projects";
+
 export default function Block0() {
   return (
     <>
@@ -17,9 +19,18 @@ export default function Block0() {
           Websites, brand identity, business systems and AI, in five packages from EGP 5,000. Each has a fixed scope and a delivery date. Hosting and backend are free in year one.
         </p>
         <div className="hero__actions">
-          <a className="px-btn" href="/pricing/">See prices</a>
+          <a className="px-btn" href="/en/pricing/">Book your package</a>
           <a className="px-btn px-btn--ghost" href="#contact">Send your project brief</a>
         </div>
+        <p className="hero__proof">
+          <span>Live right now:</span>
+          {PROJECTS.map((project) => (
+            <a key={project.slug} href={project.url} target="_blank" rel="noopener noreferrer">
+              {project.en.name}
+            </a>
+          ))}
+          <a className="hero__proof-more" href="/en/work/">See the work ↗</a>
+        </p>
         <div className="hero__stats">
           <div className="stat"><span className="stat__n">5,000</span><span className="stat__l">lowest package · EGP</span></div>
           <div className="stat"><span className="stat__n">50%</span><span className="stat__l">upfront payment</span></div>

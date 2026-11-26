@@ -1,3 +1,5 @@
+import { PROJECTS } from "../../data/projects";
+
 export default function Block0() {
   return (
     <>
@@ -17,9 +19,18 @@ export default function Block0() {
           مواقع وهوية وأنظمة إدارية وذكاء اصطناعي، بخمس باقات تبدأ من 5,000 جنيه، ولكل باقة نطاق محدد وموعد تسليم. الاستضافة والباكند مجانًا في السنة الأولى.
         </p>
         <div className="hero__actions">
-          <a className="px-btn" href="/pricing/">اطّلع على الأسعار</a>
+          <a className="px-btn" href="/pricing/">احجز باقتك</a>
           <a className="px-btn px-btn--ghost" href="#contact">أرسل تفاصيل مشروعك</a>
         </div>
+        <p className="hero__proof">
+          <span>مواقع شغّالة الآن:</span>
+          {PROJECTS.map((project) => (
+            <a key={project.slug} href={project.url} target="_blank" rel="noopener noreferrer">
+              {project.ar.name}
+            </a>
+          ))}
+          <a className="hero__proof-more" href="/work/">شوف الأعمال ↗</a>
+        </p>
         <div className="hero__stats">
           <div className="stat"><span className="stat__n">5,000</span><span className="stat__l">أقل باقة · جنيه</span></div>
           <div className="stat"><span className="stat__n">50%</span><span className="stat__l">دفعة مقدمة</span></div>
