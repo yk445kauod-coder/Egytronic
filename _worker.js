@@ -1677,9 +1677,21 @@ async function mcp(request, env, url) {
 
 // ── token rotation ───────────────────────────────────────────────────
 
-async function rotateToken(request, env) {
+async function rotateToken(request, env, who) {
   if (!env.DB) return json({ ok: false, code: "no-store" }, 503);
   const payload = await body(request);
+
+  // A signed-in owner mints a fresh break-glass code; it is returned once and replaces the old one.
+  if (payload.generate === true) {
+    if (!who || !allow(who, "settings.manage")) return json({ ok: false, code: "forbidden" }, 403);
+    const token = randomToken("egx_");
+    await env.DB
+      .prepare("INSERT INTO settings (key, value) VALUES ('admin_token_sha256', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+      .bind(await sha256(token))
+      .run();
+    return json({ ok: true, token });
+  }
+
   const current = typeof payload.current === "string" ? payload.current : "";
   const next = typeof payload.next === "string" ? payload.next : "";
   if (next.length < 12) return json({ ok: false, code: "short" }, 400);
@@ -3292,7 +3304,9 @@ export default {
       return catalog(request, env, url);
     }
     if (url.pathname === "/api/contact" && request.method === "POST") return contact(request, env);
-    if (url.pathname === "/api/admin/token" && request.method === "POST") return rotateToken(request, env);
+    if (url.pathname === "/api/admin/token" && request.method === "POST") {
+      return rotateToken(request, env, await identify(request, env, url));
+    }
     if (url.pathname === "/mcp") return mcp(request, env, url);
 
     if (url.pathname.startsWith("/hooks/")) {

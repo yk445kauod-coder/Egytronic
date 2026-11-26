@@ -335,7 +335,65 @@
   const pipelineValue = () => openLeads().reduce((sum, l) => sum + Number(l.value || 0), 0);
   const openTasks = () => state.data.tasks.filter((t) => t.status !== "done");
 
+  const leadIsDue = (lead) => {
+    const at = asDate(lead.next_action_at);
+    return Boolean(at) && at <= new Date();
+  };
+  const leadsAwaitingReply = () =>
+    state.data.leads
+      .filter((l) => l.status === "new" || (OPEN_STAGES.includes(l.status) && leadIsDue(l)))
+      .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+  const followUpsDue = () => state.data.leads.filter((l) => OPEN_STAGES.includes(l.status) && leadIsDue(l));
+  const staleLeads = () =>
+    openLeads().filter((l) => !l.next_action_at && daysBetween(l.updated_at || l.created_at) >= 7);
+  const wonLeads = () => state.data.leads.filter((l) => l.status === "won");
+  const moneyDue = () => wonLeads().reduce((sum, l) => sum + Number(l.value || 0), 0);
+
+  // Egyptian numbers arrive as 01x…, +201x… or 201x…; wa.me wants the last form.
+  const waHref = (phone, text) => {
+    const digits = String(phone || "").replace(/\D/g, "");
+    if (!digits) return "";
+    const intl = digits.startsWith("20") ? digits : digits.startsWith("0") ? `20${digits.slice(1)}` : digits;
+    return `https://wa.me/${intl}?text=${encodeURIComponent(text)}`;
+  };
+
   // ── overview ───────────────────────────────────────────────────────
+
+  function attentionBanner() {
+    const waiting = leadsAwaitingReply();
+    if (!waiting.length) return "";
+    const rows = waiting.slice(0, 3);
+    return `
+      <section class="ops-alert" aria-labelledby="alert-title">
+        <div class="ops-alert__head">
+          <span class="ops-alert__tag">يحتاج ردك</span>
+          <h2 id="alert-title">${num(waiting.length)} ${waiting.length === 1 ? "طلب" : "طلبات"} بلا رد</h2>
+          <span class="ops-alert__meta">أقدمها ${esc(ago(waiting[0].created_at))}</span>
+        </div>
+        <ul class="ops-alert__list">
+          ${rows
+            .map((l) => {
+              const href = waHref(l.phone, `مرحبًا ${l.name}، وصلنا طلبك على Egytronic — تحب نبدأ بإيه؟`);
+              const meta = [l.package, l.phone, ago(l.created_at)].filter(Boolean).join(" · ");
+              return `
+            <li class="ops-alert__row">
+              <span class="ops-avatar">${esc(initials(l.name))}</span>
+              <span class="ops-alert__who">
+                <strong>${esc(l.name)}</strong>
+                <span>${esc(meta)}</span>
+              </span>
+              <span class="ops-alert__actions">
+                ${href ? `<a class="ops-btn ops-btn--sm" href="${esc(href)}" target="_blank" rel="noopener">رد واتساب</a>` : ""}
+                <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="open-lead" data-id="${l.id}">فتح</button>
+                <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="lead-to-task" data-id="${l.id}">مهمة</button>
+                <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="lead-contacted" data-id="${l.id}">تم الرد</button>
+              </span>
+            </li>`;
+            })
+            .join("")}
+        </ul>
+      </section>`;
+  }
 
   function kpi(label, value, foot, tone = "") {
     return `
@@ -353,7 +411,7 @@
     const late = tasks.filter(isLate).length;
     const today = tasks.filter(isToday).length;
     const focusToday = m.focus?.today ?? 0;
-    const focusWeek = m.focus?.week ?? 0;
+    const waiting = leadsAwaitingReply();
 
     const funnel = STAGES.map(([key, label]) => {
       const rows = state.data.leads.filter((l) => l.status === key);
@@ -362,19 +420,38 @@
     });
     const max = Math.max(1, ...funnel.map((f) => f.count));
 
+    const rank = (t) => (isLate(t) ? 0 : isToday(t) ? 1 : !t.due_at ? 2 : 3);
     const agenda = tasks
-      .filter((t) => isLate(t) || isToday(t) || !t.due_at)
+      .slice()
+      .sort((a, b) => rank(a) - rank(b) || String(a.due_at || "").localeCompare(String(b.due_at || "")))
       .slice(0, 6);
 
     const recent = state.data.activities.slice(0, 8);
     const entityLabel = { inquiry: "طلب", client: "عميل", project: "مشروع", task: "مهمة", member: "عضو", channel: "قناة" };
 
     return `
+      ${attentionBanner()}
+
       <div class="ops-kpis">
-        ${kpi("طلبات قيد المتابعة", num(leads.length), `${num(m.leads_7d ?? 0)} طلب خلال آخر 7 أيام`, "gold")}
-        ${kpi("قيمة خط المبيعات", m.finance === false ? "—" : egp(pipelineValue()), m.finance === false ? "غير متاحة لصلاحياتك" : `${num(leads.length)} طلب في مرحلة النقاش`)}
-        ${kpi("مهام مفتوحة", num(tasks.length), `${num(late)} متأخرة · ${num(today)} مستحقة اليوم`, late ? "danger" : "")}
-        ${kpi("تركيز اليوم", `${num(focusToday)}<small>د</small>`, `${num(Math.round(focusWeek / 60))} ساعة خلال آخر 7 أيام`, "mint")}
+        ${kpi(
+          "طلبات بلا رد",
+          num(waiting.length),
+          waiting.length ? `أقدمها ${ago(waiting[0].created_at)}` : "لا طلبات في الانتظار",
+          waiting.length ? "gold" : ""
+        )}
+        ${kpi(
+          "متابعات مستحقة",
+          num(followUpsDue().length + staleLeads().length),
+          `${num(followUpsDue().length)} بموعد فات · ${num(staleLeads().length)} بقالها أسبوع`,
+          followUpsDue().length + staleLeads().length ? "danger" : ""
+        )}
+        ${kpi(
+          "مستحقات",
+          m.finance === false ? "—" : egp(moneyDue()),
+          m.finance === false ? "غير متاحة لصلاحياتك" : `${num(wonLeads().length)} صفقة مكسوبة`,
+          "mint"
+        )}
+        ${kpi("مهام الفريق", num(tasks.length), `${num(late)} متأخرة · ${num(today)} اليوم`, late ? "danger" : "")}
       </div>
 
       <div class="ops-split">
@@ -402,6 +479,8 @@
         <section class="ops-panel" aria-labelledby="agenda-title">
           <div class="ops-panel__head">
             <h2 id="agenda-title">بحاجة إلى إجراء</h2>
+            ${focusToday ? `<span class="ops-chip">تركيز اليوم ${num(focusToday)} د</span>` : ""}
+            <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="new-task">+ مهمة</button>
             <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-view="tasks">جميع المهام</button>
           </div>
           <div class="ops-panel__body ops-panel__body--flush">
@@ -420,7 +499,7 @@
                   </li>`
                     )
                     .join("")}</ul>`
-                : `<p class="ops-empty">لا توجد مهام متأخرة أو مستحقة اليوم.</p>`
+                : `<p class="ops-empty">لا مهام مفتوحة. أضف واحدة من «+ مهمة» بالأعلى.</p>`
             }
           </div>
         </section>
@@ -625,7 +704,12 @@
       <div class="ops-kpis">
         ${kpi("مهامي المفتوحة", num(tasks.length), `${num(late.length)} متأخرة`, late.length ? "danger" : "")}
         ${kpi("مستحقة اليوم", num(today.length), "تحتاج انتباه اليوم", "gold")}
-        ${kpi("رسائل غير مقروءة", num(space.unread || 0), "في محادثاتك", space.unread ? "gold" : "mint")}
+        ${kpi(
+          "رسائل غير مقروءة",
+          num(space.unread || 0),
+          `${num(channels.filter((c) => Number(c.unread)).length)} محادثة فيها جديد · ${num(channels.length)} إجمالًا`,
+          space.unread ? "gold" : ""
+        )}
         ${kpi("أنجزت خلال 7 أيام", num(space.done_7d || 0), "من مهامك", "mint")}
       </div>
 
@@ -633,6 +717,8 @@
         <div class="ops-panel__head">
           <h2>مهامي</h2>
           <span class="ops-chip">${esc(ROLES[me.role] || me.role || "")}</span>
+          ${me.id ? `<button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="password">كلمة المرور</button>` : ""}
+          ${can("settings.manage") ? `<button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="new-access-code">كود دخول جديد</button>` : ""}
           <button class="ops-btn ops-btn--sm" type="button" data-action="new-task">مهمة لنفسي</button>
         </div>
         <div class="ops-panel__body ops-panel__body--flush">
@@ -663,7 +749,11 @@
 
       <div class="ops-split">
         <section class="ops-panel">
-          <div class="ops-panel__head"><h2>محادثاتي</h2><span class="ops-chip">${num(channels.length)}</span></div>
+          <div class="ops-panel__head">
+            <h2>محادثاتي</h2>
+            <span class="ops-chip">${num(channels.length)} محادثة</span>
+            ${space.unread ? `<span class="ops-chip ops-chip--gold">${num(space.unread)} جديد</span>` : ""}
+          </div>
           <div class="ops-panel__body ops-panel__body--flush">
             ${
               channels.length
@@ -677,6 +767,7 @@
                       <span class="ops-list__meta">${esc(c.last_author ? `${c.last_author}: ${c.last_body || ""}`.slice(0, 70) : c.topic || "بدون وصف")}</span>
                     </span>
                     ${Number(c.unread) ? `<span class="ops-chip ops-chip--gold">${num(c.unread)} جديد</span>` : ""}
+                    <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="channel-to-task" data-slug="${esc(c.slug)}">مهمة</button>
                   </li>`
                     )
                     .join("")}</ul>`
@@ -686,7 +777,10 @@
         </section>
 
         <section class="ops-panel">
-          <div class="ops-panel__head"><h2>الفريق</h2></div>
+          <div class="ops-panel__head">
+            <h2>الفريق</h2>
+            ${can("team.manage") ? `<button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="new-member">+ عضو</button>` : ""}
+          </div>
           <div class="ops-panel__body ops-panel__body--flush">
             ${
               colleagues.length
@@ -703,7 +797,9 @@
                   </li>`
                     )
                     .join("")}</ul>`
-                : `<p class="ops-empty">لا يوجد زملاء مفعّلون بعد.</p>`
+                : `<p class="ops-empty">لا يوجد زملاء مفعّلون بعد.${
+                    can("team.manage") ? ' <button class="ops-btn ops-btn--sm" type="button" data-action="new-member">أضف أول عضو</button>' : ""
+                  }</p>`
             }
           </div>
         </section>
@@ -2118,6 +2214,45 @@
       },
     });
 
+  const dialogNewQuote = () =>
+    openDialog({
+      title: "عرض سعر",
+      body: `
+        <div class="ops-row">
+          <label class="ops-field"><span>الاسم</span><input class="ops-input" name="name" required></label>
+          <label class="ops-field"><span>الباقة</span><input class="ops-input" name="package" placeholder="landing / static / dynamic…"></label>
+        </div>
+        <div class="ops-row">
+          <label class="ops-field"><span>التليفون</span><input class="ops-input" name="phone" dir="ltr"></label>
+          <label class="ops-field"><span>البريد الإلكتروني</span><input class="ops-input" name="email" type="email" dir="ltr"></label>
+        </div>
+        <div class="ops-row">
+          <label class="ops-field"><span>السعر (ج.م)</span><input class="ops-input" name="value" type="number" min="0" step="500" dir="ltr"></label>
+          <label class="ops-field"><span>المتابعة بعد</span><select class="ops-select" name="follow">${options({ 3: "3 أيام", 7: "أسبوع", 14: "أسبوعين" }, 3)}</select></label>
+        </div>
+        <label class="ops-field"><span>ملاحظات</span><textarea class="ops-textarea" name="notes" rows="2"></textarea></label>`,
+      onSubmit: async (fd) => {
+        const created = await api("/inquiries", {
+          method: "POST",
+          body: {
+            name: fd.get("name"),
+            email: fd.get("email"),
+            phone: fd.get("phone"),
+            package: fd.get("package"),
+            message: fd.get("notes") || "عرض سعر من لوحة التحكم",
+            source: "console",
+          },
+        });
+        const days = Number(fd.get("follow") || 3);
+        const next = new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+        await api(`/inquiries/${created.row.id}`, {
+          method: "PATCH",
+          body: { status: "proposal", value: Number(fd.get("value") || 0), next_action_at: `${next} 09:00:00` },
+        });
+        toast("تم إنشاء عرض السعر ومتابعته.", "ok");
+      },
+    });
+
   const dialogNewClient = () =>
     openDialog({
       title: "عميل جديد",
@@ -2375,6 +2510,24 @@
       },
     });
 
+  const dialogNewAccessCode = async () => {
+    let token = "";
+    try {
+      const data = await api("/admin/token", { method: "POST", body: { generate: true } });
+      token = data.token || "";
+    } catch {
+      toast("تعذّر إنشاء كود جديد.", "bad");
+      return;
+    }
+    openDialog({
+      title: "كود دخول جديد",
+      body: `
+        <p style="font-size:13px;color:var(--fg-dim)">هذا الكود يفتح اللوحة كوصول احتياطي لو ضاعت كلمة المرور. يظهر مرة واحدة فقط — احفظه في مدير كلمات المرور.</p>
+        <code dir="ltr" style="display:block;padding:12px;background:var(--surface-2);border:1px solid var(--rule);word-break:break-all;font-family:var(--font-mono);font-size:13px">${esc(token)}</code>
+        <p style="font-size:12px;color:var(--fg-faint)">أي كود قديم أصبح غير صالح الآن.</p>`,
+    });
+  };
+
   // ── render & refresh ───────────────────────────────────────────────
 
   function render() {
@@ -2395,7 +2548,7 @@
     $$("[data-count]").forEach((node) => {
       if (node.dataset.count === "pipeline") node.textContent = String(openLeads().length);
       if (node.dataset.count === "tasks") node.textContent = String(openTasks().length);
-      if (node.dataset.count === "me") node.textContent = String(state.space?.tasks?.length ?? 0);
+      if (node.dataset.count === "me") node.textContent = String(state.space?.tasks?.filter((t) => t.status !== "done").length ?? 0);
       if (node.dataset.count === "chat") node.textContent = String(state.space?.unread ?? 0);
     });
     if (state.view === "channels" && state.activeChannel) loadMessages(state.activeChannel);
@@ -2412,6 +2565,36 @@
   }
 
   // ── mutations ──────────────────────────────────────────────────────
+
+  async function markLeadContacted(id) {
+    await api(`/inquiries/${id}`, { method: "PATCH", body: { status: "contacted" } });
+    toast("تم تسجيل الرد على الطلب.", "ok");
+    await loadAll();
+  }
+
+  async function leadToTask(id) {
+    const lead = state.data.leads.find((l) => l.id === id);
+    if (!lead) return;
+    await api("/tasks", {
+      method: "POST",
+      body: {
+        title: `متابعة طلب: ${lead.name}`,
+        detail: [lead.package, lead.phone, lead.email].filter(Boolean).join(" · "),
+        priority: 1,
+      },
+    });
+    toast("تم إنشاء مهمة متابعة للطلب.", "ok");
+    await loadAll();
+  }
+
+  async function channelToTask(slug) {
+    await api("/tasks", {
+      method: "POST",
+      body: { title: `متابعة محادثة #${slug}`, detail: `من المحادثة #${slug}`, priority: 2 },
+    });
+    toast("تم تحويل المحادثة إلى مهمة.", "ok");
+    await loadAll();
+  }
 
   async function moveLead(id, status) {
     await api(`/inquiries/${id}`, { method: "PATCH", body: { status } });
@@ -2556,6 +2739,11 @@
     "convert-lead": (el) => convertLead(Number(el.dataset.id)),
     pomodoro: () => togglePomodoro(),
     "new-lead": () => dialogNewLead(),
+    "new-quote": () => dialogNewQuote(),
+    "new-access-code": () => dialogNewAccessCode(),
+    "lead-contacted": (el) => markLeadContacted(Number(el.dataset.id)),
+    "lead-to-task": (el) => leadToTask(Number(el.dataset.id)),
+    "channel-to-task": (el) => channelToTask(el.dataset.slug),
     "new-client": () => dialogNewClient(),
     "new-task": (el) => dialogNewTask(el.dataset.client || ""),
     "new-member": () => dialogMember(),
