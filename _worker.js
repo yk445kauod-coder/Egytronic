@@ -201,7 +201,9 @@ const can = (who, scope) => Boolean(who?.scopes?.includes(scope) || who?.scopes?
 
 const SESSION_COOKIE = "egx_session";
 const SESSION_DAYS = 14;
-const PBKDF2_ROUNDS = 150000;
+// Workers' WebCrypto throws NotSupportedError above 100k PBKDF2 iterations, so
+// this is both the hash cost and the ceiling checkPassword will accept.
+const PBKDF2_ROUNDS = 100000;
 
 const PERMISSIONS = [
   "tasks.all",
@@ -307,10 +309,12 @@ async function hashPassword(password) {
 async function checkPassword(password, stored) {
   const [scheme, rounds, salt, expected] = String(stored || "").split("$");
   if (scheme !== "pbkdf2" || !salt || !expected) return false;
+  const cost = Number(rounds) || PBKDF2_ROUNDS;
+  if (cost > PBKDF2_ROUNDS) return false;
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
   const bits = new Uint8Array(
     await crypto.subtle.deriveBits(
-      { name: "PBKDF2", salt: fromB64(salt), iterations: Number(rounds) || PBKDF2_ROUNDS, hash: "SHA-256" },
+      { name: "PBKDF2", salt: fromB64(salt), iterations: cost, hash: "SHA-256" },
       key,
       256
     )
