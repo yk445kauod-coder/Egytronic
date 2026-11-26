@@ -30,6 +30,9 @@
   const TASK_LABEL = { todo: "قيد الانتظار", doing: "قيد التنفيذ", done: "مكتملة" };
   const PRIORITY_LABEL = { 1: "عالية", 2: "متوسطة", 3: "منخفضة" };
   const SOURCE_LABEL = { manual: "إدخال يدوي", console: "لوحة التحكم", website: "الموقع", contact: "نموذج التواصل", agent: "وكيل" };
+  const INVOICE_STATUS_LABEL = { draft: "مسودة", sent: "مُرسلة", partial: "مدفوعة جزئيًا", paid: "مدفوعة", void: "ملغاة" };
+  const INVOICE_TONE = { draft: "", sent: "ops-chip--gold", partial: "ops-chip--gold", paid: "ops-chip--mint", void: "ops-chip--danger" };
+  const PAYMENT_METHOD_LABEL = { cash: "كاش", bank: "تحويل بنكي", wallet: "محفظة", instapay: "إنستا باي", other: "أخرى" };
 
   const PERMISSION_LABELS = {
     "tasks.all": "كل المهام (عرض وتعديل مهام الجميع)",
@@ -72,6 +75,8 @@
       agents: [],
       activities: [],
       projects: [],
+      invoices: [],
+      finance: null,
       integrations: null,
     },
     integRuns: null,
@@ -166,6 +171,7 @@
     overview: "نظرة عامة",
     pipeline: "خط المبيعات",
     clients: "العملاء",
+    money: "المال",
     tasks: "المهام",
     team: "الفريق",
     channels: "القنوات",
@@ -174,8 +180,16 @@
     agents: "الوكلاء",
   };
 
+  const haptic = (pattern = 10) => {
+    try {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      navigator.vibrate?.(pattern);
+    } catch {}
+  };
+
   let toastTimer = null;
   function toast(message, tone = "") {
+    haptic(tone === "bad" ? [18, 40, 18] : tone === "ok" ? 10 : 6);
     const node = $("[data-toast]");
     node.textContent = message;
     node.dataset.tone = tone;
@@ -211,6 +225,9 @@
     $$("[data-nav] .ops__nav-btn").forEach((btn) => {
       btn.hidden = Boolean(btn.dataset.perm) && !can(btn.dataset.perm);
     });
+    $$("[data-tabs] button").forEach((btn) => {
+      btn.hidden = Boolean(btn.dataset.perm) && !can(btn.dataset.perm);
+    });
     // rotating the static owner token only makes sense for the owner's break-glass session
     $$("[data-rotate]").forEach((btn) => (btn.hidden = Boolean(state.me?.id)));
   }
@@ -224,6 +241,11 @@
       if (on) btn.setAttribute("aria-current", "page");
       else btn.removeAttribute("aria-current");
     });
+    $$("[data-tabs] button").forEach((btn) => {
+      if (btn.dataset.view === view) btn.setAttribute("aria-current", "page");
+      else btn.removeAttribute("aria-current");
+    });
+    closeRail();
     $("[data-title]").textContent = TITLES[view];
     document.title = `${TITLES[view]} | Egytronic`;
     if (push && location.hash !== `#${view}`) history.replaceState(null, "", `#${view}`);
@@ -275,7 +297,7 @@
     };
 
     try {
-      const [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects, integrations] = await Promise.all([
+      const [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects, integrations, invoices, finance] = await Promise.all([
         settle("الحساب", () => api("/me")),
         settle("الأرقام", () => api("/metrics")),
         settle("الطلبات", () => pick("inquiries.view") ?? api("/inquiries?limit=300")),
@@ -287,15 +309,18 @@
         settle("النشاط", () => pick("inquiries.view") ?? api("/activities?limit=40")),
         settle("المشاريع", () => pick("projects.view") ?? api("/projects")),
         settle("التكامل", () => pick("integrations.view") ?? integrationBundle()),
+        settle("الفواتير", () => pick("finance.view") ?? api("/invoices")),
+        settle("المال", () => pick("finance.view") ?? api("/finance")),
       ]);
 
-      const failed = [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects, integrations]
+      const failed = [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects, integrations, invoices, finance]
         .filter((part) => part.error)
         .map((part) => part.label);
-      const unauthorised = [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects, integrations]
+      const unauthorised = [space, metrics, leads, clients, tasks, members, channels, agents, activities, projects, integrations, invoices, finance]
         .some((part) => String(part.error?.message) === "unauthorized");
       if (unauthorised) throw new Error("unauthorized");
 
+      watchForNews(prev.leads ? prev.leads.filter((lead) => lead.status === "new").length : 0);
       state.space = space.value ?? prev.space ?? state.space;
       Object.assign(state.data, {
         metrics: metrics.value ?? prev.metrics,
@@ -307,6 +332,8 @@
         agents: agents.value?.rows ?? prev.agents,
         activities: activities.value?.rows ?? prev.activities,
         projects: projects.value?.rows ?? prev.projects,
+        invoices: invoices.value?.rows ?? prev.invoices,
+        finance: finance.value ?? prev.finance,
         integrations: integrations.value?.overview
           ? integrations.value
           : prev.integrations || { overview: null, keys: [], connectors: [], automations: [], webhooks: [], events: [] },
@@ -2060,6 +2087,33 @@
           }
         </div>
 
+        <div>
+          <p style="font-size:12px;color:var(--fg-dim);margin-bottom:8px">المال</p>
+          ${(() => {
+            const mine = (state.data.invoices || []).filter((inv) => inv.client_id === client.id);
+            if (!mine.length) return `<p class="ops-empty" style="border:1px solid var(--rule)">مفيش فواتير على العميل ده.</p>`;
+            const billed = mine.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
+            const paid = mine.reduce((sum, inv) => sum + Number(inv.paid || 0), 0);
+            return `
+              <div class="ops-money-card">
+                <div><span>مفوتر</span><strong>${egp(billed)}</strong></div>
+                <div><span>مدفوع</span><strong class="is-mint">${egp(paid)}</strong></div>
+                <div><span>باقي</span><strong class="${billed - paid ? "is-gold" : "is-mint"}">${egp(Math.max(0, billed - paid))}</strong></div>
+              </div>
+              <ul class="ops-list" style="border:1px solid var(--rule);margin-top:8px">${mine
+                .map(
+                  (inv) => `<li class="ops-list__row" data-action="open-invoice" data-id="${inv.id}">
+                    <span class="ops-list__main">
+                      <span class="ops-list__title">${esc(inv.number)} · ${esc(inv.title || "فاتورة")}</span>
+                      <span class="ops-list__meta">${egp(inv.total)} · ${esc(INVOICE_STATUS_LABEL[inv.status] || inv.status)}</span>
+                    </span>
+                  </li>`
+                )
+                .join("")}</ul>`;
+          })()}
+          <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="new-invoice" style="margin-top:8px">فاتورة للعميل</button>
+        </div>
+
         ${activityForm("client", client.id)}
 
         <div>
@@ -2068,6 +2122,7 @@
         </div>
       </div>
       <div class="ops-drawer__foot">
+        ${client.phone ? `<a class="ops-btn ops-btn--ghost" href="https://wa.me/${esc(String(client.phone).replace(/[^0-9]/g, ""))}" target="_blank" rel="noopener">واتساب</a>` : ""}
         ${client.email ? `<a class="ops-btn" href="mailto:${esc(client.email)}">مراسلة</a>` : ""}
         <button class="ops-btn ops-btn--ghost" type="button" data-action="new-task" data-client="${client.id}">مهمة جديدة</button>
         <button class="ops-btn ops-btn--ghost" type="button" data-action="close-drawer">إغلاق</button>
@@ -2528,6 +2583,292 @@
     });
   };
 
+
+  // ── money ──────────────────────────────────────────────────────────
+
+  const invoiceDue = (inv) => Math.max(0, Number(inv.total || 0) - Number(inv.paid || 0));
+
+  function invoiceRow(inv) {
+    const due = invoiceDue(inv);
+    const late = inv.due_at && due > 0 && String(inv.due_at).slice(0, 10) < todayKey();
+    return `
+      <li class="ops-inv" data-action="open-invoice" data-id="${inv.id}">
+        <span class="ops-inv__num">${esc(inv.number)}</span>
+        <span class="ops-inv__main">
+          <span class="ops-list__title">${esc(inv.title || "فاتورة بدون عنوان")}</span>
+          <span class="ops-list__meta">${esc(inv.client_name || "بدون عميل")}${
+            inv.due_at ? ` · استحقاق ${esc(dateLabel(inv.due_at))}` : ""
+          }${Number(inv.paid || 0) ? ` · مدفوع ${egp(inv.paid)}` : ""}</span>
+        </span>
+        <span class="ops-chip ${INVOICE_TONE[inv.status] || ""}${late ? " ops-chip--danger" : ""}">${esc(
+          late ? "متأخرة" : INVOICE_STATUS_LABEL[inv.status] || inv.status
+        )}</span>
+        <span class="ops-inv__amount">${egp(inv.total)}${due > 0 && due < Number(inv.total || 0) ? `<small>باقي ${egp(due)}</small>` : ""}</span>
+        <button class="ops-btn ops-btn--sm ops-inv__pay" type="button" data-action="pay-invoice" data-id="${inv.id}" ${
+          due <= 0 ? "disabled" : ""
+        }>تسجيل دفعة</button>
+      </li>`;
+  }
+
+  function renderMoney() {
+    const rows = state.data.invoices || [];
+    const f = state.data.finance || {};
+    const due = rows.reduce((sum, inv) => sum + invoiceDue(inv), 0);
+    const late = rows.filter((inv) => inv.due_at && invoiceDue(inv) > 0 && String(inv.due_at).slice(0, 10) < todayKey());
+
+    return `
+      <div class="ops-kpis">
+        ${kpi("محصّل هذا الشهر", egp(f.this_month ?? 0), "كل الدفعات المسجّلة من أول الشهر", "mint")}
+        ${kpi("مستحق", egp(due), `${num(rows.filter((i) => invoiceDue(i) > 0).length)} فاتورة لسه مفتوحة`, "gold")}
+        ${kpi("إجمالي المفوتر", egp(f.booked ?? 0), "بدون الفواتير الملغاة")}
+        ${kpi("متأخر عن الاستحقاق", num(late.length), late.length ? "محتاجة متابعة النهاردة" : "مفيش متأخرات", late.length ? "danger" : "")}
+      </div>
+
+      <section class="ops-panel">
+        <div class="ops-panel__head">
+          <h2>الفواتير</h2>
+          <button class="ops-btn ops-btn--sm" type="button" data-action="new-invoice">+ فاتورة</button>
+        </div>
+        <div class="ops-panel__body ops-panel__body--flush">
+          ${
+            rows.length
+              ? `<ul class="ops-list ops-list--inv">${rows.map(invoiceRow).join("")}</ul>`
+              : `<p class="ops-empty">مفيش فواتير بعد. اعمل أول فاتورة وابدأ تسجّل الدفعات عليها.</p>`
+          }
+        </div>
+      </section>
+
+      <section class="ops-panel">
+        <div class="ops-panel__head"><h2>أحدث الدفعات</h2></div>
+        <div class="ops-panel__body ops-panel__body--flush">
+          ${
+            (f.recent || []).length
+              ? `<ul class="ops-list">${(f.recent || [])
+                  .slice(0, 8)
+                  .map(
+                    (pay) => `<li class="ops-list__row">
+                      <span class="ops-avatar ops-avatar--money">${esc(String(pay.amount).charAt(0))}</span>
+                      <span class="ops-list__main">
+                        <span class="ops-list__title">${egp(pay.amount)} · ${esc(PAYMENT_METHOD_LABEL[pay.method] || pay.method)}</span>
+                        <span class="ops-list__meta">${esc(pay.invoice_number || "فاتورة #" + pay.invoice_id)} · ${esc(ago(pay.created_at))}</span>
+                      </span>
+                    </li>`
+                  )
+                  .join("")}</ul>`
+              : `<p class="ops-empty">أول ما تسجّل دفعة هتظهر هنا.</p>`
+          }
+        </div>
+      </section>`;
+  }
+
+  async function openInvoice(id) {
+    const inv = (state.data.invoices || []).find((i) => i.id === id);
+    if (!inv) return;
+    state.drawer = { type: "invoice", id };
+    const box = $("[data-drawer]");
+    box.hidden = false;
+    box.innerHTML = drawerHead(inv.number, `فاتورة #${inv.id}`);
+    let payments = [];
+    try {
+      payments = (await api(`/invoices/${id}/payments`)).rows;
+    } catch {}
+    const due = invoiceDue(inv);
+    box.innerHTML = `
+      ${drawerHead(inv.number, `${esc(inv.client_name || "بدون عميل")} · ${INVOICE_STATUS_LABEL[inv.status] || inv.status}`)}
+      <div class="ops-drawer__body">
+        <div class="ops-money-card">
+          <div><span>الإجمالي</span><strong>${egp(inv.total)}</strong></div>
+          <div><span>المدفوع</span><strong class="is-mint">${egp(inv.paid || 0)}</strong></div>
+          <div><span>الباقي</span><strong class="${due ? "is-gold" : "is-mint"}">${egp(due)}</strong></div>
+        </div>
+        <button class="ops-btn" type="button" data-action="pay-invoice" data-id="${inv.id}" ${due <= 0 ? "disabled" : ""}>تسجيل دفعة</button>
+        <div>
+          <p class="ops-mini-head">الدفعات (${payments.length})</p>
+          ${
+            payments.length
+              ? `<ul class="ops-list">${payments
+                  .map(
+                    (pay) => `<li class="ops-list__row">
+                      <span class="ops-list__main">
+                        <span class="ops-list__title">${egp(pay.amount)} · ${esc(PAYMENT_METHOD_LABEL[pay.method] || pay.method)}</span>
+                        <span class="ops-list__meta">${esc(ago(pay.created_at))}${pay.reference ? " · " + esc(pay.reference) : ""}</span>
+                      </span>
+                    </li>`
+                  )
+                  .join("")}</ul>`
+              : `<p class="ops-empty">مفيش دفعات على الفاتورة دي.</p>`
+          }
+        </div>
+        ${inv.notes ? `<p class="ops-note">${esc(inv.notes)}</p>` : ""}
+      </div>`;
+  }
+
+  const dialogNewInvoice = () =>
+    openDialog({
+      title: "فاتورة جديدة",
+      submit: "إنشاء",
+      body: `
+        <label class="ops-field"><span>العميل</span>
+          <select class="ops-select" name="client_id">
+            <option value="">بدون عميل</option>
+            ${state.data.clients.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("")}
+          </select>
+        </label>
+        <label class="ops-field"><span>البيان</span><input class="ops-input" name="title" placeholder="مثال: باقة متجر إلكتروني" required></label>
+        <div class="ops-row">
+          <label class="ops-field"><span>الإجمالي (ج.م)</span><input class="ops-input" name="total" type="number" min="0" step="100" dir="ltr" required></label>
+          <label class="ops-field"><span>الاستحقاق</span><input class="ops-input" name="due_at" type="date" dir="ltr"></label>
+        </div>
+        <label class="ops-field"><span>الحالة</span><select class="ops-select" name="status">${options(INVOICE_STATUS_LABEL, "sent")}</select></label>
+        <label class="ops-field"><span>ملاحظات</span><textarea class="ops-textarea" name="notes" rows="2"></textarea></label>`,
+      onSubmit: async (fd) => {
+        await api("/invoices", {
+          method: "POST",
+          body: {
+            client_id: fd.get("client_id") || null,
+            title: fd.get("title"),
+            total: Number(fd.get("total")),
+            due_at: fd.get("due_at") || "",
+            status: fd.get("status"),
+            notes: fd.get("notes"),
+          },
+        });
+        toast("تم إنشاء الفاتورة.", "ok");
+      },
+    });
+
+  const dialogPayment = (id) => {
+    const inv = (state.data.invoices || []).find((i) => i.id === id);
+    if (!inv) return;
+    const due = invoiceDue(inv);
+    openDialog({
+      title: `تسجيل دفعة · ${inv.number}`,
+      submit: "تسجيل",
+      body: `
+        <p class="ops-note">الباقي على الفاتورة: <strong>${egp(due)}</strong></p>
+        <div class="ops-row">
+          <label class="ops-field"><span>المبلغ (ج.م)</span><input class="ops-input" name="amount" type="number" min="1" step="50" value="${due || ""}" dir="ltr" required></label>
+          <label class="ops-field"><span>الطريقة</span><select class="ops-select" name="method">${options(PAYMENT_METHOD_LABEL, "cash")}</select></label>
+        </div>
+        <label class="ops-field"><span>مرجع (اختياري)</span><input class="ops-input" name="reference" dir="ltr" placeholder="رقم التحويل أو الإيصال"></label>
+        <label class="ops-field"><span>ملاحظة</span><input class="ops-input" name="note"></label>`,
+      onSubmit: async (fd) => {
+        const res = await api(`/invoices/${id}/payments`, {
+          method: "POST",
+          body: {
+            amount: Number(fd.get("amount")),
+            method: fd.get("method"),
+            reference: fd.get("reference"),
+            note: fd.get("note"),
+          },
+        });
+        toast(res.status === "paid" ? "الفاتورة اتقفلت بالكامل." : "تم تسجيل الدفعة.", "ok");
+        if (res.status === "paid") haptic([14, 50, 14, 50, 20]);
+      },
+    });
+  };
+
+  // ── theme & notifications ──────────────────────────────────────────
+
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem("egx.theme", theme);
+    } catch {}
+    $$('[data-action="theme"]').forEach((btn) => {
+      btn.textContent = theme === "light" ? "☾" : "☀";
+      btn.setAttribute("aria-label", theme === "light" ? "الوضع الليلي" : "الوضع النهاري");
+    });
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", theme === "light" ? "#f4f2ee" : "#101010");
+  }
+
+  function closeRail() {
+    const rail = $("[data-rail]");
+    if (rail) rail.removeAttribute("data-open");
+    $(".ops__rail-scrim")?.remove();
+    $$('[data-action="rail-toggle"]').forEach((btn) => btn.setAttribute("aria-expanded", "false"));
+  }
+
+  function toggleRail() {
+    const rail = $("[data-rail]");
+    if (!rail) return;
+    const open = rail.dataset.open !== "true";
+    haptic(6);
+    if (open) {
+      rail.dataset.open = "true";
+      const scrim = document.createElement("button");
+      scrim.type = "button";
+      scrim.className = "ops__rail-scrim";
+      scrim.setAttribute("aria-label", "إغلاق القائمة");
+      scrim.addEventListener("click", closeRail);
+      document.body.appendChild(scrim);
+    } else {
+      closeRail();
+      return;
+    }
+    $$('[data-action="rail-toggle"]').forEach((btn) => btn.setAttribute("aria-expanded", String(open)));
+  }
+
+  function toggleTheme() {
+    haptic(8);
+    applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+  }
+
+  async function registerWorker() {
+    if (!("serviceWorker" in navigator)) return null;
+    try {
+      return await navigator.serviceWorker.register("/admin/sw.js", { scope: "/admin/" });
+    } catch {
+      return null;
+    }
+  }
+
+  async function showNotification(title, body) {
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    try {
+      const registration = await navigator.serviceWorker?.getRegistration("/admin/");
+      if (registration?.showNotification) {
+        await registration.showNotification(title, {
+          body,
+          icon: "/favicon.ico",
+          tag: "egytronic-ops",
+          dir: "rtl",
+          lang: "ar",
+          data: { url: "/admin/" },
+        });
+        return;
+      }
+      new Notification(title, { body, icon: "/favicon.ico", tag: "egytronic-ops" });
+    } catch {}
+  }
+
+  async function enableNotifications() {
+    if (typeof Notification === "undefined") return toast("المتصفح ده مايدعمش الإشعارات.", "bad");
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return toast("الإشعارات مرفوضة من إعدادات المتصفح.", "bad");
+    await registerWorker();
+    try {
+      localStorage.setItem("egx.notify", "1");
+    } catch {}
+    haptic([12, 60, 12]);
+    toast("الإشعارات اتفعّلت.", "ok");
+    showNotification("إشعارات Egytronic شغالة", "هنبلّغك أول ما يوصل طلب أو دفعة جديدة.");
+  }
+
+  function watchForNews(prevLeads) {
+    let enabled = false;
+    try {
+      enabled = localStorage.getItem("egx.notify") === "1";
+    } catch {}
+    if (!enabled || !prevLeads) return;
+    const fresh = state.data.leads.filter((lead) => lead.status === "new").length - prevLeads;
+    if (fresh > 0 && document.hidden) {
+      showNotification("طلب جديد على الموقع", `${fresh} ليد جديد محتاج رد.`);
+      haptic([20, 60, 20]);
+    }
+  }
+
   // ── render & refresh ───────────────────────────────────────────────
 
   function render() {
@@ -2536,6 +2877,7 @@
       overview: renderOverview,
       pipeline: renderPipeline,
       clients: renderClients,
+      money: renderMoney,
       tasks: renderTasks,
       team: renderTeam,
       channels: renderChannels,
@@ -2550,6 +2892,8 @@
       if (node.dataset.count === "tasks") node.textContent = String(openTasks().length);
       if (node.dataset.count === "me") node.textContent = String(state.space?.tasks?.filter((t) => t.status !== "done").length ?? 0);
       if (node.dataset.count === "chat") node.textContent = String(state.space?.unread ?? 0);
+      if (node.dataset.count === "money")
+        node.textContent = String(state.data.invoices.filter((inv) => inv.status !== "paid" && inv.status !== "void").length);
     });
     if (state.view === "channels" && state.activeChannel) loadMessages(state.activeChannel);
   }
@@ -2745,6 +3089,12 @@
     "lead-to-task": (el) => leadToTask(Number(el.dataset.id)),
     "channel-to-task": (el) => channelToTask(el.dataset.slug),
     "new-client": () => dialogNewClient(),
+    "new-invoice": () => dialogNewInvoice(),
+    "pay-invoice": (el) => dialogPayment(Number(el.dataset.id)),
+    "open-invoice": (el) => openInvoice(Number(el.dataset.id)),
+    theme: () => toggleTheme(),
+    "rail-toggle": () => toggleRail(),
+    "notify-enable": () => enableNotifications(),
     "new-task": (el) => dialogNewTask(el.dataset.client || ""),
     "new-member": () => dialogMember(),
     "new-project": (el) => dialogProject(el.dataset.client),
@@ -3098,6 +3448,18 @@
   setInterval(() => {
     if (!document.hidden && state.me) loadAll();
   }, 90000);
+
+  try {
+    if (localStorage.getItem("egx.notify") === "1" && typeof Notification !== "undefined" && Notification.permission === "granted") {
+      registerWorker();
+    }
+  } catch {}
+
+  try {
+    applyTheme(localStorage.getItem("egx.theme") || "dark");
+  } catch {
+    applyTheme("dark");
+  }
 
   unlock();
 })();

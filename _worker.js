@@ -892,6 +892,203 @@ async function convertInquiry(env, id, payload, who) {
 
 // ── console: clients & projects ──────────────────────────────────────
 
+// ── money engine ─────────────────────────────────────────────────────
+// An invoice owns a total; payments reduce what is still owed. Status is
+// derived on every payment so it can never disagree with the ledger.
+
+const INVOICE_STATUS = new Set(["draft", "sent", "partial", "paid", "void"]);
+const PAYMENT_METHODS = new Set(["cash", "bank", "wallet", "instapay", "other"]);
+
+const INVOICE_SELECT = `SELECT i.*, c.name AS client_name,
+    COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0) AS paid
+  FROM invoices i LEFT JOIN clients c ON c.id = i.client_id`;
+
+async function listInvoices(env, url) {
+  const status = clean(url.searchParams.get("status"), 16);
+  const clientId = int(url.searchParams.get("client_id"), null);
+  const filters = [];
+  const binds = [];
+  if (status && INVOICE_STATUS.has(status)) {
+    filters.push("i.status = ?");
+    binds.push(status);
+  }
+  if (clientId) {
+    filters.push("i.client_id = ?");
+    binds.push(clientId);
+  }
+  const sql = `${INVOICE_SELECT}${filters.length ? " WHERE " + filters.join(" AND ") : ""} ORDER BY i.id DESC LIMIT 300`;
+  const stmt = binds.length ? env.DB.prepare(sql).bind(...binds) : env.DB.prepare(sql);
+  const { results } = await stmt.all();
+  return json({ ok: true, rows: results || [] });
+}
+
+async function nextInvoiceNumber(env) {
+  const year = new Date().getUTCFullYear();
+  const row = await env.DB
+    .prepare("SELECT COUNT(*) AS n FROM invoices WHERE number LIKE ?")
+    .bind(`INV-${year}-%`)
+    .first();
+  return `INV-${year}-${String(Number(row?.n || 0) + 1).padStart(3, "0")}`;
+}
+
+async function createInvoice(env, payload, who) {
+  const total = int(payload.total, null);
+  if (total === null || total < 0) return json({ ok: false, code: "total" }, 400);
+  const number = clean(payload.number, 40) || (await nextInvoiceNumber(env));
+  const row = await env.DB
+    .prepare(
+      "INSERT INTO invoices (client_id, number, title, status, total, due_at, notes) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *"
+    )
+    .bind(
+      int(payload.client_id, null),
+      number,
+      clean(payload.title, 120) || null,
+      INVOICE_STATUS.has(payload.status) ? payload.status : "sent",
+      total,
+      clean(payload.due_at, 32) || null,
+      text(payload.notes, 2000) || null
+    )
+    .first();
+  await emit(env, "invoice.created", "invoice", row.id, who.name, { number, total });
+  return json({ ok: true, row });
+}
+
+async function patchInvoice(env, id, payload, who) {
+  const sets = [];
+  const binds = [];
+  if (payload.title !== undefined) {
+    sets.push("title = ?");
+    binds.push(clean(payload.title, 120) || null);
+  }
+  if (payload.total !== undefined) {
+    const total = int(payload.total, null);
+    if (total === null || total < 0) return json({ ok: false, code: "total" }, 400);
+    sets.push("total = ?");
+    binds.push(total);
+  }
+  if (payload.due_at !== undefined) {
+    sets.push("due_at = ?");
+    binds.push(clean(payload.due_at, 32) || null);
+  }
+  if (payload.notes !== undefined) {
+    sets.push("notes = ?");
+    binds.push(text(payload.notes, 2000) || null);
+  }
+  if (payload.status !== undefined && INVOICE_STATUS.has(payload.status)) {
+    sets.push("status = ?");
+    binds.push(payload.status);
+  }
+  if (payload.client_id !== undefined) {
+    sets.push("client_id = ?");
+    binds.push(int(payload.client_id, null));
+  }
+  if (!sets.length) return json({ ok: false, code: "empty" }, 400);
+  binds.push(id);
+  const row = await env.DB.prepare(`UPDATE invoices SET ${sets.join(", ")} WHERE id = ? RETURNING *`).bind(...binds).first();
+  if (!row) return json({ ok: false, code: "missing" }, 404);
+  await emit(env, "invoice.updated", "invoice", id, who.name, { status: row.status });
+  return json({ ok: true, row });
+}
+
+async function invoicePayments(env, id) {
+  const { results } = await env.DB
+    .prepare("SELECT * FROM payments WHERE invoice_id = ? ORDER BY id DESC")
+    .bind(id)
+    .all();
+  return results || [];
+}
+
+async function addPayment(env, id, payload, who) {
+  const invoice = await env.DB.prepare("SELECT * FROM invoices WHERE id = ?").bind(id).first();
+  if (!invoice) return json({ ok: false, code: "missing" }, 404);
+  const amount = int(payload.amount, null);
+  if (amount === null || amount <= 0) return json({ ok: false, code: "amount" }, 400);
+  await env.DB
+    .prepare("INSERT INTO payments (invoice_id, amount, method, reference, note) VALUES (?, ?, ?, ?, ?)")
+    .bind(
+      id,
+      amount,
+      PAYMENT_METHODS.has(payload.method) ? payload.method : "cash",
+      clean(payload.reference, 80) || null,
+      text(payload.note, 500) || null
+    )
+    .run();
+  const { paid } = await env.DB
+    .prepare("SELECT COALESCE(SUM(amount), 0) AS paid FROM payments WHERE invoice_id = ?")
+    .bind(id)
+    .first();
+  const status = Number(paid) >= Number(invoice.total) ? "paid" : "partial";
+  await env.DB.prepare("UPDATE invoices SET status = ? WHERE id = ?").bind(status, id).run();
+  await emit(env, status === "paid" ? "invoice.paid" : "invoice.payment", "invoice", id, who.name, {
+    amount,
+    paid,
+    total: invoice.total,
+  });
+  return json({ ok: true, status, paid });
+}
+
+async function financeSummary(env) {
+  const [booked, collected, month, open, byStatus, recent] = await Promise.all([
+    env.DB.prepare("SELECT COALESCE(SUM(total), 0) AS n FROM invoices WHERE status != 'void'").first(),
+    env.DB.prepare("SELECT COALESCE(SUM(amount), 0) AS n FROM payments").first(),
+    env.DB.prepare(
+      "SELECT COALESCE(SUM(amount), 0) AS n FROM payments WHERE created_at >= datetime('now', 'start of month')"
+    ).first(),
+    env.DB.prepare(
+      `SELECT COALESCE(SUM(i.total), 0) - COALESCE((SELECT SUM(p.amount) FROM payments p
+          JOIN invoices x ON x.id = p.invoice_id WHERE x.status NOT IN ('paid', 'void')), 0) AS n
+       FROM invoices i WHERE i.status NOT IN ('paid', 'void')`
+    ).first(),
+    env.DB.prepare("SELECT status, COUNT(*) AS n FROM invoices GROUP BY status").all(),
+    env.DB
+      .prepare(
+        `SELECT p.*, i.number AS invoice_number FROM payments p
+           JOIN invoices i ON i.id = p.invoice_id ORDER BY p.id DESC LIMIT 12`
+      )
+      .all(),
+  ]);
+  const counts = Object.fromEntries((byStatus.results || []).map((r) => [r.status, r.n]));
+  return json({
+    ok: true,
+    booked: booked?.n ?? 0,
+    collected: collected?.n ?? 0,
+    this_month: month?.n ?? 0,
+    outstanding: Math.max(0, open?.n ?? 0),
+    counts,
+    recent: recent.results || [],
+  });
+}
+
+async function clientProfile(env, id) {
+  const client = await env.DB.prepare("SELECT * FROM clients WHERE id = ?").bind(id).first();
+  if (!client) return json({ ok: false, code: "missing" }, 404);
+  const [invoices, inquiries, projects, tasks, activities, money] = await Promise.all([
+    env.DB.prepare(`${INVOICE_SELECT} WHERE i.client_id = ? ORDER BY i.id DESC LIMIT 50`).bind(id).all(),
+    env.DB.prepare("SELECT * FROM inquiries WHERE client_id = ? ORDER BY id DESC LIMIT 50").bind(id).all(),
+    env.DB.prepare("SELECT * FROM projects WHERE client_id = ? ORDER BY id DESC").bind(id).all(),
+    env.DB.prepare("SELECT * FROM tasks WHERE client_id = ? ORDER BY status, id DESC LIMIT 50").bind(id).all(),
+    env.DB.prepare("SELECT * FROM activities WHERE entity = 'client' AND entity_id = ? ORDER BY id DESC LIMIT 20").bind(id).all(),
+    env.DB
+      .prepare(
+        `SELECT COALESCE(SUM(i.total), 0) AS invoiced,
+                COALESCE(SUM(i.total), 0) - COALESCE(SUM(COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0)), 0) AS due
+           FROM invoices i WHERE i.client_id = ? AND i.status != 'void'`
+      )
+      .bind(id)
+      .first(),
+  ]);
+  return json({
+    ok: true,
+    client,
+    invoices: invoices.results || [],
+    inquiries: inquiries.results || [],
+    projects: projects.results || [],
+    tasks: tasks.results || [],
+    activities: activities.results || [],
+    money: { invoiced: money?.invoiced ?? 0, due: money?.due ?? 0 },
+  });
+}
+
 async function listClients(env, url) {
   const status = clean(url.searchParams.get("status"), 16);
   const stmt =
@@ -3153,7 +3350,18 @@ async function api(request, env, url, who) {
   if (resource === "clients") {
     if (!id && method === "GET") return listClients(env, url);
     if (!id && method === "POST") return createClient(env, await body(request), who);
+    if (id && !action && method === "GET") return clientProfile(env, int(id));
     if (id && method === "PATCH") return patchClient(env, int(id), await body(request), who);
+  }
+
+  if (resource === "finance" && method === "GET") return financeSummary(env);
+
+  if (resource === "invoices") {
+    if (!id && method === "GET") return listInvoices(env, url);
+    if (!id && method === "POST") return createInvoice(env, await body(request), who);
+    if (id && !action && method === "PATCH") return patchInvoice(env, int(id), await body(request), who);
+    if (id && action === "payments" && method === "GET") return json({ ok: true, rows: await invoicePayments(env, int(id)) });
+    if (id && action === "payments" && method === "POST") return addPayment(env, int(id), await body(request), who);
   }
 
   if (resource === "projects") {

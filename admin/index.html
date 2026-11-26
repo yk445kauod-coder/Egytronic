@@ -10,8 +10,8 @@
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" href="/assets/css/tokens.css?v=50d67802">
 <link rel="stylesheet" href="/assets/css/fonts.css?v=8f2a0f7c">
-<link rel="stylesheet" href="/assets/css/admin.css?v=9d1f7c31">
-<script defer src="/assets/js/admin.js?v=9d1f7c31"></script>
+<link rel="stylesheet" href="/assets/css/admin.css?v=2a7e5c10">
+<script defer src="/assets/js/admin.js?v=2a7e5c10"></script>
 </head>
 <body class="ops">
 
@@ -54,6 +54,15 @@
   <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
     <path d="m5 5 14 14M19 5 5 19" />
   </symbol>
+  <symbol id="i-money" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+    <rect x="2.5" y="6" width="19" height="12" rx="1.5" />
+    <circle cx="12" cy="12" r="2.8" />
+    <path d="M6 10v4M18 10v4" opacity=".55" />
+  </symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+    <path d="M6 9a6 6 0 0 1 12 0c0 5 1.6 6.4 1.6 6.4H4.4S6 14 6 9Z" />
+    <path d="M10 19a2 2 0 0 0 4 0" />
+  </symbol>
 </svg>
 
 <a class="ops__skip" href="#main">تخطّ إلى المحتوى</a>
@@ -94,7 +103,7 @@
   </section>
 
   <div class="ops__shell" data-shell hidden>
-    <aside class="ops__rail">
+    <aside class="ops__rail" id="ops-rail" data-rail>
       <div class="ops__brand">
         <span class="ops__logo" aria-hidden="true">E</span>
         <div>
@@ -108,6 +117,7 @@
         <button type="button" class="ops__nav-btn" data-view="overview"><svg aria-hidden="true"><use href="#i-grid"/></svg> نظرة عامة</button>
         <button type="button" class="ops__nav-btn" data-view="pipeline" data-perm="inquiries.view"><svg aria-hidden="true"><use href="#i-funnel"/></svg> خط المبيعات <b data-count="pipeline">0</b></button>
         <button type="button" class="ops__nav-btn" data-view="clients" data-perm="clients.view"><svg aria-hidden="true"><use href="#i-users"/></svg> العملاء</button>
+        <button type="button" class="ops__nav-btn" data-view="money" data-perm="finance.view"><svg aria-hidden="true"><use href="#i-money"/></svg> المال <b data-count="money">0</b></button>
         <button type="button" class="ops__nav-btn" data-view="tasks" data-perm="tasks.manage"><svg aria-hidden="true"><use href="#i-check"/></svg> المهام <b data-count="tasks">0</b></button>
         <button type="button" class="ops__nav-btn" data-view="team"><svg aria-hidden="true"><use href="#i-team"/></svg> الفريق</button>
         <button type="button" class="ops__nav-btn" data-view="channels"><svg aria-hidden="true"><use href="#i-chat"/></svg> المحادثات <b data-count="chat">0</b></button>
@@ -124,6 +134,8 @@
 
     <div class="ops__main">
       <header class="ops__top">
+        <button class="ops-btn ops-btn--ghost ops-btn--sm ops-icon-btn ops__menu" type="button" data-action="rail-toggle"
+                aria-label="القائمة الكاملة" aria-expanded="false" aria-controls="ops-rail">☰</button>
         <div>
           <h1 data-title>نظرة عامة</h1>
           <span class="ops__sub" data-sub></span>
@@ -134,6 +146,8 @@
           <button class="ops-btn ops-btn--sm" type="button" data-action="new-lead">+ ليد جديد</button>
           <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-action="new-task">مهمة</button>
           <button class="ops-btn ops-btn--ghost ops-btn--sm ops-quick--quote" type="button" data-action="new-quote">عرض سعر</button>
+          <button class="ops-btn ops-btn--ghost ops-btn--sm ops-icon-btn" type="button" data-action="notify-enable" aria-label="تفعيل الإشعارات" title="تفعيل الإشعارات"><svg aria-hidden="true"><use href="#i-bell"/></svg></button>
+          <button class="ops-btn ops-btn--ghost ops-btn--sm ops-icon-btn" type="button" data-action="theme" aria-label="الوضع النهاري" title="تبديل الوضع">☀</button>
           <button class="ops-btn ops-btn--ghost ops-btn--sm ops-icon-btn" type="button" data-refresh aria-label="تحديث البيانات" title="تحديث البيانات">↻</button>
           <button class="ops-btn ops-btn--ghost ops-btn--sm" type="button" data-lock>خروج</button>
         </div>
@@ -144,6 +158,7 @@
         <section class="ops__view" data-panel="overview" aria-label="نظرة عامة" hidden></section>
         <section class="ops__view" data-panel="pipeline" aria-label="خط المبيعات" hidden></section>
         <section class="ops__view" data-panel="clients" aria-label="العملاء" hidden></section>
+        <section class="ops__view" data-panel="money" aria-label="المال" hidden></section>
         <section class="ops__view" data-panel="tasks" aria-label="المهام" hidden></section>
         <section class="ops__view" data-panel="team" aria-label="الفريق" hidden></section>
         <section class="ops__view" data-panel="channels" aria-label="القنوات" hidden></section>
@@ -154,6 +169,14 @@
     </div>
   </div>
 </main>
+
+<nav class="ops-tabs" data-tabs aria-label="تنقل سريع">
+  <button type="button" data-view="overview"><svg aria-hidden="true"><use href="#i-grid"/></svg><span>عام</span></button>
+  <button type="button" data-view="pipeline" data-perm="inquiries.view"><svg aria-hidden="true"><use href="#i-funnel"/></svg><span>المبيعات</span></button>
+  <button type="button" data-view="clients" data-perm="clients.view"><svg aria-hidden="true"><use href="#i-users"/></svg><span>العملاء</span></button>
+  <button type="button" data-view="money" data-perm="finance.view"><svg aria-hidden="true"><use href="#i-money"/></svg><span>المال</span></button>
+  <button type="button" data-view="tasks" data-perm="tasks.manage"><svg aria-hidden="true"><use href="#i-check"/></svg><span>المهام</span></button>
+</nav>
 
 <aside class="ops-drawer" data-drawer aria-label="تفاصيل" hidden></aside>
 <dialog class="ops-dialog" data-dialog></dialog>
