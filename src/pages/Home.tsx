@@ -30,7 +30,7 @@ export default function Home({ locale }: { locale: Locale }) {
         locale={locale}
         path={path}
         title="Egytronic | برمجيات تُسلَّم جاهزة، بأسعار معلنة"
-        description="مواقع وهوية وأنظمة إدارية وذكاء اصطناعي، بخمس باقات تبدأ من 5,000 جنيه. نطاق محدد وسعر معلن وموعد تسليم، والاستضافة والباكند مجانًا في السنة الأولى."
+        description="مواقع وهوية وأنظمة إدارية وذكاء اصطناعي، بخمس باقات تبدأ من 5,000 جنيه. حدود محددة وسعر معلن وموعد تسليم، والاستضافة والباكند مجانًا في السنة الأولى."
         jsonLd={[faqNode(locale), offerCatalogNode(locale)]}
       />
       <main id="main">

@@ -54,7 +54,7 @@ export default function Systems() {
         <li><b>تدريب</b> فريقك وتسليم دليل التشغيل</li>
       </ul>
 
-      <p className="systems__note reveal">لم تجد ما تحتاجه؟ <a href="/contact/">اطلب نظام مخصص</a> ونحدد النطاق معك.</p>
+      <p className="systems__note reveal">لم تجد ما تحتاجه؟ <a href="/contact/">اطلب نظام مخصص</a> ونحدد حدود العمل معك.</p>
     </div>
   </section>
     </>

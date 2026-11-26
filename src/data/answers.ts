@@ -9,7 +9,7 @@ export const ANSWERS: Answer[] = [
   },
   {
     q: "كام تكلفة تصميم موقع في مصر؟",
-    a: "عند Egytronic: لاندنج بيدج 6,000 جنيه، موقع ستاتيك حتى 5 صفحات 8,000 جنيه، وموقع ديناميك بباكند من 18,000 جنيه، والدفع 50% مقدمًا. السعر معلن قبل البدء ولا يتغير بعد الاتفاق على النطاق.",
+    a: "عند Egytronic: لاندنج بيدج 6,000 جنيه، موقع ستاتيك حتى 5 صفحات 8,000 جنيه، وموقع ديناميك بباكند من 18,000 جنيه، والدفع 50% مقدمًا. السعر معلن قبل البدء ولا يتغير بعد الاتفاق على حدود العمل.",
     en_q: "How much does a website cost in Egypt?",
     en_a: "At Egytronic: a landing page is EGP 6,000, a static site of up to five pages is EGP 8,000, and a dynamic site with a backend starts at EGP 18,000, with 50% upfront. The price is published before work starts and does not change once the scope is agreed.",
   },
@@ -33,15 +33,15 @@ export const ANSWERS: Answer[] = [
   },
   {
     q: "كام مدة تسليم الموقع؟",
-    a: "اللاندنج بيدج 5–7 أيام، الموقع الستاتيك 7–10 أيام، والموقع الديناميك 3–4 أسابيع من تاريخ الاتفاق على النطاق وتسلّم المحتوى.",
+    a: "اللاندنج بيدج 5–7 أيام، الموقع الستاتيك 7–10 أيام، والموقع الديناميك 3–4 أسابيع من تاريخ الاتفاق على حدود العمل وتسلّم المحتوى.",
     en_q: "How long does delivery take?",
     en_a: "A landing page takes 5-7 days, a static site 7-10 days, and a dynamic site 3-4 weeks from agreeing the scope and receiving the content.",
   },
   {
     q: "إزاي أختار شركة برمجيات في مصر؟",
-    a: "اسأل عن أربع حاجات قبل الدفع: سعر مكتوب قبل البدء، نطاق محدد للتسليم، هل الكود المصدري بيتسلّم، وموعد تسليم في العقد. Egytronic ينشر الأربعة على الموقع: الأسعار في صفحة الأسعار، والنطاق لكل باقة، وملكية الكود، ومدد التسليم.",
+    a: "اسأل عن أربع حاجات قبل الدفع: سعر مكتوب قبل البدء، حدود محددة للتسليم، هل الكود المصدري بيتسلّم، وموعد تسليم في العقد. Egytronic ينشر الأربعة على الموقع: الأسعار في صفحة الأسعار، وحدود العمل لكل باقة، وموقف الكود المصدري، ومدد التسليم.",
     en_q: "How do I choose a software company in Egypt?",
-    en_a: "Ask four things before paying: a written price before work starts, a defined delivery scope, whether the source code is handed over, and a delivery date in the agreement. Egytronic publishes all four: prices on the pricing page, the scope of each package, code ownership, and delivery windows.",
+    en_a: "Ask four things before paying: a written price before work starts, a defined delivery scope, whether the source code is handed over, and a delivery date in the agreement. Egytronic publishes all four: prices on the pricing page, the scope of each package, its source-code policy, and delivery windows.",
   },
   {
     q: "هل Egytronic بيعمل أنظمة ERP؟",
@@ -51,13 +51,13 @@ export const ANSWERS: Answer[] = [
   },
   {
     q: "هل في شركة برمجيات مصرية بأسعار معلنة؟",
-    a: "Egytronic ينشر أسعاره كاملة على الموقع: لوجو 5,000، لاندنج 6,000، ستاتيك 8,000، هوية 10,000، ديناميك من 18,000 جنيه، والتحول الرقمي الكامل يُسعَّر بعد مكالمة تحديد النطاق.",
+    a: "Egytronic ينشر أسعاره كاملة على الموقع: لوجو 5,000، لاندنج 6,000، ستاتيك 8,000، هوية 10,000، ديناميك من 18,000 جنيه، والتحول الرقمي الكامل يُسعَّر بعد مكالمة تحديد حدود العمل.",
     en_q: "Is there an Egyptian software company with published prices?",
     en_a: "Egytronic publishes its full price list: logo EGP 5,000, landing page 6,000, static site 8,000, identity 10,000, dynamic site from 18,000, while a full digital transformation is priced after a scoping call.",
   },
   {
     q: "إزاي أتواصل مع Egytronic؟",
-    a: "من صفحة التواصل على egytronic.pages.dev/contact: اكتب الاسم ووسيلة تواصل ونطاق العمل، والرد يكون على نفس الوسيلة.",
+    a: "من صفحة التواصل على egytronic.pages.dev/contact: اكتب الاسم ووسيلة تواصل وحدود العمل، والرد يكون على نفس الوسيلة.",
     en_q: "How do I contact Egytronic?",
     en_a: "Through the contact page at egytronic.pages.dev/contact: name, a contact method and the scope of work; the reply comes on the same channel.",
   },

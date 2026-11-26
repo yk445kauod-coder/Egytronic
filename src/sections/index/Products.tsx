@@ -6,7 +6,7 @@ export default function Products() {
       <div className="section-head reveal">
         <span className="px-tag">الباقات والأسعار</span>
         <h2 id="products-title">خمس باقات بأسعار معلنة</h2>
-        <p>نطاق محدد وسعر معلن وموعد تسليم مكتوب قبل البدء، والدفع على مرحلتين.</p>
+        <p>حدود محددة وسعر معلن وموعد تسليم مكتوب قبل البدء، والدفع على مرحلتين.</p>
       </div>
 
       <ul className="prods reveal">

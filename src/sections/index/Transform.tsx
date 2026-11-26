@@ -35,7 +35,7 @@ export default function Transform() {
 
         <div className="transform__band reveal">
           <p className="transform__price"><span>التحول الكامل</span> سعره يتحدد بعد الاتفاق</p>
-          <p className="transform__note">بعد أول مكالمة نحدد النطاق والتفاصيل، وبعدها بنكتب السعر في العرض. الدفع 50% عند البدء و50% بعد التسليم.</p>
+          <p className="transform__note">بعد أول مكالمة نحدد حدود العمل والتفاصيل، وبعدها بنكتب السعر في العرض. الدفع 50% عند البدء و50% بعد التسليم.</p>
           <a className="px-btn" href="/contact/">اطلب تقييم لمشروعك</a>
         </div>
       </div>

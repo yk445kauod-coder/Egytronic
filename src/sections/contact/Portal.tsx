@@ -16,7 +16,7 @@ export default function Portal() {
           data-contact-form
           noValidate
           toolname="request_quote"
-          tooldescription="أرسل تفاصيل مشروعك إلى Egytronic: الاسم، وسيلة تواصل، ونطاق العمل المطلوب."
+          tooldescription="أرسل تفاصيل مشروعك إلى Egytronic: الاسم، وسيلة تواصل، وحدود العمل المطلوبة."
           toolautosubmit="false" data-msg-invalid="راجع الحقول الناقصة: الاسم، وبريد إلكتروني صحيح، ورسالة لا تقل عن 10 أحرف." data-msg-sending="جاري الإرسال…" data-msg-ok="وصلتنا رسالتك، وسنرد على وسيلة التواصل التي أدخلتها." data-msg-rate="وردتنا طلبات كثيرة من هذا الجهاز. يُرجى المحاولة بعد قليل." data-msg-down="الإرسال غير متاح حاليًا." data-msg-offline="لا يوجد اتصال بالشبكة." data-msg-button="إرسال الطلب">
           <div className="field">
             <label htmlFor="cf-name">الاسم</label>
@@ -77,7 +77,7 @@ export default function Portal() {
             <ol className="portal__steps">
               <li><span>01</span> نقرأ الطلب والباقة المختارة.</li>
               <li><span>02</span> نرد على البريد الإلكتروني أو رقم واتساب الذي أدخلته.</li>
-              <li><span>03</span> إن كان الطلب مناسبًا، نحدد النطاق ونبدأ.</li>
+              <li><span>03</span> إن كان الطلب مناسبًا، نحدد حدود العمل ونبدأ.</li>
             </ol>
           </div>
 

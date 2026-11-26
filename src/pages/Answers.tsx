@@ -33,7 +33,7 @@ export default function Answers({ locale }: { locale: Locale }) {
               <p>
                 {en
                   ? "The questions clients ask before buying, answered with the numbers we publish. Prices are fixed; the scope of each package is written down."
-                  : "الأسئلة التي تُطرح قبل الشراء، بإجابات فيها الأرقام المعلنة. الأسعار ثابتة، ونطاق كل باقة مكتوب."}
+                  : "الأسئلة التي تُطرح قبل الشراء، بإجابات فيها الأرقام المعلنة. الأسعار ثابتة، وحدود كل باقة مكتوبة."}
               </p>
             </div>
             <dl className="answers__list">

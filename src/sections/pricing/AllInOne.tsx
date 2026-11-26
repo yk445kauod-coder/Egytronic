@@ -8,7 +8,7 @@ export default function AllInOne() {
           <span className="bundle__badge">ALL-IN-ONE</span>
           <h3 id="bundle-title">التحول الرقمي الكامل</h3>
         </div>
-        <p className="bundle__lead">سعره يتحدد بعد الاتفاق على التفاصيل: بنحدد النطاق معك الأول، وبعدها بنكتب السعر في العرض قبل بدء أي شغل.</p>
+        <p className="bundle__lead">سعره يتحدد بعد الاتفاق على التفاصيل: بنحدد حدود العمل معك الأول، وبعدها بنكتب السعر في العرض قبل بدء أي شغل.</p>
 
         <ul className="bundle__list">
           <li>جلسة تشخيص وتقرير بالأولويات</li>

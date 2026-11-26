@@ -6,7 +6,7 @@ export default function About() {
       <div className="section-head reveal">
         <span className="px-tag">عن الشركة</span>
         <h2>من يبني مشروعك</h2>
-        <p>شركة برمجيات مصرية يعمل عليها المؤسس مباشرة، من تحديد النطاق حتى التشغيل.</p>
+        <p>شركة برمجيات مصرية يعمل عليها المؤسس مباشرة، من تحديد حدود العمل حتى التشغيل.</p>
       </div>
 
       <div className="founder reveal">
