@@ -416,6 +416,14 @@
   font-size: var(--fs-md);
   max-width: 62ch;
 }
+.section-head__note {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  border-inline-start: 2px solid var(--line, var(--muted));
+  padding-inline-start: 10px;
+  max-width: 62ch;
+}
+
 .section-head--center {
   margin-inline: auto;
   text-align: center;

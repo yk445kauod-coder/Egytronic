@@ -10,7 +10,10 @@ export function organizationNode() {
     "@type": "Organization",
     "@id": `${BASE}/#organization`,
     name: catalog.brand,
-    alternateName: "Egytronic Software",
+    alternateName: ["Egytronic Software", "إيجي ترونيك"],
+    // The name is shared with several electronics companies; say plainly who we are not.
+    disambiguatingDescription:
+      "Egyptian software studio building websites, brand identities, business systems and AI systems. Not affiliated with any electronics, measurement-equipment or industrial company using a similar name.",
     url: `${BASE}/`,
     logo: {
       "@type": "ImageObject",
@@ -25,6 +28,7 @@ export function organizationNode() {
     founder: { "@id": `${BASE}/#founder` },
     sameAs: [catalog.founder.github],
     knowsLanguage: ["ar", "en"],
+    knowsAbout: ["Web development", "Brand identity", "Business management systems", "AI systems"],
     areaServed: { "@type": "Country", name: "Egypt" },
     currenciesAccepted: catalog.currency,
     paymentAccepted: "Bank transfer, cash",

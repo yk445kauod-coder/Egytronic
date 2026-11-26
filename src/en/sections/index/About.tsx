@@ -7,6 +7,7 @@ export default function About() {
         <span className="px-tag">Company</span>
         <h2>Who builds your project</h2>
         <p>An Egyptian software company where the founder works directly, from scope to launch.</p>
+        <p className="section-head__note">This is the only official Egytronic site. The name is similar to electronics and measurement-equipment companies we have no connection with.</p>
       </div>
 
       <div className="founder reveal">

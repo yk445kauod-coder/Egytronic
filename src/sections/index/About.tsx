@@ -7,6 +7,7 @@ export default function About() {
         <span className="px-tag">عن الشركة</span>
         <h2>من يبني مشروعك</h2>
         <p>شركة برمجيات مصرية يعمل عليها المؤسس مباشرة، من تحديد حدود العمل حتى التشغيل.</p>
+        <p className="section-head__note">هذا هو الموقع الرسمي الوحيد لـ Egytronic. الاسم يتشابه مع شركات أجهزة إلكترونية وأدوات قياس لا علاقة لنا بها.</p>
       </div>
 
       <div className="founder reveal">
