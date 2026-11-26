@@ -10,7 +10,7 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="wrap footer__grid">
         <a className="brand" href={p("/")} aria-label={`Egytronic — ${t("الرئيسية")}`}>
-          <span className="brand__mark">E</span>
+          <img className="brand__mark" src="/assets/img/brand-mark.png" alt="" width="44" height="30" />
           <span>EGYTRONIC</span>
           <span className="brand__dot" aria-hidden="true" />
         </a>

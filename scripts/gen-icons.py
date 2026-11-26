@@ -12,7 +12,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 MASTER = ROOT / "public/assets/img/icon-512.png"
 IMG = ROOT / "public/assets/img"
-SIZES = {"icon-48.png": 48, "icon-96.png": 96, "icon-144.png": 144, "icon-192.png": 192,
+SIZES = {"icon-16.png": 16, "icon-32.png": 32, "icon-48.png": 48, "icon-96.png": 96, "icon-144.png": 144, "icon-192.png": 192,
          "icon-256.png": 256, "icon-512.png": 512, "apple-touch-icon.png": 180}
 ICO_SIZES = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
 
