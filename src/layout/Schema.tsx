@@ -50,9 +50,12 @@ export function founderNode() {
     "@id": `${BASE}/#founder`,
     name: catalog.founder.ar,
     alternateName: catalog.founder.en,
-    jobTitle: { ar: "مؤسس Egytronic", en: "Founder of Egytronic" },
+    jobTitle: "Founder of Egytronic",
     worksFor: { "@id": `${BASE}/#organization` },
-    sameAs: [catalog.founder.github],
+    // The profiles an assistant should follow when it wants to check the work: public code and
+    // a published model. Without them search engines describe the founder as having no footprint.
+    sameAs: [catalog.founder.github, catalog.founder.huggingface],
+    knowsAbout: ["Web development", "Cloudflare Workers", "TypeScript", "Arabic speech recognition"],
     knowsLanguage: ["ar", "en"],
   };
 }
