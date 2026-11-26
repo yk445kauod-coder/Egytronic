@@ -6,7 +6,7 @@ export default function Prices() {
       <div className="section-head reveal">
         <span className="px-tag">Public pricing</span>
         <h1 id="prices-title">Five packages, public prices</h1>
-        <p>Pay 50% upfront to start and 50% before final delivery, in Egyptian pounds.</p>
+        <p>Pay 50% upfront to start and 50% after final delivery, in Egyptian pounds.</p>
       </div>
 
       <ol className="pricelist reveal">

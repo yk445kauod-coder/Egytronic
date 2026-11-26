@@ -35,7 +35,7 @@ export default function Transform() {
 
         <div className="transform__band reveal">
           <p className="transform__price"><span>Full transformation</span> priced after the scope is agreed</p>
-          <p className="transform__note">After a first call we settle the scope and the details, then put the price in the offer. Pay 50% to start and 50% before delivery.</p>
+          <p className="transform__note">After a first call we settle the scope and the details, then put the price in the offer. Pay 50% to start and 50% after delivery.</p>
           <a className="px-btn" href="/en/contact/">Request a project assessment</a>
         </div>
       </div>

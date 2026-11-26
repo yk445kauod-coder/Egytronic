@@ -7,7 +7,7 @@ export default function Build() {
         <h3 id="terms-title">The price is public before you start</h3>
         <ul>
           <li>Five packages in Egyptian pounds</li>
-          <li>50% upfront, 50% before delivery</li>
+          <li>50% upfront, 50% after delivery</li>
           <li>Book your package from the pricing page</li>
         </ul>
       </div>

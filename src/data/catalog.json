@@ -11,8 +11,8 @@
     "github": "https://github.com/yk445kauod-coder"
   },
   "facts": {
-    "ar": "Egytronic شركة برمجيات مصرية تبني المواقع والهويات والأنظمة الإدارية وأنظمة الذكاء الاصطناعي، وتسلّمها جاهزة للتشغيل. أسعارها معلنة بالجنيه المصري قبل بدء العمل: أربع باقات من 5,000 إلى 18,000 جنيه، والتحول الرقمي الكامل سعره يتحدد بعد الاتفاق على التفاصيل. الدفع على مرحلتين 50% عند البدء و50% قبل التسليم.",
-    "en": "Egytronic is an Egyptian software company that builds websites, brand identities, business systems and AI systems, delivered ready to run. Prices are published in Egyptian pounds before work starts: four packages from EGP 5,000 to EGP 18,000, while end-to-end transformation is priced after the scope is agreed. Paid in two instalments, 50% at kick-off and 50% before delivery."
+    "ar": "Egytronic شركة برمجيات مصرية تبني المواقع والهويات والأنظمة الإدارية وأنظمة الذكاء الاصطناعي، وتسلّمها جاهزة للتشغيل. أسعارها معلنة بالجنيه المصري قبل بدء العمل: أربع باقات من 5,000 إلى 18,000 جنيه، والتحول الرقمي الكامل سعره يتحدد بعد الاتفاق على التفاصيل. الدفع على مرحلتين 50% عند البدء و50% بعد التسليم.",
+    "en": "Egytronic is an Egyptian software company that builds websites, brand identities, business systems and AI systems, delivered ready to run. Prices are published in Egyptian pounds before work starts: four packages from EGP 5,000 to EGP 18,000, while end-to-end transformation is priced after the scope is agreed. Paid in two instalments, 50% at kick-off and 50% after delivery."
   },
   "packages": [
     {
@@ -72,8 +72,8 @@
     "en": { "name": "End-to-end digital transformation", "summary": "Its price is set after the scope is agreed: we settle it with you first, then write the price into the offer. For larger projects that need an assessment and priorities before anything is priced.", "includes": ["Diagnostic session and a prioritised report", "Full brand identity (logo, colours, type)", "Dynamic site with backend and database", "Google Business profile and social accounts set up", "Training on how to use it", "One month of follow-up after delivery"] }
   },
   "terms": {
-    "ar": ["استضافة وباكند مجانًا في السنة الأولى", "الدومين منفصل أو بفاتورة", "50% مقدمًا و50% قبل التسليم"],
-    "en": ["Hosting and backend free in year one", "Domain separate, or added to the invoice", "50% upfront and 50% before delivery"]
+    "ar": ["استضافة وباكند مجانًا في السنة الأولى", "الدومين منفصل أو بفاتورة", "50% مقدمًا و50% بعد التسليم"],
+    "en": ["Hosting and backend free in year one", "Domain separate, or added to the invoice", "50% upfront and 50% after delivery"]
   },
   "systems": [
     { "id": "erp", "ar": "إدارة موارد", "en": "Resource planning" },
@@ -86,7 +86,7 @@
   "faq": [
     { "id": "deliverable", "ar": { "q": "ماذا أستلم في نهاية المشروع؟", "a": "تستلم عملًا جاهزًا للتشغيل حسب الباقة: لوجو بملفاته، أو لاندنج بيدج منشورة، أو موقعًا حتى 5 صفحات، أو هوية كاملة بدليل استخدام. لا يُعدّ العمل منتهيًا قبل تشغيله فعليًا." }, "en": { "q": "What do I receive at the end of the project?", "a": "Work that is ready to run, per package: a logo with its files, a published landing page, a site of up to 5 pages, or a full identity with a usage guide. Work is not considered finished until it is actually running." } },
     { "id": "hosting", "ar": { "q": "هل الاستضافة مشمولة في السعر؟", "a": "نعم. الاستضافة والباكند مجانًا في السنة الأولى مع كل باقة. الدومين يُشترى منفصلًا أو يُضاف إلى الفاتورة." }, "en": { "q": "Is hosting included in the price?", "a": "Yes. Hosting and backend are free for the first year with every package. The domain is bought separately or added to the invoice." } },
-    { "id": "payment", "ar": { "q": "كيف يتم الدفع؟", "a": "على مرحلتين: 50% عند البدء و50% قبل التسليم. الأسعار بالجنيه المصري، ولا تُدفع كامل القيمة قبل رؤية العمل." }, "en": { "q": "How does payment work?", "a": "In two instalments: 50% at kick-off and 50% before delivery. Prices are in Egyptian pounds, and the full amount is never paid before you see the work." } },
+    { "id": "payment", "ar": { "q": "كيف يتم الدفع؟", "a": "على مرحلتين: 50% عند البدء و50% بعد التسليم. الأسعار بالجنيه المصري، ولا تُدفع كامل القيمة قبل رؤية العمل." }, "en": { "q": "How does payment work?", "a": "In two instalments: 50% at kick-off and 50% after delivery. Prices are in Egyptian pounds, and the full amount is never paid before you see the work." } },
     { "id": "pages", "ar": { "q": "كم صفحة يشمل الموقع الستاتيك؟", "a": "حتى 5 صفحات بسعر 8,000 جنيه. الموقع الديناميك بباكند وقاعدة بيانات يبدأ من 18,000 جنيه، وتسليمه من 3 إلى 4 أسابيع." }, "en": { "q": "How many pages does the static site include?", "a": "Up to 5 pages for EGP 8,000. A dynamic site with a backend and database starts at EGP 18,000 and is delivered in 3 to 4 weeks." } },
     { "id": "timeline", "ar": { "q": "كم يستغرق تنفيذ المشروع؟", "a": "اللوجو 3–5 أيام، اللاندنج بيدج 5–7 أيام، الموقع الستاتيك 7–10 أيام، والموقع الديناميك 3–4 أسابيع. المدة تبدأ من تاريخ الاتفاق وتُكتب قبل البدء." }, "en": { "q": "How long does a project take?", "a": "Logo 3–5 days, landing page 5–7 days, static site 7–10 days, dynamic site 3–4 weeks. The timeline starts from the agreed date and is written down before work begins." } },
     { "id": "scope", "ar": { "q": "هل يمكن تغيير النطاق بعد الاتفاق؟", "a": "النطاق مكتوب في الباقة المختارة، وأي إضافة تُقدَّر بسعرها قبل تنفيذها. لا تتغيّر قيمة الباقة بعد الاتفاق." }, "en": { "q": "Can the scope change after we agree?", "a": "The scope is written into the chosen package. Any addition is priced before it is built, and the package price does not change after the agreement." } },

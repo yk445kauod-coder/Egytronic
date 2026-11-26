@@ -32,7 +32,7 @@ export const TERMS: { ar: LegalDoc; en: LegalDoc } = {
         h: "الأسعار والدفع",
         p: [
           "الأسعار بالجنيه المصري وتشمل ما تذكره الباقة فقط.",
-          "الدفع على مرحلتين: 50% عند بدء التنفيذ و50% قبل التسليم، ولا يبدأ العمل قبل الدفعة الأولى.",
+          "الدفع على مرحلتين: 50% عند بدء التنفيذ و50% بعد التسليم، ولا يبدأ العمل قبل الدفعة الأولى.",
           "التحول الرقمي الكامل يُسعَّر بعد مكالمة تحديد النطاق، بنفس شرط الدفع.",
         ],
       },
@@ -92,7 +92,7 @@ export const TERMS: { ar: LegalDoc; en: LegalDoc } = {
         h: "Prices and payment",
         p: [
           "Prices are in Egyptian pounds and cover only what the package states.",
-          "Payment is 50% when work starts and 50% before delivery; work does not begin before the first payment.",
+          "Payment is 50% when work starts and 50% after delivery; work does not begin before the first payment.",
           "A full digital transformation is priced after a scoping call, on the same terms.",
         ],
       },

@@ -83,7 +83,7 @@ export default function Portal() {
 
           <div className="portal__card portal__card--quiet">
             <h3>السعر معلن مقدمًا</h3>
-            <p>كل باقة بسعرها المعلن، والدفع 50% عند البدء و50% قبل التسليم.</p>
+            <p>كل باقة بسعرها المعلن، والدفع 50% عند البدء و50% بعد التسليم.</p>
             <a className="px-btn px-btn--ghost px-btn--sm" href="/pricing/">اطّلع على الأسعار</a>
           </div>
         </aside>

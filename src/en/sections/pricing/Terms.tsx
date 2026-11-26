@@ -8,7 +8,7 @@ export default function Terms() {
         <ul>
           <li>Hosting and backend free in the first year</li>
           <li>Domain separate or by invoice</li>
-          <li>50% upfront, 50% before delivery</li>
+          <li>50% upfront, 50% after delivery</li>
         </ul>
       </div>
 

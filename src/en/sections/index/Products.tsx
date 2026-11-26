@@ -94,7 +94,7 @@ export default function Products() {
         </li>
         <li>
           <b>You pay in two steps</b>
-          <span>50% when we start and 50% before delivery. You do not pay it all before you see anything.</span>
+          <span>50% when we start and 50% after delivery. You do not pay it all before you see anything.</span>
         </li>
       </ul>
 

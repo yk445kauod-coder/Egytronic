@@ -76,7 +76,7 @@ export default function Portal() {
 
           <div className="portal__card portal__card--quiet">
             <h3>The price is public up front</h3>
-            <p>Every package has its printed price: 50% to start and 50% before delivery.</p>
+            <p>Every package has its printed price: 50% to start and 50% after delivery.</p>
             <a className="px-btn px-btn--ghost px-btn--sm" href="/en/pricing/">See prices</a>
           </div>
         </aside>
