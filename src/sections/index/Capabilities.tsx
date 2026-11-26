@@ -5,8 +5,8 @@ export default function Capabilities() {
     <div className="wrap">
       <div className="section-head reveal">
         <span className="px-tag">الخدمات</span>
-        <h2>ثلاث خدمات، بأسعار معلنة</h2>
-        <p>كل خدمة تبدأ من باقة محددة الحدود، وتُسلَّم جاهزة للاستخدام.</p>
+        <h2>ثلاث خدمات، مسار واحد للتوسّع</h2>
+        <p>كل خدمة بتبدأ من باقة محددة الحدود، وبتنزل تشتغل عندك من أول يوم.</p>
       </div>
       <div className="ledger reveal">
         <article className="ledger__row">
@@ -31,7 +31,7 @@ export default function Capabilities() {
             <span className="ledger__k">SYSTEMS</span>
             <h3>أنظمة ذكية</h3>
           </div>
-          <p>برمجيات وأنظمة ذكاء اصطناعي تُبنى بحسب احتياج مشروعك وتُسلَّم جاهزة.</p>
+          <p>أنظمة إدارية وذكاء اصطناعي بيتفصّلوا على شغلك ويوسّعوه مع الوقت.</p>
         </article>
       </div>
     </div>

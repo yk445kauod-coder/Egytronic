@@ -5,8 +5,8 @@ export default function Capabilities() {
     <div className="wrap">
       <div className="section-head reveal">
         <span className="px-tag">Services</span>
-        <h2>Three services, public prices</h2>
-        <p>Each one starts from a package with a fixed scope and is delivered ready to use.</p>
+        <h2>Three services, one path to growth</h2>
+        <p>Each starts from a package with a fixed scope and is running for you from day one.</p>
       </div>
       <div className="ledger reveal">
         <article className="ledger__row">
@@ -31,7 +31,7 @@ export default function Capabilities() {
             <span className="ledger__k">SYSTEMS</span>
             <h3>Smart systems</h3>
           </div>
-          <p>Software and AI systems built to your project's needs and delivered ready.</p>
+          <p>Business systems and AI shaped around your work, and built to grow with it.</p>
         </article>
       </div>
     </div>

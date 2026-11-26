@@ -22,7 +22,7 @@ export default function SoftwarePage({ locale }: { locale: Locale }) {
         locale={locale}
         path={path}
         title="البرمجيات والأدوات المفتوحة | Egytronic"
-        description="ما تبنيه Egytronic: مواقع وأنظمة ذكاء اصطناعي وأدوات منشورة علنًا، تُسلَّم جاهزة للتشغيل."
+        description="ما تبنيه Egytronic: مواقع وأنظمة ذكاء اصطناعي وأدوات منشورة علنًا، بتُنفَّذ على مراحل وتنزل تشتغل."
         jsonLd={systemsNode(locale, path)}
       />
       <main id="main">

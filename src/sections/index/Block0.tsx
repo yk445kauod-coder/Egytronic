@@ -10,13 +10,13 @@ export default function Block0() {
 
     <div className="wrap hero__inner">
       <div className="hero__copy">
-        <span className="px-tag">شركة برمجيات مصرية · أسعار معلنة</span>
+        <span className="px-tag">استوديو رقمي مصري · تحوّل وتوسّع</span>
         <h1>
-          <span className="line">برمجيات تُسلَّم جاهزة</span>
-          <span className="line"><em>بسعر معلن قبل أن تبدأ</em></span>
+          <span className="line">تحوّل رقمي لنشاطك</span>
+          <span className="line"><em>يوسّع شغلك</em></span>
         </h1>
         <p className="hero__sub">
-          مواقع وهوية وأنظمة إدارية وذكاء اصطناعي، بخمس باقات تبدأ من 5,000 جنيه، ولكل باقة حدود محددة وموعد تسليم. الاستضافة والباكند مجانًا في السنة الأولى.
+          موقع، هوية، نظام إداري، وذكاء اصطناعي — بنبنيها على مراحل واضحة وتنزل تشتغل عندك. الاستضافة والباكند مجانًا في السنة الأولى.
         </p>
         <div className="hero__actions">
           <a className="px-btn" href="/pricing/">احجز باقتك</a>

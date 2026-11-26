@@ -11,7 +11,7 @@ const og = {
   url: "https://egytronic.pages.dev/",
   logo: "https://egytronic.pages.dev/assets/img/icon-512.png",
   description:
-    "An Egyptian software company building websites, brand identities and AI systems, delivered ready to run.",
+    "A digital transformation for your business: websites, brand identities, business systems and AI, built in clear stages.",
   founder: { "@type": "Person", name: "Yousef Khamis" },
   sameAs: ["https://github.com/yk445kauod-coder/Egytronic"],
 };
@@ -29,8 +29,8 @@ export default function Home({ locale }: { locale: Locale }) {
       <Seo
         locale={locale}
         path={path}
-        title="Egytronic | Software delivered ready, at public prices"
-        description="Websites, brand identity, business systems and AI, in five packages from EGP 5,000. A published price and delivery date. Hosting and backend free in year one."
+        title="Egytronic | Digital transformation for your business"
+        description="A digital transformation for your business: websites, identity, business systems and AI, built in clear stages. Hosting free in year one."
         jsonLd={[faqNode(locale), offerCatalogNode(locale)]}
       />
       <main id="main">

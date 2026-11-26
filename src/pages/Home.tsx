@@ -11,7 +11,7 @@ const og = {
   url: "https://egytronic.pages.dev/",
   logo: "https://egytronic.pages.dev/assets/img/icon-512.png",
   description:
-    "شركة برمجيات مصرية تبني المواقع والهويات والأنظمة الإدارية وأنظمة الذكاء الاصطناعي، بأسعار معلنة تُنشر قبل البدء.",
+    "تحوّل رقمي لنشاطك: مواقع وهويات وأنظمة إدارية وذكاء اصطناعي، تُبنى على مراحل واضحة وتنزل تشتغل عندك.",
   founder: { "@type": "Person", name: "Yousef Khamis" },
   sameAs: ["https://github.com/yk445kauod-coder/Egytronic"],
 };
@@ -29,8 +29,8 @@ export default function Home({ locale }: { locale: Locale }) {
       <Seo
         locale={locale}
         path={path}
-        title="Egytronic | برمجيات تُسلَّم جاهزة، بأسعار معلنة"
-        description="مواقع وهوية وأنظمة إدارية وذكاء اصطناعي، بخمس باقات تبدأ من 5,000 جنيه. حدود محددة وسعر معلن وموعد تسليم، والاستضافة والباكند مجانًا في السنة الأولى."
+        title="Egytronic | تحوّل رقمي لنشاطك"
+        description="تحوّل رقمي لنشاطك: موقع، هوية، نظام إداري، وذكاء اصطناعي — بنبنيها على مراحل واضحة وتنزل تشتغل عندك. الاستضافة والباكند مجانًا في السنة الأولى."
         jsonLd={[faqNode(locale), offerCatalogNode(locale)]}
       />
       <main id="main">

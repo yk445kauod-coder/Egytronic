@@ -10,13 +10,13 @@ export default function Block0() {
 
     <div className="wrap hero__inner">
       <div className="hero__copy">
-        <span className="px-tag">Egyptian software studio · public pricing</span>
+        <span className="px-tag">Egyptian digital studio · transform and grow</span>
         <h1>
-          <span className="line">Software delivered ready</span>
-          <span className="line"><em>at a published price</em></span>
+          <span className="line">A digital transformation for your business</span>
+          <span className="line"><em>that makes it grow</em></span>
         </h1>
         <p className="hero__sub">
-          Websites, brand identity, business systems and AI, in five packages from EGP 5,000. Each has a fixed scope and a delivery date. Hosting and backend are free in year one.
+          A website, an identity, a business system, AI — built in clear stages and handed over running. Hosting and backend are free in year one.
         </p>
         <div className="hero__actions">
           <a className="px-btn" href="/en/pricing/">Book your package</a>

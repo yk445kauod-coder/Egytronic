@@ -6,7 +6,7 @@ export default function Software() {
       <div className="section-head reveal">
         <span className="px-tag">Software</span>
         <h1 id="software-title">What we build in software</h1>
-        <p>Websites, systems and tools delivered ready to run; some of them published for everyone.</p>
+        <p>Websites, systems and tools built in stages and handed over running; some of them published for everyone.</p>
       </div>
 
       <ol className="pricelist reveal">
@@ -26,7 +26,7 @@ export default function Software() {
             <span className="pricerow__dots" aria-hidden="true"></span>
             <p className="pricerow__price"><span className="pricerow__cur">SYSTEMS</span></p>
           </div>
-          <p className="pricerow__desc">Software and AI systems built to your project's needs and delivered ready.</p>
+          <p className="pricerow__desc">Business systems and AI shaped around your work, and built to grow with it.</p>
         </li>
         <li className="pricerow">
           <span className="pricerow__n" aria-hidden="true">03</span>
