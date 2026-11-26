@@ -111,7 +111,7 @@ async function checkLinks(files) {
     const hrefs = [...html.matchAll(/href="([^"]+)"/g)].map((m) => decode(m[1]));
     for (const href of hrefs) {
       if (externalOk.test(href)) continue;
-      if (/^\/(assets|favicon|apple-touch)|\.(css|js|woff2|png|ico|svg|xml|json|txt)$/.test(href)) continue;
+      if (/^\/(assets|favicon|apple-touch)|\.(css|js|woff2|png|ico|svg|xml|json|txt|webmanifest)$/.test(href)) continue;
       const [path] = href.split("#");
       if (!path) continue;
       const normal = path.endsWith("/") ? path : `${path}/`;

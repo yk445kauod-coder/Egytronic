@@ -63,6 +63,9 @@ export function websiteNode(locale: Locale) {
     "@id": `${BASE}/#website`,
     url: `${BASE}/`,
     name: catalog.brand,
+    // Google derives a site name for *.pages.dev from the platform; these are the signals it
+    // actually reads on the page, so state the brand everywhere it looks.
+    alternateName: ["إيجي ترونيك", "Egytronic Software"],
     inLanguage: lang(locale),
     publisher: { "@id": `${BASE}/#organization` },
   };
