@@ -24,18 +24,26 @@ def localise() -> None:
         home.write_text(html, encoding="utf-8")
 
 
-def fingerprint_admin() -> None:
-    page = DIST / "admin/index.html"
-    if not page.exists():
+def fingerprint_assets() -> None:
+    """Stamp every stylesheet and script URL with a content hash.
+
+    Pages serves /assets/css/* with a one-hour cache and the URL never changed, so a
+    deploy could sit invisible behind a stale stylesheet. A hashed query string makes
+    each build a new URL, which lets _headers serve them as immutable.
+    """
+    digests = {}
+    for asset in (*DIST.glob("assets/css/*.css"), *DIST.glob("assets/js/*.js")):
+        url = "/" + asset.relative_to(DIST).as_posix()
+        digests[url] = hashlib.sha256(asset.read_bytes()).hexdigest()[:8]
+    if not digests:
         return
-    html = page.read_text(encoding="utf-8")
-    for url in ("/assets/js/admin.js", "/assets/css/admin.css"):
-        asset = DIST / url.lstrip("/")
-        if not asset.exists():
-            continue
-        digest = hashlib.sha256(asset.read_bytes()).hexdigest()[:8]
-        html = re.sub(rf"{re.escape(url)}(\?v=[0-9a-zA-Z]+)?", f"{url}?v={digest}", html)
-    page.write_text(html, encoding="utf-8")
+    pattern = "|".join(re.escape(url) for url in sorted(digests, key=len, reverse=True))
+    stamp = re.compile(rf"({pattern})(\?v=[0-9a-zA-Z]+)?")
+    for page in DIST.rglob("*.html"):
+        html = page.read_text(encoding="utf-8")
+        stamped = stamp.sub(lambda m: f"{m.group(1)}?v={digests[m.group(1)]}", html)
+        if stamped != html:
+            page.write_text(stamped, encoding="utf-8")
 
 
 def sitemap() -> None:
@@ -110,10 +118,10 @@ def main() -> None:
             shutil.copytree(src, dst)
         elif src.exists():
             shutil.copy2(src, dst)
-    fingerprint_admin()
     not_found = ROOT / "404.html"
     if not_found.exists():
         shutil.copy2(not_found, DIST / "404.html")
+    fingerprint_assets()
     sitemap()
     agent = subprocess.run(["node", "scripts/agent-files.mjs"], cwd=ROOT, check=False)
     if agent.returncode != 0:
