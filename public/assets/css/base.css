@@ -252,25 +252,25 @@ pre {
 
 /* straight answers */
 .answers__list { display: grid; gap: 20px; margin: 32px 0; }
-.answers__item { border-inline-start: 3px solid var(--line-2, #d8d4c8); padding-inline-start: 16px; }
+.answers__item { border-inline-start: 3px solid var(--line); padding-inline-start: 16px; }
 .answers__item dt { font-weight: 700; font-size: 1.05rem; margin-block-end: 6px; }
-.answers__item dd { margin: 0; color: var(--ink-2, #4a463c); line-height: 1.75; max-width: 68ch; }
+.answers__item dd { margin: 0; color: var(--muted); line-height: 1.75; max-width: 68ch; }
 .answers__foot { margin-block-start: 28px; }
 
 /* work */
 .work__list { list-style: none; padding: 0; margin: 40px 0; display: grid; gap: 0; }
-.work__item { padding: 28px 0; border-block-start: 1px solid var(--line-2, #d8d4c8); }
-.work__item:last-child { border-block-end: 1px solid var(--line-2, #d8d4c8); }
-.work__kind { margin: 0 0 6px; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2, #4a463c); }
+.work__item { padding: 28px 0; border-block-start: 1px solid var(--line); }
+.work__item:last-child { border-block-end: 1px solid var(--line); }
+.work__kind { margin: 0 0 6px; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .work__name { margin: 0 0 10px; font-size: clamp(1.35rem, 2.2vw, 1.8rem); }
 .work__name a { text-decoration: none; }
-.work__what { margin: 0 0 10px; color: var(--ink-2, #4a463c); line-height: 1.7; max-width: 62ch; }
-.work__url { margin: 0; font-size: .85rem; color: var(--ink-2, #4a463c); }
+.work__what { margin: 0 0 10px; color: var(--muted); line-height: 1.7; max-width: 62ch; }
+.work__url { margin: 0; font-size: .85rem; color: var(--muted); }
 .work__foot { margin-block-start: 32px; }
 
 /* legal + consent */
 .legal__block { margin-block: 28px; max-width: 72ch; }
 .legal__block h2 { font-size: 1.1rem; margin-block-end: 8px; }
-.legal__block p { margin: 0 0 10px; line-height: 1.8; color: var(--ink-2, #4a463c); }
-.legal__updated { font-size: .85rem; color: var(--ink-2, #4a463c); }
+.legal__block p { margin: 0 0 10px; line-height: 1.8; color: var(--muted); }
+.legal__updated { font-size: .85rem; color: var(--muted); }
 .legal__foot { margin-block-start: 36px; }

@@ -66,8 +66,8 @@ export default function Work({ locale }: { locale: Locale }) {
                       </a>
                     </h2>
                     <p className="work__what">{item.what}</p>
-                    <p className="work__url" dir="ltr">
-                      {project.url.replace("https://", "")}
+                    <p className="work__url">
+                      <bdi dir="ltr">{project.url.replace("https://", "")}</bdi>
                     </p>
                   </li>
                 );
