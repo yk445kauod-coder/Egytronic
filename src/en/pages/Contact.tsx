@@ -4,6 +4,7 @@ import { contactNode } from "../../layout/Schema";
 
 import type { Locale } from "../../i18n/useLocale";
 import { Portal } from "../sections/contact/index";
+import GoogleCard from "../../sections/GoogleCard";
 
 export default function ContactPage({ locale }: { locale: Locale }) {
   const path = locale === "en" ? "/en/contact/" : "/contact/";
@@ -18,6 +19,7 @@ export default function ContactPage({ locale }: { locale: Locale }) {
       />
       <main id="main">
         <Portal />
+        <GoogleCard />
       </main>
     </Layout>
   );

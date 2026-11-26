@@ -13,7 +13,7 @@ export default function Block0() {
         <span className="px-tag">Egyptian digital studio · transform and grow</span>
         <h1>
           <span className="line">A digital transformation for your business</span>
-          <span className="line"><em>that makes it grow</em></span>
+          <span className="line"><em>and grows step by step</em></span>
         </h1>
         <p className="hero__sub">
           A website, an identity, a business system, AI — built in clear stages and handed over running. Hosting and backend are free in year one.

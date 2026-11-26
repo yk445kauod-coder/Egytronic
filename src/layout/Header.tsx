@@ -14,10 +14,9 @@ export default function Header({ path }: { path: string }) {
     { href: "/", label: t("الرئيسية"), active: home },
     { href: "/#capabilities", label: t("الخدمات"), active: false },
     { href: "/work/", label: t("أعمالنا"), active: path.includes("/work/") },
+    { href: "/software/", label: t("البرمجيات"), active: path.includes("/software/") },
     { href: "/pricing/", label: t("الأسعار"), active: path.includes("/pricing/") },
     { href: "/blog/", label: t("المدونة"), active: path.includes("/blog/") },
-    { href: "/#how", label: t("المنهجية"), active: false },
-    { href: "/#about", label: t("عن الشركة"), active: false },
     { href: "/contact/", label: t("تواصل"), active: path.includes("/contact/") },
   ];
 

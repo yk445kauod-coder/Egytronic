@@ -13,7 +13,7 @@ export default function Block0() {
         <span className="px-tag">استوديو رقمي مصري · تحوّل وتوسّع</span>
         <h1>
           <span className="line">تحوّل رقمي لنشاطك</span>
-          <span className="line"><em>يوسّع شغلك</em></span>
+          <span className="line"><em>وتوسّع خطوة بخطوة</em></span>
         </h1>
         <p className="hero__sub">
           موقع، هوية، نظام إداري، وذكاء اصطناعي — بنبنيها على مراحل واضحة وتنزل تشتغل عندك. الاستضافة والباكند مجانًا في السنة الأولى.

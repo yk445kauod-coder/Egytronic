@@ -51,24 +51,20 @@ export default function Work({ locale }: { locale: Locale }) {
               </p>
             </div>
             <ul className="work__list">
-              {PROJECTS.map((project) => {
+              {PROJECTS.map((project, index) => {
                 const item = en ? project.en : project.ar;
                 return (
                   <li key={project.slug} className="work__item">
+                    <span className="work__n" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
                     <p className="work__kind">{item.kind}</p>
-                    <h2 className="work__name">
-                      <a
-                        href={project.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {item.name} <span aria-hidden="true">↗</span>
-                      </a>
-                    </h2>
+                    <h2 className="work__name">{item.name}</h2>
                     <p className="work__what">{item.what}</p>
-                    <p className="work__url">
-                      <bdi dir="ltr">{project.url.replace("https://", "")}</bdi>
-                    </p>
+                    <div className="work__meta">
+                      <a className="work__open" href={project.url} target="_blank" rel="noopener noreferrer">
+                        {en ? "Open the site" : "افتح الموقع"} <span aria-hidden="true">↗</span>
+                      </a>
+                      <bdi dir="ltr" className="work__url">{project.url.replace("https://", "")}</bdi>
+                    </div>
                   </li>
                 );
               })}

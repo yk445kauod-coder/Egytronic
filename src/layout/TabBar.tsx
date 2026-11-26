@@ -1,26 +1,27 @@
 import { localePath, useLocale } from "../i18n/useLocale";
-import { useT } from "../i18n/useT";
 
 export default function TabBar({ path }: { path: string }) {
   const locale = useLocale();
-  const t = useT();
+  const en = locale === "en";
   const p = (href: string) => localePath(locale, href);
   const is = (part: string) => path.includes(part);
 
+  const items = [
+    { href: p("/"), icon: "#i-home", label: en ? "Home" : "الرئيسية", active: path === "/" || path === "/en/" },
+    { href: p("/work/"), icon: "#i-grid", label: en ? "Work" : "أعمالنا", active: is("/work/") },
+    { href: p("/pricing/"), icon: "#i-tag", label: en ? "Prices" : "الأسعار", active: is("/pricing/") },
+    { href: p("/software/"), icon: "#i-external-link", label: en ? "Software" : "البرمجيات", active: is("/software/") },
+    { href: p("/contact/"), icon: "#i-mail", label: en ? "Contact" : "تواصل", active: is("/contact/") },
+  ];
+
   return (
-    <nav className="tabbar" aria-label={t("تنقل سريع")}>
-      <a href={p("/")} aria-current={path === "/" || path === "/en/" ? "page" : undefined}>
-        <svg className="icon" aria-hidden="true"><use href="#i-home" /></svg><span>{t("الرئيسية")}</span>
-      </a>
-      <a href={`${p("/")}#capabilities`}>
-        <svg className="icon" aria-hidden="true"><use href="#i-grid" /></svg><span>{t("الخدمات")}</span>
-      </a>
-      <a href={p("/pricing/")} aria-current={is("/pricing/") ? "page" : undefined}>
-        <svg className="icon" aria-hidden="true"><use href="#i-tag" /></svg><span>{t("الأسعار")}</span>
-      </a>
-      <a href={p("/contact/")} aria-current={is("/contact/") ? "page" : undefined}>
-        <svg className="icon" aria-hidden="true"><use href="#i-mail" /></svg><span>{t("تواصل")}</span>
-      </a>
+    <nav className="tabbar" aria-label={en ? "Quick navigation" : "تنقل سريع"}>
+      {items.map((item) => (
+        <a key={item.href} href={item.href} aria-current={item.active ? "page" : undefined}>
+          <svg className="icon" aria-hidden="true"><use href={item.icon} /></svg>
+          <span>{item.label}</span>
+        </a>
+      ))}
     </nav>
   );
 }

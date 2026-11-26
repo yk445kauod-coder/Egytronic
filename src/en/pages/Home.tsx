@@ -2,6 +2,7 @@ import Layout from "../../layout/Layout";
 import Seo from "../../layout/Seo";
 import { faqNode, offerCatalogNode } from "../../layout/Schema";
 import type { Locale } from "../../i18n/useLocale";
+import GoogleCard from "../../sections/GoogleCard";
 import { Block0, Products, Systems, Transform, Capabilities, How, About, Faq, Contact, Journal } from "../sections/index/index";
 
 const og = {
@@ -43,6 +44,7 @@ export default function Home({ locale }: { locale: Locale }) {
         <About />
         <Journal />
         <Faq />
+        <GoogleCard />
         <Contact />
       </main>
     </Layout>

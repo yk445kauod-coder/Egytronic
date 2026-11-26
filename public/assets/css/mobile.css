@@ -131,7 +131,7 @@ body {
     inset-block-end: 0;
     z-index: 150;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
     background: color-mix(in srgb, var(--ink) 92%, transparent);
     backdrop-filter: blur(10px);
@@ -156,8 +156,21 @@ body {
     height: 21px;
   }
 
+  .tabbar a {
+    position: relative;
+  }
+
   .tabbar a[aria-current="page"] {
     color: var(--gold);
+  }
+
+  .tabbar a[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    inset-block-start: -6px;
+    inset-inline: 26%;
+    height: 2px;
+    background: var(--gold);
   }
 
   .tabbar a[aria-current="page"] .icon {
