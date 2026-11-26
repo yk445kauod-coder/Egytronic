@@ -26,7 +26,14 @@ export function organizationNode() {
     email: catalog.email,
     description: catalog.facts.en,
     founder: { "@id": `${BASE}/#founder` },
-    sameAs: [catalog.founder.github],
+    telephone: catalog.phone,
+    // The Google Business Profile is the only external profile that exists today; keep it
+    // linked so search engines tie the listing and the site to one entity.
+    sameAs: [
+      catalog.founder.github,
+      "https://g.page/r/CZxZjGcYazbKEBM",
+      "https://www.google.com/maps?cid=14570951396964456860",
+    ],
     knowsLanguage: ["ar", "en"],
     knowsAbout: ["Web development", "Brand identity", "Business management systems", "AI systems"],
     areaServed: { "@type": "Country", name: "Egypt" },
