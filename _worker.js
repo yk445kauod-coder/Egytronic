@@ -746,6 +746,12 @@ async function contact(request, env) {
   await noteInbox(env, { id: inserted?.id, name, email, phone, message, package: wanted });
 
   await emit(env, "inquiry.created", "inquiry", inserted?.id, "portal", { name, email, package: wanted });
+  await notifyTeam(env, {
+    title: "طلب جديد على الموقع",
+    body: `${name}${phone ? " · " + phone : ""}${wanted ? " · " + wanted : ""}`,
+    url: "/admin/#pipeline",
+    tag: "egytronic-inquiry",
+  }).catch(() => {});
   return json({ ok: true, id: inserted?.id ?? null });
 }
 
@@ -892,6 +898,160 @@ async function convertInquiry(env, id, payload, who) {
 
 // ── console: clients & projects ──────────────────────────────────────
 
+
+// ── web push (VAPID + aes128gcm) ─────────────────────────────────────
+// Keys live as Worker secrets: VAPID_PUBLIC_KEY (base64url point) and
+// VAPID_PRIVATE_KEY (EC P-256 JWK). Nothing here ever leaves the Worker.
+
+const b64u = {
+  decode(value) {
+    const raw = String(value).replace(/-/g, "+").replace(/_/g, "/");
+    const padded = raw + "=".repeat((4 - (raw.length % 4)) % 4);
+    const bin = atob(padded);
+    return Uint8Array.from(bin, (ch) => ch.charCodeAt(0));
+  },
+  encode(bytes) {
+    let bin = "";
+    for (const byte of new Uint8Array(bytes)) bin += String.fromCharCode(byte);
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  },
+};
+
+function concatBytes(...parts) {
+  const total = parts.reduce((sum, part) => sum + part.length, 0);
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const part of parts) {
+    out.set(part, offset);
+    offset += part.length;
+  }
+  return out;
+}
+
+async function hkdf(salt, ikm, info, length) {
+  const key = await crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits(
+    { name: "HKDF", hash: "SHA-256", salt, info },
+    key,
+    length * 8
+  );
+  return new Uint8Array(bits);
+}
+
+async function vapidAuthorization(env, endpoint) {
+  const audience = new URL(endpoint).origin;
+  const encoder = new TextEncoder();
+  const header = { typ: "JWT", alg: "ES256" };
+  const claims = {
+    aud: audience,
+    exp: Math.floor(Date.now() / 1000) + 12 * 3600,
+    sub: env.VAPID_SUBJECT || "mailto:egytronic.official@googlemail.com",
+  };
+  const unsigned = `${b64u.encode(encoder.encode(JSON.stringify(header)))}.${b64u.encode(encoder.encode(JSON.stringify(claims)))}`;
+  const jwk = JSON.parse(env.VAPID_PRIVATE_KEY);
+  const key = await crypto.subtle.importKey("jwk", jwk, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+  const signature = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, encoder.encode(unsigned));
+  return `vapid t=${unsigned}.${b64u.encode(signature)}, k=${env.VAPID_PUBLIC_KEY}`;
+}
+
+async function encryptPush(payload, p256dh, authSecretB64) {
+  const encoder = new TextEncoder();
+  const uaPublic = b64u.decode(p256dh);
+  const authSecret = b64u.decode(authSecretB64);
+
+  const as = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+  const asPublic = new Uint8Array(await crypto.subtle.exportKey("raw", as.publicKey));
+  const uaKey = await crypto.subtle.importKey("raw", uaPublic, { name: "ECDH", namedCurve: "P-256" }, false, []);
+  const shared = new Uint8Array(
+    await crypto.subtle.deriveBits({ name: "ECDH", public: uaKey }, as.privateKey, 256)
+  );
+
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const prk = await hkdf(authSecret, shared, new Uint8Array(0), 32);
+  const cek = await hkdf(salt, prk, encoder.encode("Content-Encoding: aes128gcm\0"), 16);
+  const nonce = await hkdf(salt, prk, encoder.encode("Content-Encoding: nonce\0"), 12);
+
+  const aes = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]);
+  const plaintext = concatBytes(encoder.encode(payload), new Uint8Array([2]));
+  const cipher = new Uint8Array(
+    await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, aes, plaintext)
+  );
+
+  const recordSize = new Uint8Array(4);
+  new DataView(recordSize.buffer).setUint32(0, 4096);
+  return concatBytes(salt, recordSize, new Uint8Array([asPublic.length]), asPublic, cipher);
+}
+
+async function pushTo(env, sub, message) {
+  const body = await encryptPush(JSON.stringify(message), sub.p256dh, sub.auth);
+  const res = await fetch(sub.endpoint, {
+    method: "POST",
+    headers: {
+      "content-encoding": "aes128gcm",
+      "content-type": "application/octet-stream",
+      ttl: "86400",
+      authorization: await vapidAuthorization(env, sub.endpoint),
+    },
+    body,
+  });
+  return res.status;
+}
+
+async function notifyTeam(env, message) {
+  if (!env.VAPID_PRIVATE_KEY || !env.VAPID_PUBLIC_KEY) return { ok: false, code: "no-vapid" };
+  const { results } = await env.DB.prepare("SELECT * FROM push_subs WHERE active = 1").all();
+  const subs = results || [];
+  let sent = 0;
+  for (const sub of subs) {
+    try {
+      const status = await pushTo(env, sub, message);
+      if (status === 201 || status === 200) {
+        sent += 1;
+        await env.DB.prepare("UPDATE push_subs SET last_ok = datetime('now'), failures = 0 WHERE id = ?").bind(sub.id).run();
+      } else if (status === 404 || status === 410) {
+        await env.DB.prepare("UPDATE push_subs SET active = 0 WHERE id = ?").bind(sub.id).run();
+      } else {
+        await env.DB.prepare("UPDATE push_subs SET failures = failures + 1 WHERE id = ?").bind(sub.id).run();
+      }
+    } catch {
+      await env.DB.prepare("UPDATE push_subs SET failures = failures + 1 WHERE id = ?").bind(sub.id).run();
+    }
+  }
+  return { ok: true, sent, total: subs.length };
+}
+
+async function pushSubscribe(env, payload, who) {
+  const endpoint = clean(payload.endpoint, 600);
+  const p256dh = clean(payload.keys?.p256dh, 200);
+  const auth = clean(payload.keys?.auth, 100);
+  if (!endpoint || !p256dh || !auth) return json({ ok: false, code: "subscription" }, 400);
+  await env.DB
+    .prepare(
+      `INSERT INTO push_subs (endpoint, p256dh, auth, member, active) VALUES (?, ?, ?, ?, 1)
+       ON CONFLICT(endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth, active = 1`
+    )
+    .bind(endpoint, p256dh, auth, who?.name || null)
+    .run();
+  return json({ ok: true });
+}
+
+async function pushUnsubscribe(env, payload) {
+  const endpoint = clean(payload.endpoint, 600);
+  if (!endpoint) return json({ ok: false, code: "endpoint" }, 400);
+  await env.DB.prepare("UPDATE push_subs SET active = 0 WHERE endpoint = ?").bind(endpoint).run();
+  return json({ ok: true });
+}
+
+async function pushTest(env, who) {
+  const result = await notifyTeam(env, {
+    title: "تجربة من Egytronic",
+    body: `الإشعارات شغالة يا ${who?.name || "فريق"}.`,
+    url: "/admin/",
+    tag: "egytronic-test",
+  });
+  return json({ ok: result.ok !== false, ...result });
+}
+
 // ── money engine ─────────────────────────────────────────────────────
 // An invoice owns a total; payments reduce what is still owed. Status is
 // derived on every payment so it can never disagree with the ledger.
@@ -1024,6 +1184,12 @@ async function addPayment(env, id, payload, who) {
     paid,
     total: invoice.total,
   });
+  await notifyTeam(env, {
+    title: status === "paid" ? "فاتورة اتقفلت بالكامل" : "دفعة جديدة",
+    body: `${invoice.number} · ${amount} ج.م`,
+    url: "/admin/#money",
+    tag: "egytronic-money",
+  }).catch(() => {});
   return json({ ok: true, status, paid });
 }
 
@@ -3355,6 +3521,15 @@ async function api(request, env, url, who) {
   }
 
   if (resource === "finance" && method === "GET") return financeSummary(env);
+
+  if (resource === "push") {
+    if (id === "key" && method === "GET") {
+      return json({ ok: true, key: env.VAPID_PUBLIC_KEY || null, ready: Boolean(env.VAPID_PUBLIC_KEY) });
+    }
+    if (id === "subscribe" && method === "POST") return pushSubscribe(env, await body(request), who);
+    if (id === "unsubscribe" && method === "POST") return pushUnsubscribe(env, await body(request));
+    if (id === "test" && method === "POST") return pushTest(env, who);
+  }
 
   if (resource === "invoices") {
     if (!id && method === "GET") return listInvoices(env, url);

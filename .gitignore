@@ -18,3 +18,4 @@ studio/artifacts/frames/
 
 # astro build cache
 .astro/
+.vapid.env

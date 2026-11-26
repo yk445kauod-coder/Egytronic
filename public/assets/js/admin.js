@@ -2843,17 +2843,56 @@
     } catch {}
   }
 
+  const urlBase64ToUint8Array = (value) => {
+    const raw = String(value).replace(/-/g, "+").replace(/_/g, "/");
+    const padded = raw + "=".repeat((4 - (raw.length % 4)) % 4);
+    const bin = atob(padded);
+    return Uint8Array.from(bin, (ch) => ch.charCodeAt(0));
+  };
+
   async function enableNotifications() {
     if (typeof Notification === "undefined") return toast("المتصفح ده مايدعمش الإشعارات.", "bad");
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") return toast("الإشعارات مرفوضة من إعدادات المتصفح.", "bad");
-    await registerWorker();
+    if (Notification.permission !== "granted") {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return toast("الإشعارات مرفوضة من إعدادات المتصفح.", "bad");
+    }
+
+    const registration = await registerWorker();
+    let subscribed = false;
+    try {
+      const { key, ready } = await api("/push/key");
+      if (ready && key && registration) {
+        const existing = await registration.pushManager.getSubscription();
+        const sub =
+          existing ||
+          (await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(key),
+          }));
+        await api("/push/subscribe", { method: "POST", body: sub.toJSON() });
+        subscribed = true;
+      }
+    } catch {
+      subscribed = false;
+    }
+
     try {
       localStorage.setItem("egx.notify", "1");
     } catch {}
     haptic([12, 60, 12]);
-    toast("الإشعارات اتفعّلت.", "ok");
-    showNotification("إشعارات Egytronic شغالة", "هنبلّغك أول ما يوصل طلب أو دفعة جديدة.");
+
+    if (!subscribed) {
+      toast("الإشعارات المحلية اتفعّلت، لكن الـ push محتاج إذن المتصفح من جديد.", "bad");
+      return;
+    }
+
+    toast("الإشعارات شغالة — ببعتلك تجربة دلوقتي.", "ok");
+    try {
+      const res = await api("/push/test", { method: "POST" });
+      if (!res.sent) toast("مفيش أجهزة مشتركة لسه. جرّب من تاني بعد إذن الإشعارات.", "bad");
+    } catch {
+      toast("تم الاشتراك، لكن الإشعار التجريبي ماوصلش.", "bad");
+    }
   }
 
   function watchForNews(prevLeads) {
