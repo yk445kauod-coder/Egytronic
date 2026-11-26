@@ -42,7 +42,11 @@ export default function Footer() {
           </li>
         </ul>
 
-        <p className="footer__note">{t("صُنع في مصر")} — <bdi>Egytronic</bdi></p>
+        <p className="footer__note">
+          {t("صُنع في مصر")} — <bdi>Egytronic</bdi>
+          <br />
+          {t("الموقع الرسمي:")} <bdi dir="ltr">egytronic.pages.dev</bdi>
+        </p>
       </div>
     </footer>
   );
